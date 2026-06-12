@@ -1,0 +1,81 @@
+ALINHAMENTO DE ESCOPO 
+
+FLUXO DE ATENDIMENTO
+
+1. Como um chamado percorre as etapas ate ser resolvido? Por exemplo, quando um colaborador abre um chamado, o que acontece em seguida?
+(x) a) O chamado cai em uma fila comum e o primeiro tecnico disponivel assume
+( ) b) Um gestor analisa e atribui manualmente ao tecnico responsavel
+( ) c) O sistema distribui automaticamente com base na carga de trabalho de cada tecnico
+( ) d) Outro: ____________
+
+2. Quem pode alterar a situacao de um chamado (Aberto, Em Andamento, Resolvido, Fechado, Aguardando) e em que momento?
+( ) a) Apenas o tecnico responsavel
+(x) b) O tecnico e o gestor da area
+( ) c) Qualquer pessoa envolvida no chamado (incluindo quem abriu)
+(x) d) Outro:Administrador do sistema
+
+3. Dentro de cada chamado, e necessario que o solicitante e o tecnico troquem mensagens ou registrem o historico do que foi feito?
+(x) a) Sim, precisa haver uma conversa dentro do chamado com historico completo
+( ) b) Apenas o tecnico registra observacoes internas (o solicitante nao ve)
+( ) c) Nao e necessario, basta mudar a situacao do chamado
+( ) d) Outro: ____________
+
+PERMISSOES DE ACESSO
+
+4. O que cada tipo de usuario pode ver e fazer no sistema?
+(x) a) Solicitante ve apenas seus chamados, Tecnico ve todos do seu departamento, Gestor ve tudo e pode alterar qualquer chamado
+( ) b) Solicitante ve seus chamados, Tecnico ve apenas os designados a ele, Gestor ve todos e gerencia a equipe
+( ) c) Todos veem todos os chamados, mas so podem editar conforme sua funcao
+( ) d) Outro: ____________
+
+COMUNICACAO E NOTIFICACOES
+
+5. Como as pessoas devem ser avisadas quando algo muda no chamado (ex: tecnico assumiu, chamado resolvido, pedido de mais informacao)?
+( ) a) Por e-mail automatico para todos os envolvidos
+( ) b) Apenas uma notificacao dentro do proprio sistema (sem e-mail)
+(x) c) Por e-mail e tambem com alerta na tela do sistema
+( ) d) Outro: ____________
+
+PRACOS DE ATENDIMENTO
+
+6. Existe um tempo maximo para atendimento conforme o nivel de urgencia? Por exemplo, chamados Criticos devem ser respondidos em ate 2 horas?
+( ) a) Sim, temos metas de tempo por urgencia (descrever na opcao "Outro")
+( ) b) Nao temos metas formais, mas gostariamos de definir isso junto com voces
+(x) c) Nao temos metas e isso nao e prioridade no momento
+( ) d) Outro: ____________
+
+ACESSO AO SISTEMA
+
+7. Como os usuarios entrarao no sistema?
+(x) a) Com login e senha criados exclusivamente para esta ferramenta
+( ) b) Usando a mesma conta corporativa que ja utilizam no dia a dia (ex: conta do Windows, Google ou Office 365)
+( ) c) Nao definimos isso ainda, precisamos de orientacao
+( ) d) Outro: ____________
+
+CONEXOES COM OUTROS SISTEMAS
+
+8. O HelpDesk precisa se comunicar com outros sistemas que a empresa ja utiliza?
+( ) a) Sim, com o servidor de e-mail corporativo para envio de notificacoes
+( ) b) Sim, com o diretorio de usuarios da empresa (para login unificado e cadastro automatico)
+( ) c) Sim, com ambos (e-mail e diretorio de usuarios)
+(x) d) Nao, o sistema operara de forma independente
+( ) e) Outro: ____________
+
+AVALIACAO DO ATENDIMENTO
+
+9. Como deve funcionar a pesquisa de satisfacao de 1 a 5 estrelas que foi mencionada nos relatorios?
+( ) a) O sistema envia a pesquisa por e-mail automaticamente assim que o chamado e fechado
+(x) b) A pesquisa aparece como uma tela dentro do sistema ao fechar o chamado
+( ) c) Ainda nao definimos o melhor formato e gostariamos de sugestoes
+( ) d) A pesquisa de satisfacao pode ficar para uma segunda fase do projeto
+( ) e) Outro: ____________
+
+DIMENSIONAMENTO DO USO
+
+10. Qual e o volume esperado de uso do sistema no dia a dia?
+( ) a) Pequeno (ate 50 chamados por mes, menos de 5 tecnicos, uma unica equipe)
+(x) b) Medio (entre 50 e 300 chamados por mes, entre 5 e 15 tecnicos)
+( ) c) Grande (mais de 300 chamados por mes, mais de 15 tecnicos, varios departamentos)
+( ) d) Outro: ____________
+
+Agradecemos desde ja pela atencao! Suas respostas nos ajudarao a desenhar um produto que realmente resolva as suas necessidades.
