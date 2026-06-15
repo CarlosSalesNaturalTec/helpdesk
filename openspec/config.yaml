@@ -1,20 +1,15 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Tech stack: React + TypeScript (frontend), Node.js + TypeScript (backend), PostgreSQL + Prisma ORM, Zod validation, JWT + bcrypt auth, PDFKit (PDF generation), Recharts (charts)
+  Infrastructure: GCP Cloud Run (min-instances=0), Cloud SQL PostgreSQL db-f1-micro, SendGrid/Resend (email)
+  Domain: HelpDesk system for an Instituto with multiple Unidades. 5 personas: Solicitante (opens tickets), Técnico (resolves tickets, unit-scoped), Gestor de TI (manages unit tickets + local users), Diretor (oversees unit + local users), Administrador do Sistema (global admin across all units)
+  Conventions: TypeScript strict mode, Prisma migrations, Zod schemas shared front↔back, conventional commits, sequential changes for solo developer
+  Key constraint: Data isolation between Unidades — Técnico/Diretor/Gestor only see their own Unidade's data. Admin sees everything.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Keep proposals under 500 words
+    - Always include a "Non-goals" section
+  tasks:
+    - Break tasks into chunks of max 4 hours for solo developer

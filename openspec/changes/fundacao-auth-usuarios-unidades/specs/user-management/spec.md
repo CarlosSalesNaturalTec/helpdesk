@@ -1,0 +1,65 @@
+# Spec: Gestão de Usuários (user-management)
+
+CRUD de usuários com escopo descentralizado: o Administrador do Sistema gerencia usuários de todas as Unidades; Diretor e Gestor de TI gerenciam apenas usuários de sua própria Unidade.
+
+## ADDED Requirements
+
+### Requirement: Criação de usuário
+O sistema SHALL permitir a criação de usuários com os campos obrigatórios: nome completo, e-mail (único no sistema), função (Solicitante, Técnico, Gestor de TI, Diretor), Unidade vinculada e senha inicial temporária. O e-mail DEVE ser validado como único antes da criação.
+
+#### Scenario: Admin cria usuário em qualquer Unidade
+- **WHEN** o Administrador do Sistema acessa a tela de Usuários e aciona "Novo Usuário", preenche todos os campos, seleciona qualquer Unidade, e confirma
+- **THEN** o usuário é criado com status ativo, vinculado à Unidade e função selecionadas, e pode realizar login com a senha temporária
+
+#### Scenario: Diretor cria usuário restrito à sua Unidade
+- **WHEN** um Diretor da "Unidade A" acessa a tela de Usuários, aciona "Novo Usuário", preenche os campos, e a Unidade é automaticamente preenchida como "Unidade A" e bloqueada para edição
+- **THEN** o usuário é criado ativo, vinculado exclusivamente à "Unidade A"
+
+#### Scenario: E-mail duplicado é rejeitado
+- **WHEN** um gestor tenta criar um usuário com e-mail "joao@empresa.com" que já existe no sistema
+- **THEN** o sistema exibe "Já existe um usuário com este e-mail" e impede a criação
+
+#### Scenario: Gestor de TI não pode alterar a Unidade do usuário
+- **WHEN** um Gestor de TI da "Unidade A" tenta cadastrar ou editar um usuário
+- **THEN** o campo Unidade é bloqueado e não pode ser alterado para nenhuma Unidade que não seja a "Unidade A"
+
+### Requirement: Edição de usuário
+O sistema SHALL permitir a edição de nome, e-mail, função e status de usuários, respeitando o escopo de Unidade do usuário logado. O e-mail editado DEVE permanecer único no sistema.
+
+#### Scenario: Admin edita qualquer usuário
+- **WHEN** o Admin edita um usuário de qualquer Unidade e altera seus dados
+- **THEN** as alterações são salvas e refletidas no sistema
+
+#### Scenario: Diretor edita apenas usuários da sua Unidade
+- **WHEN** um Diretor da "Unidade A" tenta acessar a rota de edição de um usuário da "Unidade B"
+- **THEN** o sistema retorna HTTP 404
+
+### Requirement: Desativação de usuário
+O sistema SHALL permitir a desativação de usuários (soft delete), impedindo seu login sem remover seus registros históricos. Ao desativar um Técnico com chamados ativos, o sistema DEVE exibir um alerta com a lista de chamados sob sua responsabilidade e solicitar confirmação.
+
+#### Scenario: Desativação de Técnico com chamados ativos
+- **WHEN** um gestor desativa um Técnico que possui X chamados em andamento atribuídos a ele
+- **THEN** o sistema exibe um alerta listando os números dos chamados ativos e solicita confirmação antes de prosseguir
+
+#### Scenario: Usuário desativado não consegue logar
+- **WHEN** um usuário desativado tenta login com credenciais válidas
+- **THEN** o sistema retorna HTTP 403 "Usuário desativado. Entre em contato com o administrador."
+
+#### Scenario: Gestor desativa usuário de sua própria Unidade
+- **WHEN** um Gestor de TI da "Unidade A" desativa um usuário da "Unidade A"
+- **THEN** a desativação é concluída com sucesso
+
+#### Scenario: Gestor não pode desativar usuário de outra Unidade
+- **WHEN** um Gestor de TI da "Unidade A" tenta desativar um usuário da "Unidade B"
+- **THEN** o sistema retorna HTTP 404 e a desativação não ocorre
+
+### Requirement: Listagem de usuários com escopo
+O sistema SHALL listar usuários respeitando o escopo do papel logado. Admin vê todos os usuários; Diretor e Gestor de TI veem apenas usuários de sua Unidade.
+
+#### Scenario: Admin lista todos os usuários
+- **WHEN** o Admin acessa a listagem de usuários
+- **THEN** o sistema retorna todos os usuários de todas as Unidades
+
+#### Scenario: Diretor lista usuários de sua Unidade
+- **WHEN** um Diretor da "Unidade A" acessa a listagem de usuários
+- **THEN** o sistema retorna apenas usuários vinculados à "Unidade A"
