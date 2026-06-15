@@ -326,7 +326,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
 
 ## 5. Requisitos Funcionais
 
-**RF01 — Autenticação:** O sistema deve permitir login mediante e-mail e senha. Credenciais inválidas devem gerar mensagem genérica de erro, sem revelar qual campo está incorreto. Usuários desativados devem ser impedidos de acessar o sistema. No primeiro acesso de um usuário utilizando uma senha temporária, o sistema deve obrigá-lo a alterar a senha antes de liberar o acesso às demais funcionalidades.
+**RF01 — Autenticação:** O sistema deve permitir login mediante e-mail e senha. Credenciais inválidas devem gerar mensagem genérica de erro, sem revelar qual campo está incorreto. Usuários desativados devem ser impedidos de acessar o sistema. No primeiro acesso de um usuário utilizando uma senha temporária, o sistema deve obrigá-lo a alterar a senha antes de liberar o acesso às demais funcionalidades. O sistema também deve bloquear temporariamente (por 15 minutos) o acesso da conta após 5 tentativas consecutivas de login com senha incorreta para o mesmo e-mail.
 
 **RF02 — Controle de Acesso por Perfil:** O sistema deve garantir que cada perfil de usuário tenha visibilidade e permissões distintas de forma rígida:
 - Solicitante: vê apenas seus próprios chamados; pode abrir chamados, interagir no histórico e fechar seus chamados resolvidos na sua respectiva unidade.
@@ -373,7 +373,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
 
 ## 6. Requisitos Não Funcionais
 
-**RNF01 — Segurança na Autenticação:** As senhas dos usuários devem ser armazenadas de forma irreversível (hash criptográfico com salt). O mecanismo de login deve ser resistente a enumeração de usuários (a mensagem de erro para credenciais inválidas não deve distinguir entre e-mail inexistente e senha incorreta).
+**RNF01 — Segurança na Autenticação:** As senhas dos usuários devem ser armazenadas de forma irreversível (hash criptográfico com salt). O mecanismo de login deve ser resistente a enumeração de usuários (a mensagem de erro para credenciais inválidas não deve distinguir entre e-mail inexistente e senha incorreta) e implementar proteção ativa contra ataques de força bruta, aplicando o bloqueio temporário de conta estipulado no RF01.
 
 **RNF02 — Confidencialidade dos Dados:** O controle de acesso baseado em perfil (RF02) deve ser aplicado no servidor, e não apenas na interface. Nenhum usuário deve conseguir acessar dados de chamados fora do seu escopo de permissão via manipulação de parâmetros de requisição.
 
