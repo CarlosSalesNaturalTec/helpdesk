@@ -111,7 +111,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
 
 ### Épico 3: Gestão e Ciclo de Vida do Chamado
 
-* **US 3.1:** Como Técnico, eu quero visualizar a fila de chamados abertos de minha unidade e assumir a responsabilidade por um chamado para que eu possa iniciar o atendimento.
+* **US 3.1:** Como Técnico, Gestor de TI ou Diretor, eu quero visualizar a fila de chamados da minha unidade e gerenciar a atribuição de tickets para garantir a responsabilidade pelo atendimento.
   * **Critérios de Aceitação:**
     * *Cenário 1 — Auto-atribuição de chamado:*
       * **Dado** que eu estou autenticado como Técnico e visualizo a lista de chamados com status "Aberto" da minha unidade
@@ -121,6 +121,10 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
       * **Dado** que eu sou Técnico da "Unidade A"
       * **Quando** eu acesso a tela de Gestão de Chamados
       * **Então** eu vejo apenas os chamados cujo solicitante pertence à "Unidade A", e não visualizo chamados de outras unidades sob a gestão do Instituto
+    * *Cenário 3 — Reatribuição de chamado por Gestor ou Diretor:*
+      * **Dado** que eu estou autenticado como Gestor de TI ou Diretor da "Unidade A" e acesso um chamado da minha unidade
+      * **Quando** eu aciono a ação de "Reatribuir" e seleciono um Técnico válido pertencente à "Unidade A"
+      * **Então** o responsável pelo chamado é atualizado, o status passa para "Em Andamento" (caso estivesse "Aberto"), a mudança de atribuição é registrada no histórico, e o novo Técnico, bem como o Solicitante, são notificados
 
 * **US 3.2:** Como Técnico, Gestor de TI ou Diretor, eu quero alterar o status de um chamado de minha unidade conforme ele avança no atendimento para que o ciclo de vida reflita a realidade do trabalho.
   * **Critérios de Aceitação:**
@@ -332,7 +336,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
 
 **RF05 — Workflow do Chamado:** O sistema deve suportar o seguinte ciclo de vida: Aberto → Em Andamento → Resolvido → Fechado. O status "Aguardando" pode ser acionado a partir de "Em Andamento" como um desvio, retornando a "Em Andamento" quando houver atualização. Chamados "Fechados" podem ser reabertos pelo Solicitante, Técnico, Gestor de TI, Diretor ou Administrador, transitando para o status "Reaberto" e retornando ao ciclo normal de atendimento (Reaberto → Em Andamento → Resolvido → Fechado). A reabertura exige o registro de um motivo e fica registrada no histórico do chamado.
 
-**RF06 — Auto-atribuição:** Um chamado com status "Aberto" pode ser assumido por qualquer Técnico da mesma unidade, passando automaticamente para "Em Andamento" e registrando o Técnico como responsável.
+**RF06 — Atribuição e Reatribuição:** Um chamado com status "Aberto" pode ser assumido (auto-atribuição) por qualquer Técnico da mesma unidade, passando automaticamente para "Em Andamento". Além disso, Gestores de TI e Diretores podem reatribuir qualquer chamado da sua unidade para um Técnico específico. Em ambos os casos, o Técnico responsável é atualizado, a ação é registrada no histórico do chamado, e os usuários envolvidos (novo Técnico e Solicitante) recebem notificações.
 
 **RF07 — Histórico do Chamado:** Cada chamado deve registrar uma linha do tempo cronológica contendo: dados da abertura, todas as mensagens trocadas entre Solicitante e Técnico (com autor, data e hora), e todas as mudanças de status (com registro do status anterior, novo status, autor e data/hora).
 
