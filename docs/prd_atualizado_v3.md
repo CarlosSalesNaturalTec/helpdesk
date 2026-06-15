@@ -74,7 +74,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
     * *Cenário 1 — Criação de usuário pelo Administrador do Sistema:*
       * **Dado** que eu estou autenticado como Administrador do Sistema e acesso a tela de Usuários
       * **Quando** eu aciono "Novo Usuário", preencho nome completo, e-mail, seleciono a função (Solicitante, Técnico, Gestor de TI, Diretor), seleciono a unidade vinculada do Instituto e uma senha temporária, e confirmo a criação
-      * **Then** o usuário é criado com status ativo, associado à unidade e à função correspondentes, e pode realizar login imediatamente com a senha temporária
+      * **Então** o usuário é criado com status ativo, associado à unidade e à função correspondentes, e pode realizar login imediatamente com a senha temporária
     * *Cenário 2 — Criação de usuário pelo Diretor ou Gestor de TI:*
       * **Dado** que eu estou autenticado como Diretor ou Gestor de TI da "Unidade A" e acesso a tela de Usuários
       * **Quando** eu aciono "Novo Usuário", preencho nome completo, e-mail, seleciono a função (Solicitante, Técnico, Gestor de TI, Diretor) e uma senha temporária, sendo a unidade preenchida automaticamente como "Unidade A" e bloqueada para edição, e confirmo a criação
@@ -148,6 +148,10 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
       * **Dado** que um chamado está com status "Fechado" e ninguém solicita a reabertura
       * **Quando** qualquer usuário tenta adicionar uma mensagem ou alterar o status sem usar a ação específica "Reabrir Chamado"
       * **Então** o sistema exibe a mensagem "Este chamado está fechado. Para continuar, utilize a opção 'Reabrir Chamado'."
+    * *Cenário 7 — Fechamento administrativo por Gestor de TI ou Diretor:*
+      * **Dado** que um chamado de minha unidade está com status "Resolvido" e eu sou Gestor de TI ou Diretor dessa unidade
+      * **Quando** eu aciono "Fechar Chamado" para encerrar o atendimento administrativamente
+      * **Então** o chamado passa para o status "Fechado" sem acionar ou exigir a pesquisa de satisfação, a ação é registrada no histórico, e o Solicitante é notificado por e-mail informando o encerramento do seu chamado
 
 * **US 3.3:** Como Técnico, eu quero buscar e filtrar chamados por diferentes critérios para localizar rapidamente tickets específicos em meio ao volume diário de minha unidade.
   * **Critérios de Aceitação:**
@@ -212,7 +216,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
       * **Quando** eu recarrego a página ou o sistema atualiza automaticamente
       * **Então** o card "Críticos" e o card "Abertos" de minha unidade refletem o incremento nos totais
 
-* **US 5.2:** Como Diretor, Gestor de TI ou Administrador do Sistema, eu quero visualizar um gráfico de tendência com a evolução diária de aberturas e fechamentos nos últimos 30 dias para que eu possa identificar padrões de demanda e avaliar a produtividade ao longo do tempo.
+* **US 5.2:** Como Diretor, Gestor de TI, Técnico ou Administrador do Sistema, eu quero visualizar um gráfico de tendência com a evolução diária de aberturas e fechamentos nos últimos 30 dias para que eu possa identificar padrões de demanda e avaliar a produtividade ao longo do tempo.
   * **Critérios de Aceitação:**
     * *Cenário 1 — Gráfico de linha com duas séries para Diretor ou Gestor de TI:*
       * **Dado** que eu estou autenticado como Diretor ou Gestor de TI e acesso o Dashboard de minha unidade
@@ -340,7 +344,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
 
 **RF11 — Dashboard Operacional:** O sistema deve exibir quatro cards numéricos com os totais de chamados: "Abertos" (status = Aberto), "Em Andamento" (status = Em Andamento), "Resolvidos" (status = Resolvido) e "Críticos" (urgência = Crítica E status ≠ Fechado). Para Técnicos, Diretores e Gestores de TI, os números são restritos à sua unidade; para o Administrador do Sistema, exibe métricas consolidadas de todas as unidades, com a possibilidade de filtragem por unidade específica.
 
-**RF12 — Pesquisa de Satisfação:** Ao fechar um chamado (transição de "Resolvido" para "Fechado" pelo Solicitante), o sistema deve obrigatoriamente apresentar uma tela de avaliação com 5 estrelas. O fechamento só deve ser concluído após a seleção de uma nota. A nota deve ser registrada e vinculada ao chamado e à respectiva unidade.
+**RF12 — Pesquisa de Satisfação:** Ao fechar um chamado (transição de "Resolvido" para "Fechado" pelo Solicitante), o sistema deve obrigatoriamente apresentar uma tela de avaliação com 5 estrelas. O fechamento só deve ser concluído após a seleção de uma nota. A nota deve ser registrada e vinculada ao chamado e à respectiva unidade. Em caso de fechamento administrativo realizado por um Gestor de TI ou Diretor, o fluxo de pesquisa de satisfação é ignorado e o chamado é fechado diretamente.
 
 **RF13 — CRUD de Usuários:** O sistema deve permitir o gerenciamento de usuários de forma descentralizada. O Administrador do Sistema pode gerenciar usuários de todas as unidades; os perfis Diretor e Gestor de TI podem criar, editar e desativar usuários restritos à sua respectiva unidade. Campos obrigatórios: nome completo, e-mail (deve ser único no sistema), função (Solicitante, Técnico, Gestor de TI, Diretor), unidade correspondente e senha inicial. A desativação de um Técnico com chamados ativos sob sua responsabilidade deve gerar alerta de confirmação.
 
