@@ -210,7 +210,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
     * *Cenário 1 — Cards de status para Diretor ou Gestor de TI:*
       * **Dado** que eu estou autenticado como Diretor ou Gestor de TI da "Unidade A" e acesso o Dashboard
       * **Quando** a página carrega
-      * **Então** eu vejo quatro cards com os totais de: "Abertos" (todos os chamados com este status da minha unidade), "Em Andamento" (todos em atendimento na minha unidade), "Resolvidos" (todos resolvidos mas ainda não fechados na minha unidade) e "Críticos" (todos com urgência Crítica na minha unidade, independentemente do status, exceptuando-se o status Fechado)
+      * **Então** eu vejo quatro cards com os totais de: "Abertos" (todos os chamados com status Aberto ou Reaberto da minha unidade), "Em Andamento" (todos em atendimento ou Aguardando na minha unidade), "Resolvidos" (todos resolvidos mas ainda não fechados na minha unidade) e "Críticos" (todos com urgência Crítica na minha unidade, independentemente do status, exceptuando-se o status Fechado)
     * *Cenário 2 — Cards de status para Técnico:*
       * **Dado** que eu estou autenticado como Técnico da "Unidade A" e acesso o Dashboard
       * **Quando** a página carrega
@@ -350,7 +350,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
 
 **RF10 — Notificações Visuais no Sistema:** O sistema deve exibir um indicador visual de notificações não lidas para o usuário logado, com contador de atualizações pendentes. Ao clicar, deve listar as notificações com link direto para o chamado correspondente.
 
-**RF11 — Dashboard Operacional:** O sistema deve exibir quatro cards numéricos com os totais de chamados: "Abertos" (status = Aberto), "Em Andamento" (status = Em Andamento), "Resolvidos" (status = Resolvido) e "Críticos" (urgência = Crítica E status ≠ Fechado). Para Técnicos, Diretores e Gestores de TI, os números são restritos à sua unidade; para o Administrador do Sistema, exibe métricas consolidadas de todas as unidades, com a possibilidade de filtragem por unidade específica.
+**RF11 — Dashboard Operacional:** O sistema deve exibir quatro cards numéricos com os totais de chamados: "Abertos" (status = Aberto ou Reaberto), "Em Andamento" (status = Em Andamento ou Aguardando), "Resolvidos" (status = Resolvido) e "Críticos" (urgência = Crítica E status ≠ Fechado). Para Técnicos, Diretores e Gestores de TI, os números são restritos à sua unidade; para o Administrador do Sistema, exibe métricas consolidadas de todas as unidades, com a possibilidade de filtragem por unidade específica.
 
 **RF12 — Pesquisa de Satisfação:** Ao fechar um chamado (transição de "Resolvido" para "Fechado" pelo Solicitante), o sistema deve obrigatoriamente apresentar uma tela de avaliação com 5 estrelas. O fechamento só deve ser concluído após a seleção de uma nota. A nota deve ser registrada e vinculada ao chamado e à respectiva unidade. Em caso de fechamento administrativo realizado por um Gestor de TI ou Diretor, o fluxo de pesquisa de satisfação é ignorado e o chamado é fechado diretamente.
 
