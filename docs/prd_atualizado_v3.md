@@ -68,6 +68,10 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
       * **Dado** que eu errei a senha por 5 vezes consecutivas para o mesmo e-mail
       * **Quando** eu tento a 6ª tentativa
       * **Então** o sistema bloqueia meu acesso por 15 minutos e exibe a mensagem 'Muitas tentativas falhas. Tente novamente em 15 minutos', visando proteger a conta contra acessos não autorizados.
+    * *Cenário 5 — Primeiro login com senha temporária:*
+      * **Dado** que eu estou realizando o meu primeiro acesso ao sistema usando uma senha temporária definida pelo gestor
+      * **Quando** eu sou autenticado com sucesso
+      * **Então** o sistema me redireciona obrigatoriamente para uma tela de "Alteração de Senha", impedindo o acesso a qualquer outra funcionalidade até que eu defina uma nova senha pessoal
 
 * **US 1.2:** Como Administrador do Sistema, Diretor ou Gestor de TI, eu quero criar, editar e desativar usuários para que a base de usuários reflita a estrutura organizacional de forma centralizada ou descentralizada.
   * **Critérios de Aceitação:**
@@ -322,7 +326,7 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
 
 ## 5. Requisitos Funcionais
 
-**RF01 — Autenticação:** O sistema deve permitir login mediante e-mail e senha. Credenciais inválidas devem gerar mensagem genérica de erro, sem revelar qual campo está incorreto. Usuários desativados devem ser impedidos de acessar o sistema.
+**RF01 — Autenticação:** O sistema deve permitir login mediante e-mail e senha. Credenciais inválidas devem gerar mensagem genérica de erro, sem revelar qual campo está incorreto. Usuários desativados devem ser impedidos de acessar o sistema. No primeiro acesso de um usuário utilizando uma senha temporária, o sistema deve obrigá-lo a alterar a senha antes de liberar o acesso às demais funcionalidades.
 
 **RF02 — Controle de Acesso por Perfil:** O sistema deve garantir que cada perfil de usuário tenha visibilidade e permissões distintas de forma rígida:
 - Solicitante: vê apenas seus próprios chamados; pode abrir chamados, interagir no histórico e fechar seus chamados resolvidos na sua respectiva unidade.
