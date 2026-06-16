@@ -38,7 +38,7 @@ Guia passo-a-passo para realizar o deploy completo da aplicação HelpDesk no Go
 Antes de começar, certifique-se de ter:
 
 - **Google Cloud SDK (gcloud CLI)** instalado e autenticado:
-  ```bash
+  ```powershell
   gcloud auth login
   gcloud config set project <PROJECT_ID>
   ```
@@ -69,7 +69,7 @@ Antes de começar, certifique-se de ter:
 
 Se ainda não tem um projeto, crie:
 
-```bash
+```powershell
 gcloud projects create <PROJECT_ID> --name="HelpDesk"
 gcloud config set project <PROJECT_ID>
 gcloud billing projects link <PROJECT_ID> --billing-account=<BILLING_ACCOUNT_ID>
@@ -77,21 +77,21 @@ gcloud billing projects link <PROJECT_ID> --billing-account=<BILLING_ACCOUNT_ID>
 
 Habilite as APIs necessárias:
 
-```bash
-gcloud services enable \
-  sqladmin.googleapis.com \
-  run.googleapis.com \
-  artifactregistry.googleapis.com \
-  cloudbuild.googleapis.com \
-  secretmanager.googleapis.com \
-  storage.googleapis.com \
+```powershell
+gcloud services enable `
+  sqladmin.googleapis.com `
+  run.googleapis.com `
+  artifactregistry.googleapis.com `
+  cloudbuild.googleapis.com `
+  secretmanager.googleapis.com `
+  storage.googleapis.com `
   cloudresourcemanager.googleapis.com
 ```
 
 Verifique se todas foram habilitadas:
 
-```bash
-gcloud services list --enabled | grep -E 'sqladmin|run|artifactregistry|cloudbuild|secretmanager|storage'
+```powershell
+gcloud services list --enabled | Select-String 'sqladmin|run|artifactregistry|cloudbuild|secretmanager|storage'
 ```
 
 ---
@@ -100,15 +100,15 @@ gcloud services list --enabled | grep -E 'sqladmin|run|artifactregistry|cloudbui
 
 ### 5.1 Criar instância
 
-```bash
-gcloud sql instances create helpdesk-db \
-  --database-version=POSTGRES_15 \
-  --tier=db-g1-small \
-  --region=us-central1 \
-  --storage-size=10 \
-  --storage-type=SSD \
-  --availability-type=zonal \
-  --backup-start-time=03:00 \
+```powershell
+gcloud sql instances create helpdesk-db `
+  --database-version=POSTGRES_15 `
+  --tier=db-g1-small `
+  --region=us-central1 `
+  --storage-size=10 `
+  --storage-type=SSD `
+  --availability-type=zonal `
+  --backup-start-time=03:00 `
   --assign-ip
 ```
 
@@ -116,11 +116,11 @@ gcloud sql instances create helpdesk-db \
 
 ### 5.2 Criar banco de dados e usuário
 
-```bash
+```powershell
 gcloud sql databases create helpdesk --instance=helpdesk-db
 
-gcloud sql users create helpdesk-user \
-  --instance=helpdesk-db \
+gcloud sql users create helpdesk-user `
+  --instance=helpdesk-db `
   --password=<DB_PASSWORD>
 ```
 
@@ -138,16 +138,16 @@ Guarde este valor — será usado como `DATABASE_URL` no Secret Manager.
 
 Crie um repositório Docker para armazenar as imagens do backend:
 
-```bash
-gcloud artifacts repositories create helpdesk-repo \
-  --repository-format=docker \
-  --location=us-central1 \
+```powershell
+gcloud artifacts repositories create helpdesk-repo `
+  --repository-format=docker `
+  --location=us-central1 `
   --description="HelpDesk backend images"
 ```
 
 Configure o Docker para autenticar com o Artifact Registry:
 
-```bash
+```powershell
 gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
@@ -157,35 +157,39 @@ gcloud auth configure-docker us-central1-docker.pkg.dev
 
 Armazene os segredos da aplicação no Secret Manager:
 
-```bash
+```powershell
 # Database URL (connection string completa)
-echo -n "postgresql://helpdesk-user:<DB_PASSWORD>@/helpdesk?host=/cloudsql/<PROJECT_ID>:us-central1:helpdesk-db" | \
-  gcloud secrets create helpdesk-database-url --data-file=-
+[System.IO.File]::WriteAllText("$env:TEMP\helpdesk-db-url.txt", "postgresql://helpdesk-user:<DB_PASSWORD>@/helpdesk?host=/cloudsql/<PROJECT_ID>:us-central1:helpdesk-db", [System.Text.Encoding]::UTF8)
+gcloud secrets create helpdesk-database-url --data-file="$env:TEMP\helpdesk-db-url.txt"
+Remove-Item "$env:TEMP\helpdesk-db-url.txt"
 
 # JWT Secret (gere um valor aleatório)
-openssl rand -base64 32 | \
-  gcloud secrets create helpdesk-jwt-secret --data-file=-
+$jwtBytes = [byte[]]::new(32); (New-Object System.Security.Cryptography.RNGCryptoServiceProvider).GetBytes($jwtBytes); $jwtSecret = [Convert]::ToBase64String($jwtBytes)
+[System.IO.File]::WriteAllText("$env:TEMP\helpdesk-jwt.txt", $jwtSecret, [System.Text.Encoding]::UTF8)
+gcloud secrets create helpdesk-jwt-secret --data-file="$env:TEMP\helpdesk-jwt.txt"
+Remove-Item "$env:TEMP\helpdesk-jwt.txt"
 
 # SendGrid API Key (opcional — deixe vazio se não for usar e-mail)
-echo -n "<SG_API_KEY>" | \
-  gcloud secrets create helpdesk-sendgrid-api-key --data-file=-
+[System.IO.File]::WriteAllText("$env:TEMP\helpdesk-sg.txt", "<SG_API_KEY>", [System.Text.Encoding]::UTF8)
+gcloud secrets create helpdesk-sendgrid-api-key --data-file="$env:TEMP\helpdesk-sg.txt"
+Remove-Item "$env:TEMP\helpdesk-sg.txt"
 ```
 
 Conceda permissão para o Cloud Run acessar os secrets:
 
-```bash
-PROJECT_NUMBER=$(gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
+```powershell
+$PROJECT_NUMBER = (gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
 
-gcloud secrets add-iam-policy-binding helpdesk-database-url \
-  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+gcloud secrets add-iam-policy-binding helpdesk-database-url `
+  --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" `
   --role="roles/secretmanager.secretAccessor"
 
-gcloud secrets add-iam-policy-binding helpdesk-jwt-secret \
-  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+gcloud secrets add-iam-policy-binding helpdesk-jwt-secret `
+  --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" `
   --role="roles/secretmanager.secretAccessor"
 
-gcloud secrets add-iam-policy-binding helpdesk-sendgrid-api-key \
-  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+gcloud secrets add-iam-policy-binding helpdesk-sendgrid-api-key `
+  --member="serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" `
   --role="roles/secretmanager.secretAccessor"
 ```
 
@@ -195,13 +199,13 @@ gcloud secrets add-iam-policy-binding helpdesk-sendgrid-api-key \
 
 Faça o build da imagem localmente (opcional — o Cloud Build fará isso automaticamente depois):
 
-```bash
+```powershell
 docker build -t us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-backend:latest .
 ```
 
 Faça o push para o Artifact Registry:
 
-```bash
+```powershell
 docker push us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-backend:latest
 ```
 
@@ -213,33 +217,33 @@ docker push us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-backe
 
 Implante o serviço do backend no Cloud Run:
 
-```bash
-gcloud run deploy helpdesk-backend \
-  --image=us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-backend:latest \
-  --region=us-central1 \
-  --platform=managed \
-  --allow-unauthenticated \
-  --memory=512Mi \
-  --cpu=1 \
-  --min-instances=0 \
-  --max-instances=3 \
-  --concurrency=80 \
-  --timeout=300 \
-  --port=3001 \
-  --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 \
-  --set-env-vars=FROM_EMAIL=noreply@helpdesk.local \
-  --set-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com \
-  --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
-  --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest \
-  --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest \
+```powershell
+gcloud run deploy helpdesk-backend `
+  --image=us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-backend:latest `
+  --region=us-central1 `
+  --platform=managed `
+  --allow-unauthenticated `
+  --memory=512Mi `
+  --cpu=1 `
+  --min-instances=0 `
+  --max-instances=3 `
+  --concurrency=80 `
+  --timeout=300 `
+  --port=3001 `
+  --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 `
+  --set-env-vars=FROM_EMAIL=noreply@helpdesk.local `
+  --set-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com `
+  --set-secrets=DATABASE_URL=helpdesk-database-url:latest `
+  --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest `
+  --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest `
   --add-cloudsql-instances=<PROJECT_ID>:us-central1:helpdesk-db
 ```
 
 Após o deploy, anote a URL do serviço:
 
-```bash
-gcloud run services describe helpdesk-backend \
-  --region=us-central1 \
+```powershell
+gcloud run services describe helpdesk-backend `
+  --region=us-central1 `
   --format='value(status.url)'
 ```
 
@@ -247,8 +251,8 @@ A URL será algo como: `https://helpdesk-backend-xxxxx-uc.a.run.app`
 
 ### Verifique o health check
 
-```bash
-curl https://helpdesk-backend-xxxxx-uc.a.run.app/api/health
+```powershell
+Invoke-RestMethod -Uri https://helpdesk-backend-xxxxx-uc.a.run.app/api/health
 # Deve retornar: {"status":"ok"}
 ```
 
@@ -264,27 +268,27 @@ As migrations precisam ser executadas para criar as tabelas no banco. Como o Clo
 
 1. Inicie o Cloud SQL Proxy:
 
-   ```bash
-   ./cloud-sql-proxy <PROJECT_ID>:us-central1:helpdesk-db
+   ```powershell
+   .\cloud-sql-proxy.exe <PROJECT_ID>:us-central1:helpdesk-db
    ```
 
    > Baixe o proxy em: https://cloud.google.com/sql/docs/postgres/sql-proxy
 
 2. Em outro terminal, configure a DATABASE_URL local:
 
-   ```bash
-   export DATABASE_URL="postgresql://helpdesk-user:<DB_PASSWORD>@localhost:5432/helpdesk"
+   ```powershell
+   $env:DATABASE_URL = "postgresql://helpdesk-user:<DB_PASSWORD>@localhost:5432/helpdesk"
    ```
 
 3. Execute as migrations:
 
-   ```bash
+   ```powershell
    npx prisma migrate deploy
    ```
 
 4. (Opcional) Popule com dados de teste:
 
-   ```bash
+   ```powershell
    npx prisma db seed
    ```
 
@@ -292,13 +296,13 @@ As migrations precisam ser executadas para criar as tabelas no banco. Como o Clo
 
 Crie um job único no Cloud Run para executar a migration:
 
-```bash
-gcloud run jobs create helpdesk-migration \
-  --image=us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-backend:latest \
-  --region=us-central1 \
-  --command="npx" \
-  --args="prisma,migrate,deploy" \
-  --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
+```powershell
+gcloud run jobs create helpdesk-migration `
+  --image=us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-backend:latest `
+  --region=us-central1 `
+  --command="npx" `
+  --args="prisma,migrate,deploy" `
+  --set-secrets=DATABASE_URL=helpdesk-database-url:latest `
   --add-cloudsql-instances=<PROJECT_ID>:us-central1:helpdesk-db
 
 gcloud run jobs execute helpdesk-migration --region=us-central1
@@ -310,9 +314,9 @@ gcloud run jobs execute helpdesk-migration --region=us-central1
 
 ### 11.1 Criar bucket
 
-```bash
-gcloud storage buckets create gs://helpdesk-frontend-<PROJECT_ID> \
-  --location=us-central1 \
+```powershell
+gcloud storage buckets create gs://helpdesk-frontend-<PROJECT_ID> `
+  --location=us-central1 `
   --public-access-prevention
 ```
 
@@ -320,17 +324,17 @@ gcloud storage buckets create gs://helpdesk-frontend-<PROJECT_ID> \
 
 Para tornar o bucket público (SPA):
 
-```bash
-gcloud storage buckets add-iam-policy-binding gs://helpdesk-frontend-<PROJECT_ID> \
-  --member=allUsers \
+```powershell
+gcloud storage buckets add-iam-policy-binding gs://helpdesk-frontend-<PROJECT_ID> `
+  --member=allUsers `
   --role=roles/storage.objectViewer
 ```
 
 Configure a página de índice e erro para SPA:
 
-```bash
-gcloud storage buckets update gs://helpdesk-frontend-<PROJECT_ID> \
-  --web-main-page-suffix=index.html \
+```powershell
+gcloud storage buckets update gs://helpdesk-frontend-<PROJECT_ID> `
+  --web-main-page-suffix=index.html `
   --web-error-page=index.html
 ```
 
@@ -338,29 +342,29 @@ gcloud storage buckets update gs://helpdesk-frontend-<PROJECT_ID> \
 
 Obtenha a URL do Cloud Run (do Passo 6):
 
-```bash
-CLOUD_RUN_URL=$(gcloud run services describe helpdesk-backend \
-  --region=us-central1 \
+```powershell
+$CLOUD_RUN_URL = (gcloud run services describe helpdesk-backend `
+  --region=us-central1 `
   --format='value(status.url)')
 ```
 
 Faça o build do frontend com a URL da API:
 
-```bash
-VITE_API_URL=$CLOUD_RUN_URL npm run build --workspace=frontend
+```powershell
+$env:VITE_API_URL = $CLOUD_RUN_URL; npm run build --workspace=frontend
 ```
 
 Faça o upload para o bucket:
 
-```bash
+```powershell
 gsutil -m rsync -r -d frontend/dist/ gs://helpdesk-frontend-<PROJECT_ID>/
 
 # Configure cache headers
-gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' \
+gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' `
   gs://helpdesk-frontend-<PROJECT_ID>/**/*.js
-gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' \
+gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' `
   gs://helpdesk-frontend-<PROJECT_ID>/**/*.css
-gsutil -m setmeta -h 'Cache-Control:no-cache' \
+gsutil -m setmeta -h 'Cache-Control:no-cache' `
   gs://helpdesk-frontend-<PROJECT_ID>/index.html
 ```
 
@@ -374,9 +378,9 @@ https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>/index.html
 
 Após o deploy do frontend, atualize o `ALLOWED_ORIGIN` no Cloud Run:
 
-```bash
-gcloud run services update helpdesk-backend \
-  --region=us-central1 \
+```powershell
+gcloud run services update helpdesk-backend `
+  --region=us-central1 `
   --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
 ```
 
@@ -388,32 +392,32 @@ gcloud run services update helpdesk-backend \
 
 A service account do Cloud Build precisa de permissões para deploy no Cloud Run e acesso aos secrets:
 
-```bash
-PROJECT_NUMBER=$(gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
-CLOUD_BUILD_SA="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+```powershell
+$PROJECT_NUMBER = (gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
+$CLOUD_BUILD_SA = "serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com"
 
 # Permissão para deploy no Cloud Run
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="$CLOUD_BUILD_SA" \
+gcloud projects add-iam-policy-binding <PROJECT_ID> `
+  --member="$CLOUD_BUILD_SA" `
   --role="roles/run.admin"
 
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="$CLOUD_BUILD_SA" \
+gcloud projects add-iam-policy-binding <PROJECT_ID> `
+  --member="$CLOUD_BUILD_SA" `
   --role="roles/iam.serviceAccountUser"
 
 # Permissão para acessar Secret Manager
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="$CLOUD_BUILD_SA" \
+gcloud projects add-iam-policy-binding <PROJECT_ID> `
+  --member="$CLOUD_BUILD_SA" `
   --role="roles/secretmanager.secretAccessor"
 
 # Permissão para upload no Cloud Storage
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="$CLOUD_BUILD_SA" \
+gcloud projects add-iam-policy-binding <PROJECT_ID> `
+  --member="$CLOUD_BUILD_SA" `
   --role="roles/storage.admin"
 
 # Permissão para Cloud SQL
-gcloud projects add-iam-policy-binding <PROJECT_ID> \
-  --member="$CLOUD_BUILD_SA" \
+gcloud projects add-iam-policy-binding <PROJECT_ID> `
+  --member="$CLOUD_BUILD_SA" `
   --role="roles/cloudsql.client"
 ```
 
@@ -421,20 +425,20 @@ gcloud projects add-iam-policy-binding <PROJECT_ID> \
 
 Conecte o repositório ao Cloud Build (se ainda não estiver conectado):
 
-```bash
+```powershell
 # Via GitHub
-gcloud builds triggers create github \
-  --name="helpdesk-deploy" \
-  --repo-name="<REPO_NAME>" \
-  --repo-owner="<GITHUB_USER_OR_ORG>" \
-  --branch-pattern="^main$" \
-  --build-config="cloudbuild.yaml" \
-  --substitutions=\
-_REGION=us-central1,\
-_ARTIFACT_REGISTRY_REPO=helpdesk-repo,\
-_CLOUD_RUN_SERVICE=helpdesk-backend,\
-_CLOUD_SQL_INSTANCE=helpdesk-db,\
-_FRONTEND_BUCKET=helpdesk-frontend-<PROJECT_ID>,\
+gcloud builds triggers create github `
+  --name="helpdesk-deploy" `
+  --repo-name="<REPO_NAME>" `
+  --repo-owner="<GITHUB_USER_OR_ORG>" `
+  --branch-pattern="^main$" `
+  --build-config="cloudbuild.yaml" `
+  --substitutions=`
+_REGION=us-central1,`
+_ARTIFACT_REGISTRY_REPO=helpdesk-repo,`
+_CLOUD_RUN_SERVICE=helpdesk-backend,`
+_CLOUD_SQL_INSTANCE=helpdesk-db,`
+_FRONTEND_BUCKET=helpdesk-frontend-<PROJECT_ID>,`
 _VITE_API_URL=<CLOUD_RUN_URL>
 ```
 
@@ -444,7 +448,7 @@ _VITE_API_URL=<CLOUD_RUN_URL>
 
 Faça um push para a branch `main`:
 
-```bash
+```powershell
 git add .
 git commit -m "chore: trigger CI/CD pipeline"
 git push origin main
@@ -452,7 +456,7 @@ git push origin main
 
 Acompanhe o build:
 
-```bash
+```powershell
 gcloud builds list --limit=5
 gcloud builds log <BUILD_ID>
 ```
@@ -465,14 +469,15 @@ Após o deploy completo, execute a checklist de verificação:
 
 ### 13.1 Backend
 
-```bash
+```powershell
 # Health check
-curl https://<CLOUD_RUN_URL>/api/health
+Invoke-RestMethod -Uri https://<CLOUD_RUN_URL>/api/health
 
 # Login (substitua as credenciais)
-curl -X POST https://<CLOUD_RUN_URL>/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@helpdesk.com","senha":"admin123"}'
+Invoke-RestMethod -Uri https://<CLOUD_RUN_URL>/api/auth/login `
+  -Method Post `
+  -Headers @{"Content-Type" = "application/json"} `
+  -Body '{"email":"admin@helpdesk.com","senha":"admin123"}'
 ```
 
 ### 13.2 Frontend
@@ -483,7 +488,7 @@ curl -X POST https://<CLOUD_RUN_URL>/api/auth/login \
 
 ### 13.3 Banco de dados
 
-```bash
+```powershell
 # Via Cloud SQL Proxy
 gcloud sql connect helpdesk-db --user=helpdesk-user
 # Execute: SELECT count(*) FROM "Ticket";
@@ -508,9 +513,9 @@ gcloud sql connect helpdesk-db --user=helpdesk-user
 - Cloud SQL Proxy não está sendo usado no ambiente local
 
 **Solução:**
-```bash
+```powershell
 # Verifique a configuração do Cloud Run
-gcloud run services describe helpdesk-backend --region=us-central1 \
+gcloud run services describe helpdesk-backend --region=us-central1 `
   --format='yaml(spec.template.metadata.annotations)'
 
 # Confirme a instância Cloud SQL
@@ -529,10 +534,10 @@ gcloud sql instances list
 - Migration anterior travada (lock)
 
 **Solução:**
-```bash
+```powershell
 # 1. Verifique a conectividade via Cloud SQL Proxy
-./cloud-sql-proxy <PROJECT_ID>:us-central1:helpdesk-db &
-sleep 2
+Start-Process .\cloud-sql-proxy.exe -ArgumentList '<PROJECT_ID>:us-central1:helpdesk-db'
+Start-Sleep -Seconds 2
 psql "postgresql://helpdesk-user:<DB_PASSWORD>@localhost:5432/helpdesk" -c "SELECT 1;"
 
 # 2. Se houver lock, veja as migrations pendentes
@@ -551,9 +556,9 @@ npx prisma migrate reset --force
 **Solução:**
 - Opção 1 (recomendada para economia): Aceite o cold start — é aceitável para volumes baixos.
 - Opção 2: Aumente `min-instances` para 1:
-  ```bash
-  gcloud run services update helpdesk-backend \
-    --region=us-central1 \
+  ```powershell
+  gcloud run services update helpdesk-backend `
+    --region=us-central1 `
     --min-instances=1
   ```
   Custo adicional: ~$15-20/mês por instância.
@@ -567,14 +572,14 @@ npx prisma migrate reset --force
 - URL do Cloud Storage não corresponde ao valor em `ALLOWED_ORIGIN`
 
 **Solução:**
-```bash
+```powershell
 # Verifique o valor atual
-gcloud run services describe helpdesk-backend --region=us-central1 \
+gcloud run services describe helpdesk-backend --region=us-central1 `
   --format='yaml(spec.template.containers[0].env)'
 
 # Atualize com a origem correta (sem a barra no final)
-gcloud run services update helpdesk-backend \
-  --region=us-central1 \
+gcloud run services update helpdesk-backend `
+  --region=us-central1 `
   --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
 ```
 
@@ -585,13 +590,13 @@ gcloud run services update helpdesk-backend \
 **Causa:** Service account do Cloud Build não tem as roles necessárias.
 
 **Solução:**
-```bash
-PROJECT_NUMBER=$(gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
-CLOUD_BUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+```powershell
+$PROJECT_NUMBER = (gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
+$CLOUD_BUILD_SA = "$PROJECT_NUMBER@cloudbuild.gserviceaccount.com"
 
 # Revise todas as permissões concedidas
-gcloud projects get-iam-policy <PROJECT_ID> \
-  --flatten="bindings[].members" \
+gcloud projects get-iam-policy <PROJECT_ID> `
+  --flatten="bindings[].members" `
   --filter="bindings.members:$CLOUD_BUILD_SA"
 
 # Conceda as permissões faltantes (veja Passo 9)
@@ -604,9 +609,9 @@ gcloud projects get-iam-policy <PROJECT_ID> \
 **Causa:** Imagem final muito grande (> 2 GB). O limite do Cloud Run é ~2 GB.
 
 **Solução:**
-```bash
+```powershell
 # Verifique o tamanho da imagem
-docker images | grep helpdesk-backend
+docker images | Select-String helpdesk-backend
 
 # A imagem deve ter menos de 300 MB. Se estiver maior:
 # 1. Verifique o .dockerignore — frontend/ e docs/ não devem estar na imagem
