@@ -16,14 +16,14 @@ RUN npm ci
 COPY shared/src/ shared/src/
 COPY backend/src/ backend/src/
 
+# Generate Prisma client BEFORE building (TypeScript needs the generated types)
+RUN npx prisma generate
+
 # Build shared first (backend depends on it)
 RUN npm run build --workspace=shared
 
 # Build backend
 RUN npm run build --workspace=backend
-
-# Generate Prisma client
-RUN npx prisma generate
 
 # Stage 2: Runtime
 FROM node:20-alpine AS runtime
