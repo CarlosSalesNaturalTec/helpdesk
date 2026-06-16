@@ -232,7 +232,7 @@ gcloud run deploy helpdesk-backend `
   --port=3001 `
   --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 `
   --set-env-vars=FROM_EMAIL=noreply@helpdesk.local `
-  --set-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com `
+  --set-env-vars=ALLOWED_ORIGIN=https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com `
   --set-secrets=DATABASE_URL=helpdesk-database-url:latest `
   --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest `
   --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest `
@@ -303,7 +303,7 @@ gcloud run jobs create helpdesk-migration `
   --command="npx" `
   --args="prisma,migrate,deploy" `
   --set-secrets=DATABASE_URL=helpdesk-database-url:latest `
-  --add-cloudsql-instances=<PROJECT_ID>:us-central1:helpdesk-db
+  --set-cloudsql-instances=<PROJECT_ID>:us-central1:helpdesk-db
 
 gcloud run jobs execute helpdesk-migration --region=us-central1
 ```
@@ -317,10 +317,10 @@ gcloud run jobs execute helpdesk-migration --region=us-central1
 ```powershell
 gcloud storage buckets create gs://helpdesk-frontend-<PROJECT_ID> `
   --location=us-central1 `
-  --public-access-prevention
+  --no-public-access-prevention
 ```
 
-> O bucket **não** é público. Configuramos acesso via load balancer ou usamos URLs assinadas. Para simplificar, este guia usa acesso público controlado (adequado para SPAs sem dados sensíveis no frontend).
+> Para SPAs sem dados sensíveis no frontend, este guia usa acesso público controlado. Se preferir bucket privado com load balancer ou URLs assinadas, crie sem `--no-public-access-prevention` e pule o passo abaixo.
 
 Para tornar o bucket público (SPA):
 
@@ -371,7 +371,7 @@ gsutil -m setmeta -h 'Cache-Control:no-cache' `
 Acesse o frontend em:
 
 ```
-https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>/index.html
+https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com
 ```
 
 ### 11.3 Atualizar CORS no Cloud Run
@@ -381,7 +381,7 @@ Após o deploy do frontend, atualize o `ALLOWED_ORIGIN` no Cloud Run:
 ```powershell
 gcloud run services update helpdesk-backend `
   --region=us-central1 `
-  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
+  --update-env-vars=ALLOWED_ORIGIN=https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com
 ```
 
 ---
@@ -580,7 +580,7 @@ gcloud run services describe helpdesk-backend --region=us-central1 `
 # Atualize com a origem correta (sem a barra no final)
 gcloud run services update helpdesk-backend `
   --region=us-central1 `
-  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
+  --update-env-vars=ALLOWED_ORIGIN=https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com
 ```
 
 ### 14.5 Cloud Build Sem Permissão
