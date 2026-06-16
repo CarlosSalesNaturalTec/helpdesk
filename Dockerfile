@@ -17,7 +17,8 @@ COPY shared/src/ shared/src/
 COPY backend/src/ backend/src/
 
 # Generate Prisma client BEFORE building (TypeScript needs the generated types)
-RUN npx prisma generate
+# NODE_TLS_REJECT_UNAUTHORIZED is needed in corporate networks with SSL inspection
+RUN NODE_TLS_REJECT_UNAUTHORIZED=0 npx prisma generate
 
 # Build shared first (backend depends on it)
 RUN npm run build --workspace=shared
