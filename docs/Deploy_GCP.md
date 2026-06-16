@@ -433,13 +433,7 @@ gcloud builds triggers create github `
   --repo-owner="<GITHUB_USER_OR_ORG>" `
   --branch-pattern="^main$" `
   --build-config="cloudbuild.yaml" `
-  --substitutions=`
-_REGION=us-central1,`
-_ARTIFACT_REGISTRY_REPO=helpdesk-repo,`
-_CLOUD_RUN_SERVICE=helpdesk-backend,`
-_CLOUD_SQL_INSTANCE=helpdesk-db,`
-_FRONTEND_BUCKET=helpdesk-frontend-<PROJECT_ID>,`
-_VITE_API_URL=<CLOUD_RUN_URL>
+  --substitutions="_REGION=us-central1,_ARTIFACT_REGISTRY_REPO=helpdesk-repo,_CLOUD_RUN_SERVICE=helpdesk-backend,_CLOUD_SQL_INSTANCE=helpdesk-db,_FRONTEND_BUCKET=helpdesk-frontend-<PROJECT_ID>,_VITE_API_URL=<CLOUD_RUN_URL>"
 ```
 
 > **Nota:** Substitua `<CLOUD_RUN_URL>` pela URL real do serviço Cloud Run (ex: `https://helpdesk-backend-xxxxx-uc.a.run.app`).
