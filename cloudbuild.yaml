@@ -1,0 +1,104 @@
+# Cloud Build CI/CD Pipeline — HelpDesk
+# Trigger: push to main branch
+# Architecture: 4 sequential stages (backend → frontend)
+
+substitutions:
+  _REGION: us-central1
+  _ARTIFACT_REGISTRY_REPO: helpdesk-repo
+  _CLOUD_RUN_SERVICE: helpdesk-backend
+  _CLOUD_SQL_INSTANCE: helpdesk-db
+  _FRONTEND_BUCKET: helpdesk-frontend
+  _VITE_API_URL: https://helpdesk-backend-xxxxx-uc.a.run.app
+
+steps:
+  # -----------------------------------------------------------------------
+  # Stage 1: Build Docker image and push to Artifact Registry
+  # -----------------------------------------------------------------------
+  - id: 'docker-build'
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker build \
+          -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_CLOUD_RUN_SERVICE}:${COMMIT_SHA} \
+          -t ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_CLOUD_RUN_SERVICE}:latest \
+          -f Dockerfile .
+    timeout: 600s
+
+  - id: 'docker-push'
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_CLOUD_RUN_SERVICE}:${COMMIT_SHA}
+        docker push ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_CLOUD_RUN_SERVICE}:latest
+    waitFor: ['docker-build']
+
+  # -----------------------------------------------------------------------
+  # Stage 2: Deploy to Cloud Run
+  # -----------------------------------------------------------------------
+  - id: 'deploy-cloud-run'
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy ${_CLOUD_RUN_SERVICE} \
+          --image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/${_CLOUD_RUN_SERVICE}:${COMMIT_SHA} \
+          --region=${_REGION} \
+          --platform=managed \
+          --allow-unauthenticated \
+          --memory=512Mi \
+          --cpu=1 \
+          --min-instances=0 \
+          --max-instances=3 \
+          --concurrency=80 \
+          --timeout=300 \
+          --port=3001 \
+          --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 \
+          --set-env-vars=FROM_EMAIL=noreply@helpdesk.local \
+          --set-env-vars=ALLOWED_ORIGIN=${_VITE_API_URL%/*} \
+          --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
+          --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest \
+          --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest \
+          --add-cloudsql-instances=${PROJECT_ID}:${_REGION}:${_CLOUD_SQL_INSTANCE}
+    waitFor: ['docker-push']
+
+  # -----------------------------------------------------------------------
+  # Stage 3: Build frontend
+  # -----------------------------------------------------------------------
+  - id: 'build-frontend'
+    name: 'node:20'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        npm ci
+        VITE_API_URL=${_VITE_API_URL} npm run build --workspace=frontend
+    waitFor: ['deploy-cloud-run']
+
+  # -----------------------------------------------------------------------
+  # Stage 4: Upload frontend to Cloud Storage
+  # -----------------------------------------------------------------------
+  - id: 'deploy-frontend'
+    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gsutil -m rsync -r -d frontend/dist/ gs://${_FRONTEND_BUCKET}/
+        gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.js
+        gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.css
+        gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/index.html
+    waitFor: ['build-frontend']
+
+# ---------------------------------------------------------------------------
+# Options
+# ---------------------------------------------------------------------------
+options:
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true
+
+timeout: 1800s

@@ -11,7 +11,7 @@ const fastify = Fastify({ logger: true });
 
 // CORS Hook
 fastify.addHook('onRequest', async (request, reply) => {
-  reply.header('Access-Control-Allow-Origin', '*');
+  reply.header('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*');
   reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   

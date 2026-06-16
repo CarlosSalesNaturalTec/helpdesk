@@ -1,0 +1,40 @@
+# Frontend (not needed in backend image)
+frontend/
+
+# Documentation
+docs/
+
+# Git
+.git/
+
+# Dependencies (installed fresh in build)
+node_modules/
+
+# Build outputs (built fresh in build)
+dist/
+
+# Environment files
+.env*
+.env*.local
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OpenSpec planning artifacts
+openspec/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
