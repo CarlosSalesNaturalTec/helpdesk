@@ -1,0 +1,675 @@
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { prisma } from '../lib/prisma.js';
+import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
+import { validateTransition } from '../lib/workflow.js';
+import {
+  createTicketSchema,
+  ticketStatusSchema,
+  assignTicketSchema,
+  satisfactionSchema,
+  ticketQuerySchema,
+} from '@helpdesk/shared';
+
+export async function ticketRoutes(fastify: FastifyInstance) {
+  // 1. Criar Chamado
+  fastify.post(
+    '/api/tickets',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parseResult = createTicketSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({ error: parseResult.error.format() });
+      }
+
+      const { titulo, descricao, tipoProblema, urgencia } = parseResult.data;
+      const user = request.user!;
+
+      const ticket = await prisma.ticket.create({
+        data: {
+          titulo,
+          descricao,
+          tipoProblema,
+          urgencia,
+          solicitanteId: user.id,
+          unidadeId: user.unidadeId,
+          status: 'ABERTO',
+        },
+      });
+
+      // Registrar no histórico
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: ticket.id,
+          type: 'ABERTURA',
+          content: {
+            titulo,
+            descricao,
+            tipoProblema,
+            urgencia,
+          },
+          authorId: user.id,
+        },
+      });
+
+      return reply.status(201).send({
+        id: ticket.id,
+        numero: ticket.numero.toString(),
+        status: ticket.status,
+        criadoEm: ticket.criadoEm,
+        message: 'Chamado criado com sucesso!',
+      });
+    }
+  );
+
+  // 2. Listar Chamados (com busca, filtro e escopo)
+  fastify.get(
+    '/api/tickets',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const queryParse = ticketQuerySchema.safeParse(request.query);
+      if (!queryParse.success) {
+        return reply.status(400).send({ error: queryParse.error.format() });
+      }
+
+      const { search, status, page, limit } = queryParse.data;
+      const user = request.user!;
+
+      let whereClause: any = {};
+
+      // Aplicar escopo por papel
+      if (user.role === 'SOLICITANTE') {
+        whereClause.solicitanteId = user.id;
+      } else if (['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role)) {
+        whereClause.unidadeId = user.unidadeId;
+      } else if (user.role === 'ADMIN') {
+        // Admin vê tudo
+      }
+
+      // Aplicar filtro de status
+      if (status) {
+        whereClause.status = status;
+      }
+
+      // Aplicar busca textual (titulo, solicitante.nome, unidade.nome)
+      if (search) {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { titulo: { contains: search, mode: 'insensitive' } },
+              { solicitante: { nome: { contains: search, mode: 'insensitive' } } },
+              { unidade: { nome: { contains: search, mode: 'insensitive' } } },
+            ],
+          },
+        ];
+      }
+
+      const total = await prisma.ticket.count({ where: whereClause });
+      const tickets = await prisma.ticket.findMany({
+        where: whereClause,
+        include: {
+          solicitante: {
+            select: { id: true, nome: true, email: true },
+          },
+          tecnico: {
+            select: { id: true, nome: true, email: true },
+          },
+          unidade: {
+            select: { id: true, nome: true },
+          },
+          _count: {
+            select: { history: true },
+          },
+        },
+        orderBy: { criadoEm: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      const formattedData = tickets.map((t) => ({
+        ...t,
+        numero: t.numero.toString(),
+      }));
+
+      reply.header('X-Total-Count', total.toString());
+      return reply.send({
+        data: formattedData,
+        total,
+        page,
+        limit,
+      });
+    }
+  );
+
+  // 3. Endpoints de Apoio (devem ficar antes das rotas com parâmetro :id para evitar conflito)
+  fastify.get(
+    '/api/tickets/tipos-problema',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const tipos = [
+        { label: 'Hardware', value: 'HARDWARE' },
+        { label: 'Software', value: 'SOFTWARE' },
+        { label: 'Rede e Internet', value: 'REDE_INTERNET' },
+        { label: 'E-mail', value: 'EMAIL' },
+        { label: 'Impressora', value: 'IMPRESSORA' },
+        { label: 'Acesso e Senhas', value: 'ACESSO_SENHA' },
+        { label: 'Sistema Interno', value: 'SISTEMA_INTERNO' },
+        { label: 'Outro', value: 'OUTRO' },
+      ];
+      return reply.send(tipos);
+    }
+  );
+
+  fastify.get(
+    '/api/tickets/niveis-urgencia',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const niveis = [
+        { label: 'Baixa', value: 'BAIXA' },
+        { label: 'Média', value: 'MEDIA' },
+        { label: 'Alta', value: 'ALTA' },
+        { label: 'Crítica', value: 'CRITICA' },
+      ];
+      return reply.send(niveis);
+    }
+  );
+
+  // 4. Obter Detalhes do Chamado
+  fastify.get<{ Params: { id: string } }>(
+    '/api/tickets/:id',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) {
+        return reply.status(400).send({ error: 'ID inválido' });
+      }
+
+      const ticket = await prisma.ticket.findUnique({
+        where: { id },
+        include: {
+          solicitante: {
+            select: { id: true, nome: true, email: true },
+          },
+          tecnico: {
+            select: { id: true, nome: true, email: true },
+          },
+          unidade: {
+            select: { id: true, nome: true },
+          },
+          _count: {
+            select: { history: true },
+          },
+        },
+      });
+
+      if (!ticket) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
+      }
+
+      // Validar escopo de visualização
+      const user = request.user!;
+      if (user.role === 'SOLICITANTE' && ticket.solicitanteId !== user.id) {
+        return reply.status(403).send({ error: 'Acesso negado. Você não é o solicitante deste chamado.' });
+      }
+      if (['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId !== user.unidadeId) {
+        return reply.status(403).send({ error: 'Acesso negado. Este chamado pertence a outra Unidade.' });
+      }
+
+      return reply.send({
+        ...ticket,
+        numero: ticket.numero.toString(),
+      });
+    }
+  );
+
+  // 5. Obter Histórico do Chamado
+  fastify.get<{ Params: { id: string } }>(
+    '/api/tickets/:id/history',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) {
+        return reply.status(400).send({ error: 'ID inválido' });
+      }
+
+      const ticket = await prisma.ticket.findUnique({
+        where: { id },
+      });
+
+      if (!ticket) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
+      }
+
+      // Validar escopo de visualização
+      const user = request.user!;
+      if (user.role === 'SOLICITANTE' && ticket.solicitanteId !== user.id) {
+        return reply.status(403).send({ error: 'Acesso negado' });
+      }
+      if (['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId !== user.unidadeId) {
+        return reply.status(403).send({ error: 'Acesso negado' });
+      }
+
+      const history = await prisma.ticketHistory.findMany({
+        where: { ticketId: id },
+        include: {
+          author: {
+            select: { id: true, nome: true, role: true },
+          },
+        },
+        orderBy: { criadoEm: 'asc' },
+      });
+
+      return reply.send(history);
+    }
+  );
+
+  // 6. Auto-atribuição de Chamado (Técnico assume)
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/assign',
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['TECNICO', 'GESTOR_TI', 'DIRETOR'])] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      // Bloqueio de chamados fechados (Tarefa 6.5)
+      if (ticket.status === 'FECHADO') {
+        return reply.status(422).send({ error: 'Não é possível modificar um chamado que já está fechado. Reabra-o primeiro.' });
+      }
+
+      if (ticket.status !== 'ABERTO' && ticket.status !== 'REABERTO') {
+        return reply.status(400).send({ error: 'Apenas chamados nos status Aberto ou Reaberto podem ser assumidos.' });
+      }
+
+      const user = request.user!;
+      // Validar se o técnico pertence à mesma unidade do chamado (Tarefa 7.2)
+      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
+        return reply.status(403).send({ error: 'Você só pode assumir chamados da sua própria Unidade.' });
+      }
+
+      const currentStatus = ticket.status;
+      const nextStatus = 'EM_ANDAMENTO';
+
+      const updatedTicket = await prisma.ticket.update({
+        where: { id },
+        data: {
+          tecnicoId: user.id,
+          status: nextStatus,
+        },
+      });
+
+      // Registrar histórico de atribuição e mudança de status
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: id,
+          type: 'ATRIBUICAO',
+          content: {
+            tecnicoId: user.id,
+            tecnicoNome: user.nome,
+          },
+          authorId: user.id,
+        },
+      });
+
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: id,
+          type: 'MUDANCA_STATUS',
+          content: {
+            from: currentStatus,
+            to: nextStatus,
+          },
+          authorId: user.id,
+        },
+      });
+
+      return reply.send({
+        id: updatedTicket.id,
+        numero: updatedTicket.numero.toString(),
+        status: updatedTicket.status,
+        tecnicoId: updatedTicket.tecnicoId,
+        message: 'Chamado atribuído a você com sucesso!',
+      });
+    }
+  );
+
+  // 7. Reatribuição de Chamado (Gestor/Diretor)
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/reassign',
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const parseResult = assignTicketSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({ error: parseResult.error.format() });
+      }
+
+      const { tecnicoId } = parseResult.data;
+      if (!tecnicoId) {
+        return reply.status(400).send({ error: 'O técnico de destino (tecnicoId) é obrigatório.' });
+      }
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      if (ticket.status === 'FECHADO') {
+        return reply.status(422).send({ error: 'Não é possível reatribuir um chamado fechado.' });
+      }
+
+      const user = request.user!;
+      // Validar se o gestor/diretor pertence à mesma unidade do chamado (Tarefa 7.4)
+      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
+        return reply.status(403).send({ error: 'Você só pode reatribuir chamados da sua própria Unidade.' });
+      }
+
+      // Validar se o técnico de destino existe e pertence à mesma Unidade
+      const tecnicoDestino = await prisma.user.findUnique({ where: { id: tecnicoId } });
+      if (!tecnicoDestino || (tecnicoDestino.role !== 'TECNICO' && tecnicoDestino.role !== 'GESTOR_TI')) {
+        return reply.status(400).send({ error: 'O usuário destino deve possuir o papel de Técnico ou Gestor.' });
+      }
+
+      if (tecnicoDestino.unidadeId !== ticket.unidadeId) {
+        return reply.status(400).send({ error: 'O Técnico destino deve pertencer à mesma Unidade do chamado.' });
+      }
+
+      const currentStatus = ticket.status;
+      let nextStatus = currentStatus;
+      // Se estiver Aberto ou Reaberto, atribuição coloca Em Andamento
+      if (currentStatus === 'ABERTO' || currentStatus === 'REABERTO') {
+        nextStatus = 'EM_ANDAMENTO';
+      }
+
+      const updatedTicket = await prisma.ticket.update({
+        where: { id },
+        data: {
+          tecnicoId,
+          status: nextStatus,
+        },
+      });
+
+      // Registrar reatribuição no histórico
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: id,
+          type: 'REATRIBUICAO',
+          content: {
+            tecnicoId,
+            tecnicoNome: tecnicoDestino.nome,
+            atribuidoPor: user.nome,
+          },
+          authorId: user.id,
+        },
+      });
+
+      if (nextStatus !== currentStatus) {
+        await prisma.ticketHistory.create({
+          data: {
+            ticketId: id,
+            type: 'MUDANCA_STATUS',
+            content: {
+              from: currentStatus,
+              to: nextStatus,
+            },
+            authorId: user.id,
+          },
+        });
+      }
+
+      return reply.send({
+        id: updatedTicket.id,
+        numero: updatedTicket.numero.toString(),
+        status: updatedTicket.status,
+        tecnicoId: updatedTicket.tecnicoId,
+        message: `Chamado reatribuído com sucesso para ${tecnicoDestino.nome}!`,
+      });
+    }
+  );
+
+  // 8. Transição Geral de Status (Máquina de Estados)
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/status',
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['TECNICO', 'GESTOR_TI', 'DIRETOR', 'ADMIN'])] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const parseResult = ticketStatusSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({ error: parseResult.error.format() });
+      }
+
+      const { status: newStatus, mensagem, solucao } = parseResult.data;
+
+      // Bloquear caminhos que possuam endpoints dedicados
+      if (newStatus === 'FECHADO' || newStatus === 'REABERTO') {
+        return reply.status(400).send({
+          error: 'Utilize os endpoints dedicados para as ações de fechamento (/close, /admin-close) ou reabertura (/reopen).',
+        });
+      }
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      if (ticket.status === 'FECHADO') {
+        return reply.status(422).send({ error: 'Não é possível alterar o status de um chamado fechado. Reabra-o primeiro.' });
+      }
+
+      const user = request.user!;
+      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
+        return reply.status(403).send({ error: 'Você não tem permissão para alterar chamados de outra Unidade.' });
+      }
+
+      // Validar transição na máquina de estados (Tarefa 6.1)
+      if (!validateTransition(ticket.status, newStatus)) {
+        return reply.status(400).send({
+          error: `Transição inválida: de ${ticket.status} para ${newStatus}.`,
+        });
+      }
+
+      // Validar que possui técnico antes de mover para EM_ANDAMENTO
+      if (newStatus === 'EM_ANDAMENTO' && !ticket.tecnicoId) {
+        return reply.status(400).send({ error: 'O chamado deve possuir um Técnico atribuído para ser colocado Em Andamento.' });
+      }
+
+      const updatedTicket = await prisma.ticket.update({
+        where: { id },
+        data: { status: newStatus },
+      });
+
+      // Registrar mudança no histórico (com os dados condicionais exigidos na Tarefa 6.3)
+      await prisma.ticketHistory.create({
+        data: {
+          ticketId: id,
+          type: 'MUDANCA_STATUS',
+          content: {
+            from: ticket.status,
+            to: newStatus,
+            mensagem: newStatus === 'AGUARDANDO' ? mensagem : undefined,
+            solucao: newStatus === 'RESOLVIDO' ? solucao : undefined,
+          },
+          authorId: user.id,
+        },
+      });
+
+      return reply.send({
+        id: updatedTicket.id,
+        numero: updatedTicket.numero.toString(),
+        status: updatedTicket.status,
+        message: `Status atualizado com sucesso para ${newStatus}!`,
+      });
+    }
+  );
+
+  // 9. Fechar Chamado com Avaliação (Pelo Solicitante)
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/close',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const parseResult = satisfactionSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({ error: parseResult.error.format() });
+      }
+
+      const { nota } = parseResult.data;
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      const user = request.user!;
+      // Validar que apenas o Solicitante do chamado pode fechar e avaliar (Tarefa 8.1)
+      if (ticket.solicitanteId !== user.id) {
+        return reply.status(403).send({ error: 'Apenas o solicitante deste chamado pode fechá-lo e avaliá-lo.' });
+      }
+
+      if (ticket.status !== 'RESOLVIDO') {
+        return reply.status(400).send({ error: 'Apenas chamados no status Resolvido podem ser fechados pelo solicitante.' });
+      }
+
+      const [updatedTicket] = await prisma.$transaction([
+        prisma.ticket.update({
+          where: { id },
+          data: { status: 'FECHADO' },
+        }),
+        prisma.satisfaction.create({
+          data: {
+            ticketId: id,
+            nota,
+          },
+        }),
+        prisma.ticketHistory.create({
+          data: {
+            ticketId: id,
+            type: 'FECHAMENTO',
+            content: {
+              nota,
+              fechadoPor: user.nome,
+            },
+            authorId: user.id,
+          },
+        }),
+      ]);
+
+      return reply.send({
+        id: updatedTicket.id,
+        numero: updatedTicket.numero.toString(),
+        status: updatedTicket.status,
+        message: 'Chamado fechado e avaliado com sucesso!',
+      });
+    }
+  );
+
+  // 10. Fechamento Administrativo (Gestor/Diretor)
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/admin-close',
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      if (ticket.status !== 'RESOLVIDO') {
+        return reply.status(400).send({ error: 'Apenas chamados no status Resolvido podem ser fechados.' });
+      }
+
+      const user = request.user!;
+      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
+        return reply.status(403).send({ error: 'Você não tem permissão para fechar chamados de outra Unidade.' });
+      }
+
+      const { motivo } = (request.body as { motivo?: string }) || {};
+
+      const [updatedTicket] = await prisma.$transaction([
+        prisma.ticket.update({
+          where: { id },
+          data: { status: 'FECHADO' },
+        }),
+        prisma.ticketHistory.create({
+          data: {
+            ticketId: id,
+            type: 'FECHAMENTO',
+            content: {
+              adminClose: true,
+              motivo: motivo || 'Fechamento administrativo.',
+              fechadoPor: user.nome,
+            },
+            authorId: user.id,
+          },
+        }),
+      ]);
+
+      // Nota: Tarefa 8.3 garante que chamados fechados administrativamente NÃO geram registro em Satisfaction
+
+      return reply.send({
+        id: updatedTicket.id,
+        numero: updatedTicket.numero.toString(),
+        status: updatedTicket.status,
+        message: 'Chamado fechado administrativamente com sucesso.',
+      });
+    }
+  );
+
+  // 11. Reabrir Chamado (Solicitante / Técnico / Gestor / Diretor)
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/reopen',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const { motivo } = (request.body as { motivo?: string }) || {};
+      if (!motivo || motivo.trim().length < 10) {
+        return reply.status(400).send({ error: 'O motivo da reabertura é obrigatório (mínimo 10 caracteres).' });
+      }
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      if (ticket.status !== 'FECHADO') {
+        return reply.status(400).send({ error: 'Apenas chamados no status Fechado podem ser reabertos.' });
+      }
+
+      const user = request.user!;
+      const isSolicitante = ticket.solicitanteId === user.id;
+      const isUnidadeStaff = ['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId === user.unidadeId;
+      const isAdmin = user.role === 'ADMIN';
+
+      if (!isSolicitante && !isUnidadeStaff && !isAdmin) {
+        return reply.status(403).send({ error: 'Você não tem permissão para reabrir este chamado.' });
+      }
+
+      const [updatedTicket] = await prisma.$transaction([
+        prisma.ticket.update({
+          where: { id },
+          data: { status: 'REABERTO' },
+        }),
+        prisma.ticketHistory.create({
+          data: {
+            ticketId: id,
+            type: 'REABERTURA',
+            content: {
+              motivo,
+              reabertoPor: user.nome,
+            },
+            authorId: user.id,
+          },
+        }),
+      ]);
+
+      return reply.send({
+        id: updatedTicket.id,
+        numero: updatedTicket.numero.toString(),
+        status: updatedTicket.status,
+        message: 'Chamado reaberto com sucesso!',
+      });
+    }
+  );
+}

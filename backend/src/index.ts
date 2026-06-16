@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import { authRoutes } from './routes/auth.js';
 import { unidadeRoutes } from './routes/unidades.js';
 import { usuarioRoutes } from './routes/usuarios.js';
+import { ticketRoutes } from './routes/tickets.js';
 
 const fastify = Fastify({ logger: true });
 
@@ -25,6 +26,7 @@ fastify.get('/api/health', async () => {
 fastify.register(authRoutes);
 fastify.register(unidadeRoutes);
 fastify.register(usuarioRoutes);
+fastify.register(ticketRoutes);
 
 const start = async () => {
   try {

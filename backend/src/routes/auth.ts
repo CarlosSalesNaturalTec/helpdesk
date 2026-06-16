@@ -82,6 +82,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       role: user.role,
       unidadeId: user.unidadeId,
       mustChangePassword: user.passwordResetRequired,
+      nome: user.nome,
     });
 
     return reply.send({

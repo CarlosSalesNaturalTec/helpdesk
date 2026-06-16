@@ -20,20 +20,100 @@ model Unidade {
   nome      String   @unique
   criadoEm  DateTime @default(now())
   users     User[]
+  tickets   Ticket[]
 }
 
 model User {
-  id                    Int       @id @default(autoincrement())
+  id                    Int             @id @default(autoincrement())
   nome                  String
-  email                 String    @unique
+  email                 String          @unique
   senhaHash             String
   role                  Role
   unidadeId             Int
-  unidade               Unidade   @relation(fields: [unidadeId], references: [id])
-  ativo                 Boolean   @default(true)
-  passwordResetRequired Boolean   @default(true)
-  failedLoginAttempts   Int       @default(0)
+  unidade               Unidade         @relation(fields: [unidadeId], references: [id])
+  ativo                 Boolean         @default(true)
+  passwordResetRequired Boolean         @default(true)
+  failedLoginAttempts   Int             @default(0)
   lockedUntil           DateTime?
-  criadoEm              DateTime  @default(now())
-  atualizadoEm          DateTime  @updatedAt
+  criadoEm              DateTime        @default(now())
+  atualizadoEm          DateTime        @updatedAt
+  ticketsSolicitados    Ticket[]        @relation("Solicitante")
+  ticketsAtribuidos     Ticket[]        @relation("Tecnico")
+  ticketHistory         TicketHistory[]
+}
+
+enum TicketStatus {
+  ABERTO
+  EM_ANDAMENTO
+  AGUARDANDO
+  RESOLVIDO
+  FECHADO
+  REABERTO
+}
+
+enum TipoProblema {
+  HARDWARE
+  SOFTWARE
+  REDE_INTERNET
+  EMAIL
+  IMPRESSORA
+  ACESSO_SENHA
+  SISTEMA_INTERNO
+  OUTRO
+}
+
+enum NivelUrgencia {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum HistoryType {
+  ABERTURA
+  MENSAGEM
+  MUDANCA_STATUS
+  ATRIBUICAO
+  REATRIBUICAO
+  FECHAMENTO
+  REABERTURA
+}
+
+model Ticket {
+  id            Int             @id @default(autoincrement())
+  numero        BigInt          @default(autoincrement())
+  titulo        String          @db.VarChar(100)
+  descricao     String          @db.VarChar(2000)
+  tipoProblema  TipoProblema
+  urgencia      NivelUrgencia
+  status        TicketStatus    @default(ABERTO)
+  solicitanteId Int
+  solicitante   User            @relation("Solicitante", fields: [solicitanteId], references: [id])
+  tecnicoId     Int?
+  tecnico       User?           @relation("Tecnico", fields: [tecnicoId], references: [id])
+  unidadeId     Int
+  unidade       Unidade         @relation(fields: [unidadeId], references: [id])
+  history       TicketHistory[]
+  satisfaction  Satisfaction?
+  criadoEm      DateTime        @default(now())
+  atualizadoEm  DateTime        @updatedAt
+}
+
+model TicketHistory {
+  id        Int         @id @default(autoincrement())
+  ticketId  Int
+  ticket    Ticket      @relation(fields: [ticketId], references: [id])
+  type      HistoryType
+  content   Json
+  authorId  Int
+  author    User        @relation(fields: [authorId], references: [id])
+  criadoEm  DateTime    @default(now())
+}
+
+model Satisfaction {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int      @unique
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  nota      Int
+  criadoEm  DateTime @default(now())
 }

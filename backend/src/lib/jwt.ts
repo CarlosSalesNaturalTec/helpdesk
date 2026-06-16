@@ -8,6 +8,7 @@ export interface JwtPayload {
   role: string;
   unidadeId: number;
   mustChangePassword: boolean;
+  nome: string;
 }
 
 export function signToken(payload: JwtPayload): string {

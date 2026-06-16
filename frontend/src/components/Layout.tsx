@@ -45,13 +45,38 @@ export const Layout: React.FC = () => {
         </div>
 
         <nav className="nav-links">
+          {user.role === 'SOLICITANTE' && (
+            <>
+              <Link 
+                to="/chamados" 
+                className={`nav-link ${location.pathname === '/chamados' ? 'active' : ''}`}
+              >
+                Meus Chamados
+              </Link>
+              <Link 
+                to="/abrir-chamado" 
+                className={`nav-link ${location.pathname === '/abrir-chamado' ? 'active' : ''}`}
+              >
+                Abrir Chamado
+              </Link>
+            </>
+          )}
+
           {user.role !== 'SOLICITANTE' && (
-            <Link 
-              to="/dashboard" 
-              className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
-            >
-              Dashboard
-            </Link>
+            <>
+              <Link 
+                to="/dashboard" 
+                className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
+              >
+                Dashboard
+              </Link>
+              <Link 
+                to="/chamados" 
+                className={`nav-link ${location.pathname.startsWith('/chamados') ? 'active' : ''}`}
+              >
+                Chamados
+              </Link>
+            </>
           )}
           
           {showUsuarios && (
