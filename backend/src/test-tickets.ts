@@ -20,6 +20,7 @@ async function runTests() {
   try {
     // 1. Limpar banco para o teste
     console.log('-> Resetando dados de teste no banco...');
+    await prisma.notification.deleteMany({});
     await prisma.satisfaction.deleteMany({});
     await prisma.ticketHistory.deleteMany({});
     await prisma.ticket.deleteMany({});

@@ -1,9 +1,8 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
-import { PrismaClient, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma.js';
+import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
 
 interface MetricsQuery {
   periodo: string;
@@ -15,7 +14,7 @@ interface MetricsQuery {
 
 export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.post('/api/reports/pdf', {
-    preHandler: [fastify.authenticate],
+    preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])],
   }, async (request, reply) => {
     const { cards, chartImage, dimensao, periodoLabel, unidadeLabel } = request.body as any;
 
@@ -71,7 +70,7 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     } else if (chartImage) {
       doc.moveDown(2);
       try {
-        const base64Data = chartImage.replace(/^data:image\\/png;base64,/, '');
+        const base64Data = chartImage.replace(/^data:image\/png;base64,/, '');
         const imgBuffer = Buffer.from(base64Data, 'base64');
         doc.image(imgBuffer, 50, doc.y, { width: 495 });
       } catch (e) {
@@ -87,7 +86,7 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
   });
 
   fastify.get<{ Querystring: MetricsQuery }>('/api/reports/metrics', {
-    preHandler: [fastify.authenticate],
+    preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])],
   }, async (request, reply) => {
     const { periodo, dataInicio, dataFim, unidadeId, dimensao } = request.query;
     const user = request.user;

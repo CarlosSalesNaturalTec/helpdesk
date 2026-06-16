@@ -41,9 +41,9 @@ export const Relatorios: React.FC = () => {
         chartImage = await toPng(chartRef.current, { backgroundColor: '#ffffff', pixelRatio: 2 });
       }
 
-      let periodoLabel = \`Últimos \${periodo} dias\`;
+      let periodoLabel = `Últimos ${periodo} dias`;
       if (periodo === 'custom') {
-        periodoLabel = \`De \${new Date(dataInicio).toLocaleDateString()} até \${new Date(dataFim).toLocaleDateString()}\`;
+        periodoLabel = `De ${new Date(dataInicio).toLocaleDateString()} até ${new Date(dataFim).toLocaleDateString()}`;
       }
 
       const blob = await generateReportPdf({
@@ -132,8 +132,8 @@ export const Relatorios: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
             <StatusCard label="Total de Chamados" value={data.cards.total} type="abertos" />
-            <StatusCard label="Taxa de Fechamento" value={\`\${Number(data.cards.taxaFechamento).toFixed(1)}%\`} type="resolvidos" />
-            <StatusCard label="Tempo Médio (TMA)" value={\`\${Number(data.cards.tmaHoras).toFixed(1)} h\`} type="emAndamento" />
+            <StatusCard label="Taxa de Fechamento" value={`${Number(data.cards.taxaFechamento).toFixed(1)}%`} type="resolvidos" />
+            <StatusCard label="Tempo Médio (TMA)" value={`${Number(data.cards.tmaHoras).toFixed(1)} h`} type="emAndamento" />
             <StatusCard label="Satisfação Média" value={Number(data.cards.satisfacaoMedia).toFixed(1)} type="criticos" />
           </div>
 
@@ -147,8 +147,8 @@ export const Relatorios: React.FC = () => {
                   {(dimensao === 'status' || dimensao === 'satisfacao') ? (
                     <PieChart>
                       <Pie data={data.distribuicao} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={120} label>
-                        {data.distribuicao.map((entry, index) => (
-                          <Cell key={\`cell-\${index}\`} fill={COLORS[index % COLORS.length]} />
+                        {data.distribuicao.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -161,8 +161,8 @@ export const Relatorios: React.FC = () => {
                       <Tooltip />
                       <Legend />
                       <Bar dataKey="count" fill="#8884d8">
-                        {data.distribuicao.map((entry, index) => (
-                          <Cell key={\`cell-\${index}\`} fill={COLORS[index % COLORS.length]} />
+                        {data.distribuicao.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Bar>
                     </BarChart>

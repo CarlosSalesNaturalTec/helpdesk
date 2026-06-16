@@ -2,7 +2,7 @@ import React from 'react';
 
 interface StatusCardProps {
   label: string;
-  value: number;
+  value: number | string;
   type: 'abertos' | 'emAndamento' | 'resolvidos' | 'criticos';
 }
 

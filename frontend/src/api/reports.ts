@@ -1,4 +1,4 @@
-import api from './axios.js';
+import { apiClient as api } from './client.js';
 
 export interface ReportMetricsFilters {
   periodo: string;
