@@ -4,6 +4,7 @@ import { unidadeRoutes } from './routes/unidades.js';
 import { usuarioRoutes } from './routes/usuarios.js';
 import { ticketRoutes } from './routes/tickets.js';
 import { notificationRoutes } from './routes/notifications.js';
+import { dashboardRoutes } from './routes/dashboard.js';
 
 const fastify = Fastify({ logger: true });
 
@@ -29,6 +30,7 @@ fastify.register(unidadeRoutes);
 fastify.register(usuarioRoutes);
 fastify.register(ticketRoutes);
 fastify.register(notificationRoutes);
+fastify.register(dashboardRoutes);
 
 const start = async () => {
   try {
