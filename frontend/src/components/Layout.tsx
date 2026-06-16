@@ -79,6 +79,15 @@ export const Layout: React.FC = () => {
               </Link>
             </>
           )}
+
+          {showUsuarios && (
+            <Link 
+              to="/relatorios" 
+              className={`nav-link ${location.pathname.startsWith('/relatorios') ? 'active' : ''}`}
+            >
+              Relatórios
+            </Link>
+          )}
           
           {showUsuarios && (
             <Link 

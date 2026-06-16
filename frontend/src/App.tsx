@@ -8,6 +8,7 @@ import { Layout } from './components/Layout.js';
 import { Login } from './pages/Login.js';
 import { ChangePassword } from './pages/ChangePassword.js';
 import { Dashboard } from './pages/Dashboard.js';
+import { Relatorios } from './pages/Relatorios.js';
 import { Usuarios } from './pages/usuarios/Usuarios.js';
 import { Unidades } from './pages/unidades/Unidades.js';
 import { AbrirChamado } from './pages/AbrirChamado.js';
@@ -78,6 +79,16 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR_TI', 'TECNICO']}>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Relatórios - Gestor, Diretor e Admin */}
+        <Route
+          path="/relatorios"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR_TI']}>
+              <Relatorios />
             </ProtectedRoute>
           }
         />
