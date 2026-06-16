@@ -2,4 +2,4 @@
 2 - ok - nucleo-ticket-ciclo-vida
 3 - ok - comunicacao-mensagens-notificacoes
 4 - ok - dashboard-operacional
-5 - relatorios-gerenciais-pdf
+5 - ok - relatorios-gerenciais-pdf
