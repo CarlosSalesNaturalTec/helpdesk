@@ -1,0 +1,39 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SOLICITANTE
+  TECNICO
+  GESTOR_TI
+  DIRETOR
+  ADMIN
+}
+
+model Unidade {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique
+  criadoEm  DateTime @default(now())
+  users     User[]
+}
+
+model User {
+  id                    Int       @id @default(autoincrement())
+  nome                  String
+  email                 String    @unique
+  senhaHash             String
+  role                  Role
+  unidadeId             Int
+  unidade               Unidade   @relation(fields: [unidadeId], references: [id])
+  ativo                 Boolean   @default(true)
+  passwordResetRequired Boolean   @default(true)
+  failedLoginAttempts   Int       @default(0)
+  lockedUntil           DateTime?
+  criadoEm              DateTime  @default(now())
+  atualizadoEm          DateTime  @updatedAt
+}
