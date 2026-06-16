@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
+import { NotificationBell } from './NotificationBell.js';
 
 export const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -99,6 +100,7 @@ export const Layout: React.FC = () => {
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <NotificationBell />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
             <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-main)' }}>
               {user.nome}

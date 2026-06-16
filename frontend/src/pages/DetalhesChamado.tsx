@@ -36,6 +36,7 @@ export const DetalhesChamado: React.FC = () => {
   const [closeReason, setCloseReason] = useState('');
   const [reopenReason, setReopenReason] = useState('');
 
+  const [messageText, setMessageText] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
 
   // Queries
@@ -125,6 +126,15 @@ export const DetalhesChamado: React.FC = () => {
       invalidateQueries();
     },
     onError: (err: any) => setActionError(err.response?.data?.error || 'Erro ao reabrir chamado.'),
+  });
+
+  const sendMessageMutation = useMutation({
+    mutationFn: (content: string) => apiClient.post(`/api/tickets/${id}/messages`, { content }),
+    onSuccess: () => {
+      setMessageText('');
+      invalidateQueries();
+    },
+    onError: (err: any) => setActionError(err.response?.data?.error || 'Erro ao enviar mensagem.'),
   });
 
   if (loadingTicket) {
@@ -258,6 +268,24 @@ export const DetalhesChamado: React.FC = () => {
             </div>
           </div>
         );
+      case 'MENSAGEM':
+        const isAuthorSolicitante = item.author.role === 'SOLICITANTE';
+        return (
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '12px',
+            borderTopLeftRadius: isAuthorSolicitante ? '0px' : '12px',
+            borderTopRightRadius: isAuthorSolicitante ? '12px' : '0px',
+            background: isAuthorSolicitante ? 'rgba(168, 85, 247, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+            border: isAuthorSolicitante ? '1px solid rgba(168, 85, 247, 0.2)' : '1px solid rgba(59, 130, 246, 0.2)',
+            marginTop: '4px',
+            color: 'var(--text-main)',
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap'
+          }}>
+            {content.mensagem}
+          </div>
+        );
       default:
         return <div>Evento de histórico registrado.</div>;
     }
@@ -271,6 +299,7 @@ export const DetalhesChamado: React.FC = () => {
       case 'MUDANCA_STATUS': return '⚙';
       case 'FECHAMENTO': return '✓';
       case 'REABERTURA': return '♻';
+      case 'MENSAGEM': return '💬';
       default: return '•';
     }
   };
@@ -402,6 +431,57 @@ export const DetalhesChamado: React.FC = () => {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Envio de Mensagens */}
+          <div className="glass-panel" style={{ padding: '32px', marginTop: '24px' }}>
+            <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Nova Mensagem</h3>
+            
+            {ticket.status === 'FECHADO' ? (
+              <div className="alert alert-secondary" style={{ margin: 0, fontSize: '14px' }}>
+                Este chamado está fechado. Para continuar, utilize a opção "Reabrir Chamado".
+              </div>
+            ) : (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (messageText.trim().length > 0 && messageText.length <= 2000) {
+                  sendMessageMutation.mutate(messageText);
+                }
+              }}>
+                <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <textarea
+                    rows={4}
+                    placeholder="Digite sua mensagem para o técnico/solicitante..."
+                    className="form-control"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      color: 'var(--text-main)',
+                      resize: 'vertical',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                    <span style={{ fontSize: '12px', color: messageText.length > 2000 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                      {messageText.length}/2000 caracteres
+                    </span>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={messageText.trim().length === 0 || messageText.length > 2000 || sendMessageMutation.isPending}
+                      style={{ padding: '8px 24px', fontSize: '14px' }}
+                    >
+                      {sendMessageMutation.isPending ? 'Enviando...' : 'Enviar Mensagem'}
+                    </button>
+                  </div>
+                </div>
+              </form>
             )}
           </div>
 

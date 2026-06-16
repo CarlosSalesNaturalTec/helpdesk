@@ -40,6 +40,7 @@ model User {
   ticketsSolicitados    Ticket[]        @relation("Solicitante")
   ticketsAtribuidos     Ticket[]        @relation("Tecnico")
   ticketHistory         TicketHistory[]
+  notifications         Notification[]
 }
 
 enum TicketStatus {
@@ -95,6 +96,7 @@ model Ticket {
   unidade       Unidade         @relation(fields: [unidadeId], references: [id])
   history       TicketHistory[]
   satisfaction  Satisfaction?
+  notifications Notification[]
   criadoEm      DateTime        @default(now())
   atualizadoEm  DateTime        @updatedAt
 }
@@ -115,5 +117,17 @@ model Satisfaction {
   ticketId  Int      @unique
   ticket    Ticket   @relation(fields: [ticketId], references: [id])
   nota      Int
+  criadoEm  DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  type      String
+  message   String
+  lida      Boolean  @default(false)
   criadoEm  DateTime @default(now())
 }

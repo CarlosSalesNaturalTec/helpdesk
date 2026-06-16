@@ -11,6 +11,7 @@
   "dependencies": {
     "@helpdesk/shared": "*",
     "@prisma/client": "^5.11.0",
+    "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^2.4.3",
     "fastify": "^4.26.2",
     "jsonwebtoken": "^9.0.2",

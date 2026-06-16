@@ -1,7 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
 import { validateTransition } from '../lib/workflow.js';
+import { NotificationService } from '../services/notification.js';
 import {
   createTicketSchema,
   ticketStatusSchema,
@@ -325,6 +327,8 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         },
       });
 
+      await NotificationService.notifyAssigned(updatedTicket).catch(err => fastify.log.error(err));
+
       return reply.send({
         id: updatedTicket.id,
         numero: updatedTicket.numero.toString(),
@@ -419,6 +423,8 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         });
       }
 
+      await NotificationService.notifyReassignment(updatedTicket, tecnicoId).catch(err => fastify.log.error(err));
+
       return reply.send({
         id: updatedTicket.id,
         numero: updatedTicket.numero.toString(),
@@ -494,6 +500,12 @@ export async function ticketRoutes(fastify: FastifyInstance) {
           authorId: user.id,
         },
       });
+
+      if (newStatus === 'AGUARDANDO') {
+        await NotificationService.notifyAguardando(updatedTicket, mensagem || '').catch(err => fastify.log.error(err));
+      } else if (newStatus === 'RESOLVIDO') {
+        await NotificationService.notifyResolved(updatedTicket).catch(err => fastify.log.error(err));
+      }
 
       return reply.send({
         id: updatedTicket.id,
@@ -608,6 +620,8 @@ export async function ticketRoutes(fastify: FastifyInstance) {
 
       // Nota: Tarefa 8.3 garante que chamados fechados administrativamente NÃO geram registro em Satisfaction
 
+      await NotificationService.notifyAdminClose(updatedTicket).catch(err => fastify.log.error(err));
+
       return reply.send({
         id: updatedTicket.id,
         numero: updatedTicket.numero.toString(),
@@ -664,11 +678,130 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         }),
       ]);
 
+      await NotificationService.notifyReopened(updatedTicket, motivo || '').catch(err => fastify.log.error(err));
+
       return reply.send({
         id: updatedTicket.id,
         numero: updatedTicket.numero.toString(),
         status: updatedTicket.status,
         message: 'Chamado reaberto com sucesso!',
+      });
+    }
+  );
+
+  // 12. Enviar Mensagem no Chamado
+  fastify.post<{ Params: { id: string } }>(
+    '/api/tickets/:id/messages',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const zMessageSchema = z.object({
+        content: z.string().min(1).max(2000),
+      });
+
+      const parseResult = zMessageSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({ error: parseResult.error.format() });
+      }
+
+      const { content } = parseResult.data;
+
+      const ticket = await prisma.ticket.findUnique({
+        where: { id },
+      });
+
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      if (ticket.status === 'FECHADO') {
+        return reply.status(422).send({
+          error: "Este chamado está fechado. Para continuar, utilize a opção 'Reabrir Chamado'.",
+        });
+      }
+
+      const user = request.user!;
+      const isSolicitante = ticket.solicitanteId === user.id;
+      const isStaff = ['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId === user.unidadeId;
+      const isAdmin = user.role === 'ADMIN';
+
+      if (!isSolicitante && !isStaff && !isAdmin) {
+        return reply.status(403).send({ error: 'Você não tem permissão para enviar mensagens neste chamado.' });
+      }
+
+      const originalStatus = ticket.status;
+      let currentStatus = originalStatus;
+
+      // Se status é AGUARDANDO e autor é Solicitante, transitar para EM_ANDAMENTO
+      if (originalStatus === 'AGUARDANDO' && isSolicitante) {
+        currentStatus = 'EM_ANDAMENTO';
+        await prisma.ticket.update({
+          where: { id },
+          data: { status: 'EM_ANDAMENTO' },
+        });
+
+        // Registrar a mudança de status no histórico
+        await prisma.ticketHistory.create({
+          data: {
+            ticketId: id,
+            type: 'MUDANCA_STATUS',
+            content: {
+              from: 'AGUARDANDO',
+              to: 'EM_ANDAMENTO',
+              mensagem: 'Retornado para Em Andamento por mensagem do solicitante.',
+            },
+            authorId: user.id,
+          },
+        });
+      }
+
+      // Registrar mensagem no histórico
+      const historyRecord = await prisma.ticketHistory.create({
+        data: {
+          ticketId: id,
+          type: 'MENSAGEM',
+          content: {
+            mensagem: content,
+          },
+          authorId: user.id,
+        },
+      });
+
+      // Disparar notificações
+      if (isSolicitante) {
+        if (originalStatus === 'AGUARDANDO') {
+          // E-mail + Visual no Aguardando
+          await NotificationService.notifyMessageInAguardando(ticket.id, content).catch(err => fastify.log.error(err));
+        } else if (ticket.tecnicoId) {
+          // Notificação apenas visual para o técnico em mensagens normais
+          await NotificationService.create(
+            ticket.tecnicoId,
+            ticket.id,
+            'MENSAGEM',
+            `Nova mensagem no chamado #${ticket.numero} pelo solicitante`
+          ).catch(err => fastify.log.error(err));
+        }
+      } else {
+        // Técnico/Gestor/Diretor/Admin enviou mensagem -> notificar o Solicitante (apenas visual para mensagens comuns)
+        await NotificationService.create(
+          ticket.solicitanteId,
+          ticket.id,
+          'MENSAGEM',
+          `Nova mensagem no chamado #${ticket.numero} pelo técnico`
+        ).catch(err => fastify.log.error(err));
+      }
+
+      return reply.status(201).send({
+        id: historyRecord.id,
+        content: historyRecord.content,
+        type: historyRecord.type,
+        criadoEm: historyRecord.criadoEm,
+        author: {
+          id: user.id,
+          nome: user.nome,
+          role: user.role,
+        },
+        status: currentStatus,
       });
     }
   );
