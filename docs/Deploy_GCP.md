@@ -232,7 +232,7 @@ gcloud run deploy helpdesk-backend `
   --port=3001 `
   --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 `
   --set-env-vars=FROM_EMAIL=noreply@helpdesk.local `
-  --set-env-vars=ALLOWED_ORIGIN=https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com `
+  --set-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com `
   --set-secrets=DATABASE_URL=helpdesk-database-url:latest `
   --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest `
   --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest `
@@ -371,7 +371,7 @@ gsutil -m setmeta -h 'Cache-Control:no-cache' `
 Acesse o frontend em:
 
 ```
-https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com
+https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>/index.html
 ```
 
 ### 11.3 Atualizar CORS no Cloud Run
@@ -381,7 +381,7 @@ Após o deploy do frontend, atualize o `ALLOWED_ORIGIN` no Cloud Run:
 ```powershell
 gcloud run services update helpdesk-backend `
   --region=us-central1 `
-  --update-env-vars=ALLOWED_ORIGIN=https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com
+  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
 ```
 
 ---
@@ -580,7 +580,7 @@ gcloud run services describe helpdesk-backend --region=us-central1 `
 # Atualize com a origem correta (sem a barra no final)
 gcloud run services update helpdesk-backend `
   --region=us-central1 `
-  --update-env-vars=ALLOWED_ORIGIN=https://helpdesk-frontend-<PROJECT_ID>.storage.googleapis.com
+  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
 ```
 
 ### 14.5 Cloud Build Sem Permissão
