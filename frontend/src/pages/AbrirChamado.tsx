@@ -62,7 +62,7 @@ export const AbrirChamado: React.FC = () => {
     const result = createTicketSchema.safeParse(formData);
     if (!result.success) {
       const errorsMap: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
+      result.error.issues.forEach((issue: any) => {
         const path = issue.path[0] as string;
         errorsMap[path] = issue.message;
       });

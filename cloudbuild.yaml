@@ -76,6 +76,7 @@ steps:
       - '-c'
       - |
         npm ci
+        npm run build --workspace=shared
         VITE_API_URL=${_VITE_API_URL} npm run build --workspace=frontend
     waitFor: ['deploy-cloud-run']
 
