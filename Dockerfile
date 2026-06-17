@@ -3,6 +3,8 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 # Copy workspace configuration and package files for dependency installation
 COPY package.json package-lock.json ./
 COPY shared/package.json shared/tsconfig.json shared/
@@ -30,6 +32,9 @@ RUN npm run build --workspace=backend
 FROM node:20-alpine AS runtime
 
 WORKDIR /app
+
+# Instalar OpenSSL (necessário para o Prisma no Alpine)
+RUN apk add --no-cache openssl
 
 # Copy workspace configuration
 COPY --from=build /app/package.json /app/package-lock.json ./

@@ -7,8 +7,8 @@ substitutions:
   _ARTIFACT_REGISTRY_REPO: helpdesk-repo
   _CLOUD_RUN_SERVICE: helpdesk-backend
   _CLOUD_SQL_INSTANCE: helpdesk-db
-  _FRONTEND_BUCKET: helpdesk-frontend
-  _VITE_API_URL: https://helpdesk-backend-xxxxx-uc.a.run.app
+  _FRONTEND_BUCKET: helpdesk-frontend-helpdesk-499614
+  _VITE_API_URL: https://helpdesk-backend-503116182148.us-central1.run.app
 
 steps:
   # -----------------------------------------------------------------------
@@ -59,7 +59,7 @@ steps:
           --port=3001 \
           --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 \
           --set-env-vars=FROM_EMAIL=noreply@helpdesk.local \
-          --set-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com \
+          --set-env-vars=ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com \
           --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
           --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest \
           --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest \
