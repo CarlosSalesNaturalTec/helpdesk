@@ -57,7 +57,7 @@ steps:
           --concurrency=80 \
           --timeout=300 \
           --port=3001 \
-          --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 \
+          --set-env-vars=NODE_ENV=production,HOST=0.0.0.0 \
           --set-env-vars=FROM_EMAIL=noreply@helpdesk.local \
           --set-env-vars=ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com \
           --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
