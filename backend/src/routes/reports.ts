@@ -83,6 +83,8 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     doc.fontSize(10).text(`Gerado por ${request.user?.nome || 'Usuário'} em ${new Date().toLocaleString('pt-BR')}`, 50, bottomY, { align: 'center' });
 
     doc.end();
+    
+    return reply;
   });
 
   fastify.get<{ Querystring: MetricsQuery }>('/api/reports/metrics', {
