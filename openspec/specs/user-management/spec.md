@@ -8,7 +8,11 @@ TBD
 ## Requirements
 
 ### Requirement: Criação de usuário
-O sistema SHALL permitir a criação de usuários com os campos obrigatórios: nome completo, e-mail (único no sistema), função (Solicitante, Técnico, Gestor de TI, Diretor), Unidade vinculada e senha inicial temporária. O e-mail DEVE ser validado como único antes da criação.
+O sistema SHALL permitir a criação de usuários com os campos obrigatórios: nome completo, e-mail (único no sistema), função (Solicitante, Técnico, Gestor de TI, Diretor), Unidade vinculada e senha inicial temporária. Adicionalmente, se a função selecionada for "Técnico", a seleção de um **Setor** passa a ser obrigatória. Para outras funções, o Setor é opcional ou não aplicável. O e-mail DEVE ser validado como único antes da criação.
+
+#### Scenario: Admin cria usuário Técnico
+- **WHEN** o Administrador do Sistema seleciona a função "Técnico" ao criar um usuário
+- **THEN** o campo "Setor" se torna visível e obrigatório, e o usuário só pode ser salvo após a escolha de um Setor
 
 #### Scenario: Admin cria usuário em qualquer Unidade
 - **WHEN** o Administrador do Sistema acessa a tela de Usuários e aciona "Novo Usuário", preenche todos os campos, seleciona qualquer Unidade, e confirma
@@ -27,7 +31,11 @@ O sistema SHALL permitir a criação de usuários com os campos obrigatórios: n
 - **THEN** o campo Unidade é bloqueado e não pode ser alterado para nenhuma Unidade que não seja a "Unidade A"
 
 ### Requirement: Edição de usuário
-O sistema SHALL permitir a edição de nome, e-mail, função e status de usuários, respeitando o escopo de Unidade do usuário logado. O e-mail editado DEVE permanecer único no sistema.
+O sistema SHALL permitir a edição de nome, e-mail, função, status de usuários e Setor (caso aplicável), respeitando o escopo de Unidade do usuário logado. Se a função for alterada para "Técnico", o Setor DEVE se tornar obrigatório. O e-mail editado DEVE permanecer único no sistema.
+
+#### Scenario: Admin edita qualquer usuário e altera função
+- **WHEN** o Admin altera a função de um "Solicitante" para "Técnico"
+- **THEN** o sistema passa a exigir o preenchimento do campo "Setor" antes de permitir salvar
 
 #### Scenario: Admin edita qualquer usuário
 - **WHEN** o Admin edita um usuário de qualquer Unidade e altera seus dados
