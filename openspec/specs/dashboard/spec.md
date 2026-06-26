@@ -27,7 +27,11 @@ O sistema SHALL exibir quatro cards numéricos no Dashboard com as seguintes reg
 
 #### Scenario: Cards filtrados por Unidade para Admin
 - **WHEN** o Admin seleciona uma Unidade específica no seletor do Dashboard
-- **THEN** os 4 cards são recalculados exibindo apenas os dados da Unidade selecionada
+- **THEN** os 4 cards são recalculados exibindo apenas os dados da Unidade selecionada de todos os setores
+
+#### Scenario: Cards filtrados por Unidade e Setor para Admin
+- **WHEN** o Admin seleciona uma Unidade específica e um Setor específico nos seletores do Dashboard
+- **THEN** os 4 cards são recalculados exibindo apenas os dados da Unidade e do Setor selecionados
 
 ### Requirement: Atualização dos cards
 O sistema SHALL refletir mudanças nos totais dos cards quando a página é recarregada.
@@ -51,9 +55,13 @@ O sistema SHALL exibir, abaixo dos cards, um gráfico de linha com duas séries 
 - **WHEN** o Administrador do Sistema acessa o Dashboard geral
 - **THEN** o gráfico exibe dados consolidados de todas as Unidades combinadas
 
-#### Scenario: Gráfico filtrável para Admin
+#### Scenario: Gráfico filtrável por Unidade para Admin
 - **WHEN** o Admin seleciona uma Unidade específica no seletor
-- **THEN** o gráfico é atualizado para exibir apenas os dados da Unidade selecionada
+- **THEN** o gráfico é atualizado para exibir apenas os dados da Unidade selecionada de todos os setores
+
+#### Scenario: Gráfico filtrável por Unidade e Setor para Admin
+- **WHEN** o Admin seleciona uma Unidade e um Setor específicos nos seletores
+- **THEN** o gráfico é atualizado para exibir apenas os dados da Unidade e Setor selecionados
 
 ### Requirement: Período sem dados suficientes
 O sistema SHALL exibir o gráfico apenas com os dias desde a implantação quando o sistema estiver em operação há menos de 30 dias. NÃO DEVE haver quebras visuais para dias futuros ou ausentes — dias sem chamados DEVEM aparecer com valor zero.
