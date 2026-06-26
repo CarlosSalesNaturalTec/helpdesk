@@ -59,4 +59,4 @@ ENV HOST=0.0.0.0
 
 EXPOSE 3001
 
-CMD ["node", "backend/dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node backend/dist/index.js"]
