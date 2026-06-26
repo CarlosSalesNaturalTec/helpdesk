@@ -3,20 +3,31 @@ import { useQuery } from '@tanstack/react-query';
 import { getTickets } from '../api/tickets.js';
 import { useAuth } from '../context/AuthContext.js';
 import { Link } from 'react-router-dom';
+import { apiClient } from '../api/client.js';
 
 export const Chamados: React.FC = () => {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sectorFilter, setSectorFilter] = useState('');
   const [page, setPage] = useState(1);
   const limit = 20;
 
+  const { data: sectors } = useQuery({
+    queryKey: ['sectors'],
+    queryFn: async () => {
+      const res = await apiClient.get<any[]>('/api/sectors');
+      return res.data.filter((s: any) => s.ativo);
+    },
+  });
+
   // Query para buscar chamados
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['tickets', { search, status: statusFilter, page, limit }],
+    queryKey: ['tickets', { search, status: statusFilter, sectorId: sectorFilter, page, limit }],
     queryFn: () => getTickets({
       search: search || undefined,
       status: (statusFilter || undefined) as any,
+      sectorId: sectorFilter ? Number(sectorFilter) : undefined,
       page,
       limit,
     }),
@@ -77,6 +88,11 @@ export const Chamados: React.FC = () => {
     setPage(1); // Resetar para a primeira página
   };
 
+  const handleSectorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSectorFilter(e.target.value);
+    setPage(1); // Resetar para a primeira página
+  };
+
   const isSolicitante = user?.role === 'SOLICITANTE';
 
   return (
@@ -109,6 +125,20 @@ export const Chamados: React.FC = () => {
             value={search}
             onChange={handleSearchChange}
           />
+        </div>
+        <div style={{ width: '200px' }}>
+          <select
+            className="input-field"
+            value={sectorFilter}
+            onChange={handleSectorChange}
+          >
+            <option value="">Todos os setores</option>
+            {sectors?.map((sector) => (
+              <option key={sector.id} value={sector.id}>
+                {sector.nome}
+              </option>
+            ))}
+          </select>
         </div>
         <div style={{ width: '200px' }}>
           <select

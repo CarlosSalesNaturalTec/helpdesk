@@ -378,6 +378,10 @@ export const DetalhesChamado: React.FC = () => {
                 <strong style={{ color: 'var(--text-main)' }}>{ticket.unidade.nome}</strong>
               </div>
               <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Setor</span>
+                <strong style={{ color: 'var(--text-main)' }}>{ticket.sector?.nome || '-'}</strong>
+              </div>
+              <div>
                 <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Datas</span>
                 <span style={{ display: 'block', fontSize: '13px' }}>Abertura: <strong>{formatData(ticket.criadoEm)}</strong></span>
                 <span style={{ display: 'block', fontSize: '13px', marginTop: '4px' }}>Atualizado: <strong>{formatData(ticket.atualizadoEm)}</strong></span>
