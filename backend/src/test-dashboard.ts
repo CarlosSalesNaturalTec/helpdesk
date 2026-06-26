@@ -27,12 +27,22 @@ async function runTests() {
     await prisma.ticketHistory.deleteMany({});
     await prisma.ticket.deleteMany({});
     await prisma.user.deleteMany({});
+    await prisma.problemType.deleteMany({});
+    await prisma.sector.deleteMany({});
     await prisma.unidade.deleteMany({});
 
-    // 2. Criar Unidades e Usuários
-    console.log('-> Criando unidades e usuários...');
+    // 2. Criar Unidades, Setores, Tipos de Problema e Usuários
+    console.log('-> Criando unidades, setores, tipos de problema e usuários...');
     const unitA = await prisma.unidade.create({ data: { nome: 'Unidade Alfa' } });
     const unitB = await prisma.unidade.create({ data: { nome: 'Unidade Beta' } });
+
+    const sectorTI = await prisma.sector.create({ data: { nome: 'Tecnologia da Informação' } });
+
+    const ptHardware = await prisma.problemType.create({ data: { nome: 'HARDWARE', slaMinutes: 120, sectorId: sectorTI.id } });
+    const ptSoftware = await prisma.problemType.create({ data: { nome: 'SOFTWARE', slaMinutes: 120, sectorId: sectorTI.id } });
+    const ptRede = await prisma.problemType.create({ data: { nome: 'REDE_INTERNET', slaMinutes: 120, sectorId: sectorTI.id } });
+    const ptEmail = await prisma.problemType.create({ data: { nome: 'EMAIL', slaMinutes: 120, sectorId: sectorTI.id } });
+    const ptSistema = await prisma.problemType.create({ data: { nome: 'SISTEMA_INTERNO', slaMinutes: 120, sectorId: sectorTI.id } });
 
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash('senha123', salt);
@@ -41,10 +51,10 @@ async function runTests() {
       data: { nome: 'Admin System', email: 'admin@dash.com', senhaHash, role: 'ADMIN', unidadeId: unitA.id, passwordResetRequired: false }
     });
     const tecUserA = await prisma.user.create({
-      data: { nome: 'Tecnico Alfa', email: 'teca@dash.com', senhaHash, role: 'TECNICO', unidadeId: unitA.id, passwordResetRequired: false }
+      data: { nome: 'Tecnico Alfa', email: 'teca@dash.com', senhaHash, role: 'TECNICO', unidadeId: unitA.id, sectorId: sectorTI.id, passwordResetRequired: false }
     });
     const tecUserB = await prisma.user.create({
-      data: { nome: 'Tecnico Beta', email: 'tecb@dash.com', senhaHash, role: 'TECNICO', unidadeId: unitB.id, passwordResetRequired: false }
+      data: { nome: 'Tecnico Beta', email: 'tecb@dash.com', senhaHash, role: 'TECNICO', unidadeId: unitB.id, sectorId: sectorTI.id, passwordResetRequired: false }
     });
     const solUserA = await prisma.user.create({
       data: { nome: 'Solicitante Alfa', email: 'sola@dash.com', senhaHash, role: 'SOLICITANTE', unidadeId: unitA.id, passwordResetRequired: false }
@@ -76,29 +86,29 @@ async function runTests() {
     // - 1 FECHADO
     // - 1 CRITICO e ABERTO
     await prisma.ticket.create({
-      data: { titulo: 'Ticket Aberto Alfa', descricao: 'Desc', tipoProblema: 'HARDWARE', urgencia: 'MEDIA', status: 'ABERTO', solicitanteId: solUserA.id, unidadeId: unitA.id }
+      data: { titulo: 'Ticket Aberto Alfa', descricao: 'Desc', problemTypeId: ptHardware.id, sectorId: sectorTI.id, urgencia: 'MEDIA', status: 'ABERTO', solicitanteId: solUserA.id, unidadeId: unitA.id }
     });
     await prisma.ticket.create({
-      data: { titulo: 'Ticket Em Andamento Alfa', descricao: 'Desc', tipoProblema: 'SOFTWARE', urgencia: 'MEDIA', status: 'EM_ANDAMENTO', solicitanteId: solUserA.id, unidadeId: unitA.id }
+      data: { titulo: 'Ticket Em Andamento Alfa', descricao: 'Desc', problemTypeId: ptSoftware.id, sectorId: sectorTI.id, urgencia: 'MEDIA', status: 'EM_ANDAMENTO', solicitanteId: solUserA.id, unidadeId: unitA.id }
     });
     await prisma.ticket.create({
-      data: { titulo: 'Ticket Resolvido Alfa', descricao: 'Desc', tipoProblema: 'REDE_INTERNET', urgencia: 'MEDIA', status: 'RESOLVIDO', solicitanteId: solUserA.id, unidadeId: unitA.id }
+      data: { titulo: 'Ticket Resolvido Alfa', descricao: 'Desc', problemTypeId: ptRede.id, sectorId: sectorTI.id, urgencia: 'MEDIA', status: 'RESOLVIDO', solicitanteId: solUserA.id, unidadeId: unitA.id }
     });
     const ticketFechado = await prisma.ticket.create({
-      data: { titulo: 'Ticket Fechado Alfa', descricao: 'Desc', tipoProblema: 'EMAIL', urgencia: 'MEDIA', status: 'FECHADO', solicitanteId: solUserA.id, unidadeId: unitA.id }
+      data: { titulo: 'Ticket Fechado Alfa', descricao: 'Desc', problemTypeId: ptEmail.id, sectorId: sectorTI.id, urgencia: 'MEDIA', status: 'FECHADO', solicitanteId: solUserA.id, unidadeId: unitA.id }
     });
     await prisma.ticket.create({
-      data: { titulo: 'Ticket Critico Alfa', descricao: 'Desc', tipoProblema: 'SISTEMA_INTERNO', urgencia: 'CRITICA', status: 'ABERTO', solicitanteId: solUserA.id, unidadeId: unitA.id }
+      data: { titulo: 'Ticket Critico Alfa', descricao: 'Desc', problemTypeId: ptSistema.id, sectorId: sectorTI.id, urgencia: 'CRITICA', status: 'ABERTO', solicitanteId: solUserA.id, unidadeId: unitA.id }
     });
 
     // Tickets Unidade Beta:
     // - 1 ABERTO
     // - 1 FECHADO (vamos criar outro solicitante ou usar o mesmo)
     await prisma.ticket.create({
-      data: { titulo: 'Ticket Aberto Beta', descricao: 'Desc', tipoProblema: 'HARDWARE', urgencia: 'MEDIA', status: 'ABERTO', solicitanteId: solUserA.id, unidadeId: unitB.id }
+      data: { titulo: 'Ticket Aberto Beta', descricao: 'Desc', problemTypeId: ptHardware.id, sectorId: sectorTI.id, urgencia: 'MEDIA', status: 'ABERTO', solicitanteId: solUserA.id, unidadeId: unitB.id }
     });
     await prisma.ticket.create({
-      data: { titulo: 'Ticket Fechado Beta', descricao: 'Desc', tipoProblema: 'SOFTWARE', urgencia: 'MEDIA', status: 'FECHADO', solicitanteId: solUserA.id, unidadeId: unitB.id }
+      data: { titulo: 'Ticket Fechado Beta', descricao: 'Desc', problemTypeId: ptSoftware.id, sectorId: sectorTI.id, urgencia: 'MEDIA', status: 'FECHADO', solicitanteId: solUserA.id, unidadeId: unitB.id }
     });
 
     // =========================================================================
