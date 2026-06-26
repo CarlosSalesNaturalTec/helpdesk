@@ -6,6 +6,8 @@ import { ticketRoutes } from './routes/tickets.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { reportsRoutes } from './routes/reports.js';
+import { sectorRoutes } from './routes/sectors.js';
+import { problemTypeRoutes } from './routes/problem-types.js';
 
 const fastify = Fastify({ logger: true });
 
@@ -33,6 +35,8 @@ fastify.register(ticketRoutes);
 fastify.register(notificationRoutes);
 fastify.register(dashboardRoutes);
 fastify.register(reportsRoutes);
+fastify.register(sectorRoutes);
+fastify.register(problemTypeRoutes);
 
 const start = async () => {
   try {

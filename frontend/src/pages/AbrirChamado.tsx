@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createTicket, getTiposProblema, getNiveisUrgencia } from '../api/tickets.js';
+import { createTicket, getNiveisUrgencia } from '../api/tickets.js';
+import { apiClient } from '../api/client.js';
 import { createTicketSchema } from '@helpdesk/shared';
 import { useAuth } from '../context/AuthContext.js';
 import { Link } from 'react-router-dom';
@@ -9,7 +10,8 @@ export const AbrirChamado: React.FC = () => {
   const { user } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [tipoProblema, setTipoProblema] = useState('');
+  const [sectorId, setSectorId] = useState<number | ''>('');
+  const [problemTypeId, setProblemTypeId] = useState<number | ''>('');
   const [urgencia, setUrgencia] = useState('');
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -17,10 +19,23 @@ export const AbrirChamado: React.FC = () => {
   const [successData, setSuccessData] = useState<{ numero: string; id: number } | null>(null);
 
   // Queries para os dropdowns
-  const { data: tiposProblema, isLoading: loadingTipos } = useQuery({
-    queryKey: ['tiposProblema'],
-    queryFn: getTiposProblema,
+  const { data: sectors, isLoading: loadingSectors } = useQuery({
+    queryKey: ['sectors'],
+    queryFn: async () => {
+      const res = await apiClient.get<any[]>('/api/sectors');
+      return res.data.filter((s: any) => s.ativo);
+    },
   });
+
+  const { data: allProblemTypes, isLoading: loadingTipos } = useQuery({
+    queryKey: ['problemTypes'],
+    queryFn: async () => {
+      const res = await apiClient.get<any[]>('/api/problem-types');
+      return res.data.filter((pt: any) => pt.ativo);
+    },
+  });
+
+  const filteredProblemTypes = allProblemTypes?.filter(pt => pt.sectorId === sectorId) || [];
 
   const { data: niveisUrgencia, isLoading: loadingUrgencias } = useQuery({
     queryKey: ['niveisUrgencia'],
@@ -35,7 +50,8 @@ export const AbrirChamado: React.FC = () => {
       // Resetar form
       setTitulo('');
       setDescricao('');
-      setTipoProblema('');
+      setSectorId('');
+      setProblemTypeId('');
       setUrgencia('');
       setValidationErrors({});
       setSubmitError(null);
@@ -54,7 +70,8 @@ export const AbrirChamado: React.FC = () => {
     const formData = {
       titulo,
       descricao,
-      tipoProblema: tipoProblema as any,
+      sectorId: sectorId as any,
+      problemTypeId: problemTypeId as any,
       urgencia: urgencia as any,
     };
 
@@ -180,25 +197,51 @@ export const AbrirChamado: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            {/* Setor */}
+            <div className="form-group">
+              <label className="form-label">Setor</label>
+              <select
+                className={`input-field ${validationErrors.sectorId ? 'input-error' : ''}`}
+                value={sectorId}
+                onChange={(e) => {
+                  setSectorId(e.target.value ? Number(e.target.value) : '');
+                  setProblemTypeId('');
+                }}
+                disabled={loadingSectors}
+              >
+                <option value="">Selecione o setor...</option>
+                {sectors?.map((sector) => (
+                  <option key={sector.id} value={sector.id}>
+                    {sector.nome}
+                  </option>
+                ))}
+              </select>
+              {validationErrors.sectorId && (
+                <span className="error-message" style={{ color: 'var(--danger-main)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                  {validationErrors.sectorId}
+                </span>
+              )}
+            </div>
+
             {/* Tipo de Problema */}
             <div className="form-group">
               <label className="form-label">Tipo de Problema</label>
               <select
-                className={`input-field ${validationErrors.tipoProblema ? 'input-error' : ''}`}
-                value={tipoProblema}
-                onChange={(e) => setTipoProblema(e.target.value)}
-                disabled={loadingTipos}
+                className={`input-field ${validationErrors.problemTypeId ? 'input-error' : ''}`}
+                value={problemTypeId}
+                onChange={(e) => setProblemTypeId(e.target.value ? Number(e.target.value) : '')}
+                disabled={!sectorId || loadingTipos}
               >
-                <option value="">Selecione o tipo...</option>
-                {tiposProblema?.map((tipo) => (
-                  <option key={tipo.value} value={tipo.value}>
-                    {tipo.label}
+                <option value="">Selecione o problema...</option>
+                {filteredProblemTypes.map((pt) => (
+                  <option key={pt.id} value={pt.id}>
+                    {pt.nome}
                   </option>
                 ))}
               </select>
-              {validationErrors.tipoProblema && (
+              {validationErrors.problemTypeId && (
                 <span className="error-message" style={{ color: 'var(--danger-main)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                  {validationErrors.tipoProblema}
+                  {validationErrors.problemTypeId}
                 </span>
               )}
             </div>

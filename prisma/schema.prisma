@@ -16,11 +16,34 @@ enum Role {
 }
 
 model Unidade {
-  id        Int      @id @default(autoincrement())
-  nome      String   @unique
-  criadoEm  DateTime @default(now())
-  users     User[]
-  tickets   Ticket[]
+  id       Int      @id @default(autoincrement())
+  nome     String   @unique
+  criadoEm DateTime @default(now())
+  users    User[]
+  tickets  Ticket[]
+}
+
+model Sector {
+  id           Int           @id @default(autoincrement())
+  nome         String        @unique
+  ativo        Boolean       @default(true)
+  criadoEm     DateTime      @default(now())
+  atualizadoEm DateTime      @updatedAt
+  problemTypes ProblemType[]
+  users        User[]
+  tickets      Ticket[]
+}
+
+model ProblemType {
+  id           Int      @id @default(autoincrement())
+  nome         String
+  slaMinutes   Int
+  ativo        Boolean  @default(true)
+  sectorId     Int
+  sector       Sector   @relation(fields: [sectorId], references: [id])
+  tickets      Ticket[]
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
 }
 
 model User {
@@ -31,6 +54,8 @@ model User {
   role                  Role
   unidadeId             Int
   unidade               Unidade         @relation(fields: [unidadeId], references: [id])
+  sectorId              Int?
+  sector                Sector?         @relation(fields: [sectorId], references: [id])
   ativo                 Boolean         @default(true)
   passwordResetRequired Boolean         @default(true)
   failedLoginAttempts   Int             @default(0)
@@ -50,17 +75,6 @@ enum TicketStatus {
   RESOLVIDO
   FECHADO
   REABERTO
-}
-
-enum TipoProblema {
-  HARDWARE
-  SOFTWARE
-  REDE_INTERNET
-  EMAIL
-  IMPRESSORA
-  ACESSO_SENHA
-  SISTEMA_INTERNO
-  OUTRO
 }
 
 enum NivelUrgencia {
@@ -85,7 +99,6 @@ model Ticket {
   numero        BigInt          @default(autoincrement())
   titulo        String          @db.VarChar(100)
   descricao     String          @db.VarChar(2000)
-  tipoProblema  TipoProblema
   urgencia      NivelUrgencia
   status        TicketStatus    @default(ABERTO)
   solicitanteId Int
@@ -94,6 +107,10 @@ model Ticket {
   tecnico       User?           @relation("Tecnico", fields: [tecnicoId], references: [id])
   unidadeId     Int
   unidade       Unidade         @relation(fields: [unidadeId], references: [id])
+  sectorId      Int?
+  sector        Sector?         @relation(fields: [sectorId], references: [id])
+  problemTypeId Int?
+  problemType   ProblemType?    @relation(fields: [problemTypeId], references: [id])
   history       TicketHistory[]
   satisfaction  Satisfaction?
   notifications Notification[]
@@ -102,32 +119,32 @@ model Ticket {
 }
 
 model TicketHistory {
-  id        Int         @id @default(autoincrement())
-  ticketId  Int
-  ticket    Ticket      @relation(fields: [ticketId], references: [id])
-  type      HistoryType
-  content   Json
-  authorId  Int
-  author    User        @relation(fields: [authorId], references: [id])
-  criadoEm  DateTime    @default(now())
+  id       Int         @id @default(autoincrement())
+  ticketId Int
+  ticket   Ticket      @relation(fields: [ticketId], references: [id])
+  type     HistoryType
+  content  Json
+  authorId Int
+  author   User        @relation(fields: [authorId], references: [id])
+  criadoEm DateTime    @default(now())
 }
 
 model Satisfaction {
-  id        Int      @id @default(autoincrement())
-  ticketId  Int      @unique
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
-  nota      Int
-  criadoEm  DateTime @default(now())
+  id       Int      @id @default(autoincrement())
+  ticketId Int      @unique
+  ticket   Ticket   @relation(fields: [ticketId], references: [id])
+  nota     Int
+  criadoEm DateTime @default(now())
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  ticketId  Int
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
-  type      String
-  message   String
-  lida      Boolean  @default(false)
-  criadoEm  DateTime @default(now())
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id])
+  ticketId Int
+  ticket   Ticket   @relation(fields: [ticketId], references: [id])
+  type     String
+  message  String
+  lida     Boolean  @default(false)
+  criadoEm DateTime @default(now())
 }

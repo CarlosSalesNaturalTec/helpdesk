@@ -18,11 +18,15 @@ export interface Ticket {
   solicitanteId: number;
   tecnicoId: number | null;
   unidadeId: number;
+  sectorId?: number;
+  problemTypeId?: number;
   criadoEm: string;
   atualizadoEm: string;
   solicitante: { id: number; nome: string; email: string };
   tecnico: { id: number; nome: string; email: string } | null;
   unidade: { id: number; nome: string };
+  sector?: { id: number; nome: string };
+  problemType?: { id: number; nome: string };
 }
 
 export interface TicketHistory {

@@ -7,5 +7,14 @@ export const userSchema = z.object({
   email: z.string().email('E-mail inválido'),
   role: RoleEnum,
   unidadeId: z.number().int().positive('Unidade inválida'),
+  sectorId: z.number().int().positive('Setor inválido').optional().nullable(),
   senha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres').optional(),
+}).superRefine((data, ctx) => {
+  if (data.role === 'TECNICO' && !data.sectorId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Setor é obrigatório para técnicos',
+      path: ['sectorId'],
+    });
+  }
 });

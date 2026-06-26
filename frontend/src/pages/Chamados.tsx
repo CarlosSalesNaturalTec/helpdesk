@@ -177,7 +177,7 @@ export const Chamados: React.FC = () => {
                     <td>
                       <div style={{ fontWeight: 500, color: 'var(--text-main)' }}>{ticket.titulo}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {ticket.tipoProblema.replace('_', ' ')}
+                        {ticket.sector?.nome ? `${ticket.sector.nome} > ${ticket.problemType?.nome}` : ticket.tipoProblema?.replace('_', ' ')}
                       </div>
                     </td>
                     {!isSolicitante && (

@@ -7,6 +7,7 @@ export interface JwtPayload {
   email: string;
   role: string;
   unidadeId: number;
+  sectorId?: number | null;
   mustChangePassword: boolean;
   nome: string;
 }

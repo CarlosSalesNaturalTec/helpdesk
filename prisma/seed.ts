@@ -26,6 +26,36 @@ async function main() {
   });
   console.log(`Unidade de testes criada: ${unidadeSecundaria.nome} (ID: ${unidadeSecundaria.id})`);
 
+  // NOVO: Criar Setor padrão "Tecnologia" e Tipos de Problema
+  const sectorTecnologia = await prisma.sector.upsert({
+    where: { nome: 'Tecnologia' },
+    update: {},
+    create: {
+      nome: 'Tecnologia',
+    },
+  });
+  console.log(`Setor criado: ${sectorTecnologia.nome}`);
+
+  const problemTypes = ['HARDWARE', 'SOFTWARE', 'REDE_INTERNET', 'EMAIL', 'IMPRESSORA', 'ACESSO_SENHA', 'SISTEMA_INTERNO', 'OUTRO'];
+  const createdProblemTypes: Record<string, number> = {};
+  
+  for (const ptName of problemTypes) {
+    // Avoid upsert error if not unique, just use create or findFirst
+    let pt = await prisma.problemType.findFirst({ where: { nome: ptName, sectorId: sectorTecnologia.id } });
+    if (!pt) {
+      pt = await prisma.problemType.create({
+        data: {
+          nome: ptName,
+          slaMinutes: 1440,
+          sectorId: sectorTecnologia.id,
+        },
+      });
+    }
+    createdProblemTypes[ptName] = pt.id;
+  }
+  console.log('Tipos de problema criados para Tecnologia.');
+
+
   // 3. Criar Admin global
   const salt = await bcrypt.genSalt(10);
   const senhaHash = await bcrypt.hash('admin123', salt);
@@ -72,6 +102,7 @@ async function main() {
       senhaHash: hashComum,
       role: Role.TECNICO,
       unidadeId: unidadePadrao.id,
+      sectorId: sectorTecnologia.id,
       ativo: true,
       passwordResetRequired: false,
     },
@@ -117,6 +148,7 @@ async function main() {
       senhaHash: hashComum,
       role: Role.TECNICO,
       unidadeId: unidadeSecundaria.id,
+      sectorId: sectorTecnologia.id,
       ativo: true,
       passwordResetRequired: false,
     },
@@ -145,7 +177,8 @@ async function main() {
     data: {
       titulo: 'Computador não liga',
       descricao: 'Meu computador de trabalho não liga de jeito nenhum, já verifiquei a tomada.',
-      tipoProblema: 'HARDWARE',
+      sectorId: sectorTecnologia.id,
+      problemTypeId: createdProblemTypes['HARDWARE'],
       urgencia: 'ALTA',
       status: 'ABERTO',
       solicitanteId: solicitanteCentral.id,
@@ -155,7 +188,7 @@ async function main() {
   await createHistory(t1.id, solicitanteCentral.id, 'ABERTURA', {
     titulo: t1.titulo,
     descricao: t1.descricao,
-    tipoProblema: t1.tipoProblema,
+    problemType: 'HARDWARE',
     urgencia: t1.urgencia,
   });
 
@@ -164,7 +197,8 @@ async function main() {
     data: {
       titulo: 'Erro ao acessar o e-mail corporativo',
       descricao: 'Ao tentar logar, aparece erro 500 na tela do Webmail.',
-      tipoProblema: 'EMAIL',
+      sectorId: sectorTecnologia.id,
+      problemTypeId: createdProblemTypes['EMAIL'],
       urgencia: 'MEDIA',
       status: 'EM_ANDAMENTO',
       solicitanteId: solicitanteCentral.id,
@@ -175,7 +209,7 @@ async function main() {
   await createHistory(t2.id, solicitanteCentral.id, 'ABERTURA', {
     titulo: t2.titulo,
     descricao: t2.descricao,
-    tipoProblema: t2.tipoProblema,
+    problemType: 'EMAIL',
     urgencia: t2.urgencia,
   });
   await createHistory(t2.id, tecnicoCentral.id, 'ATRIBUICAO', {
@@ -192,7 +226,8 @@ async function main() {
     data: {
       titulo: 'Impressora sem toner',
       descricao: 'A impressora da recepção está com aviso de toner vazio.',
-      tipoProblema: 'IMPRESSORA',
+      sectorId: sectorTecnologia.id,
+      problemTypeId: createdProblemTypes['IMPRESSORA'],
       urgencia: 'BAIXA',
       status: 'AGUARDANDO',
       solicitanteId: solicitanteCentral.id,
@@ -203,7 +238,7 @@ async function main() {
   await createHistory(t3.id, solicitanteCentral.id, 'ABERTURA', {
     titulo: t3.titulo,
     descricao: t3.descricao,
-    tipoProblema: t3.tipoProblema,
+    problemType: 'IMPRESSORA',
     urgencia: t3.urgencia,
   });
   await createHistory(t3.id, tecnicoCentral.id, 'ATRIBUICAO', {
@@ -225,7 +260,8 @@ async function main() {
     data: {
       titulo: 'Rede Wi-Fi caindo frequentemente',
       descricao: 'A rede wifi cai a cada 10 minutos na sala de reuniões.',
-      tipoProblema: 'REDE_INTERNET',
+      sectorId: sectorTecnologia.id,
+      problemTypeId: createdProblemTypes['REDE_INTERNET'],
       urgencia: 'CRITICA',
       status: 'RESOLVIDO',
       solicitanteId: solicitanteCentral.id,
@@ -236,7 +272,7 @@ async function main() {
   await createHistory(t4.id, solicitanteCentral.id, 'ABERTURA', {
     titulo: t4.titulo,
     descricao: t4.descricao,
-    tipoProblema: t4.tipoProblema,
+    problemType: 'REDE_INTERNET',
     urgencia: t4.urgencia,
   });
   await createHistory(t4.id, tecnicoCentral.id, 'ATRIBUICAO', {
@@ -258,7 +294,8 @@ async function main() {
     data: {
       titulo: 'Instalação de software de videoconferência',
       descricao: 'Preciso que instalem o Teams para uma reunião à tarde.',
-      tipoProblema: 'SOFTWARE',
+      sectorId: sectorTecnologia.id,
+      problemTypeId: createdProblemTypes['SOFTWARE'],
       urgencia: 'MEDIA',
       status: 'FECHADO',
       solicitanteId: solicitanteCentral.id,
@@ -269,7 +306,7 @@ async function main() {
   await createHistory(t5.id, solicitanteCentral.id, 'ABERTURA', {
     titulo: t5.titulo,
     descricao: t5.descricao,
-    tipoProblema: t5.tipoProblema,
+    problemType: 'SOFTWARE',
     urgencia: t5.urgencia,
   });
   await createHistory(t5.id, tecnicoCentral.id, 'ATRIBUICAO', {
@@ -300,7 +337,8 @@ async function main() {
     data: {
       titulo: 'Troca de teclado com defeito',
       descricao: 'A tecla espaço não funciona.',
-      tipoProblema: 'HARDWARE',
+      sectorId: sectorTecnologia.id,
+      problemTypeId: createdProblemTypes['HARDWARE'],
       urgencia: 'BAIXA',
       status: 'FECHADO',
       solicitanteId: solicitanteCentral.id,
@@ -311,7 +349,7 @@ async function main() {
   await createHistory(t6.id, solicitanteCentral.id, 'ABERTURA', {
     titulo: t6.titulo,
     descricao: t6.descricao,
-    tipoProblema: t6.tipoProblema,
+    problemType: 'HARDWARE',
     urgencia: t6.urgencia,
   });
   await createHistory(t6.id, tecnicoCentral.id, 'ATRIBUICAO', {
@@ -337,7 +375,8 @@ async function main() {
     data: {
       titulo: 'Sistema interno indisponível',
       descricao: 'Não consigo abrir a tela de faturamento da minha unidade.',
-      tipoProblema: 'SISTEMA_INTERNO',
+      sectorId: sectorTecnologia.id,
+      problemTypeId: createdProblemTypes['SISTEMA_INTERNO'],
       urgencia: 'CRITICA',
       status: 'ABERTO',
       solicitanteId: solicitanteSecundario.id,
@@ -347,7 +386,7 @@ async function main() {
   await createHistory(t7.id, solicitanteSecundario.id, 'ABERTURA', {
     titulo: t7.titulo,
     descricao: t7.descricao,
-    tipoProblema: t7.tipoProblema,
+    problemType: 'SISTEMA_INTERNO',
     urgencia: t7.urgencia,
   });
 

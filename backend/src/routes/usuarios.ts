@@ -49,7 +49,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: parseResult.error.format() });
       }
 
-      const { nome, email, role, unidadeId: reqUnidadeId, senha } = parseResult.data;
+      const { nome, email, role, unidadeId: reqUnidadeId, sectorId, senha } = parseResult.data;
 
       // Se Diretor/Gestor de TI, força a unidade do usuário logado
       const targetUnidadeId = user.role === 'ADMIN' ? reqUnidadeId : user.unidadeId;
@@ -77,6 +77,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
           email,
           role,
           unidadeId: targetUnidadeId,
+          sectorId,
           senhaHash: hash,
           ativo: true,
           passwordResetRequired: true, // Força alteração no primeiro login
@@ -104,7 +105,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: parseResult.error.format() });
       }
 
-      const { nome, email, role, unidadeId: reqUnidadeId, senha } = parseResult.data;
+      const { nome, email, role, unidadeId: reqUnidadeId, sectorId, senha } = parseResult.data;
 
       // Buscar usuário alvo
       const targetUser = await prisma.user.findUnique({
@@ -145,6 +146,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         email,
         role,
         unidadeId: finalUnidadeId,
+        sectorId,
       };
 
       // Se forneceu nova senha, atualiza e marca para resetar

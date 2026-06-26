@@ -23,14 +23,15 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: parseResult.error.format() });
       }
 
-      const { titulo, descricao, tipoProblema, urgencia } = parseResult.data;
+      const { titulo, descricao, sectorId, problemTypeId, urgencia } = parseResult.data;
       const user = request.user!;
 
       const ticket = await prisma.ticket.create({
         data: {
           titulo,
           descricao,
-          tipoProblema,
+          sectorId,
+          problemTypeId,
           urgencia,
           solicitanteId: user.id,
           unidadeId: user.unidadeId,
@@ -46,7 +47,8 @@ export async function ticketRoutes(fastify: FastifyInstance) {
           content: {
             titulo,
             descricao,
-            tipoProblema,
+            sectorId,
+            problemTypeId,
             urgencia,
           },
           authorId: user.id,
@@ -73,7 +75,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: queryParse.error.format() });
       }
 
-      const { search, status, page, limit } = queryParse.data;
+      const { search, status, page, limit, sectorId, problemTypeId } = queryParse.data;
       const user = request.user!;
 
       let whereClause: any = {};
@@ -83,6 +85,9 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         whereClause.solicitanteId = user.id;
       } else if (['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role)) {
         whereClause.unidadeId = user.unidadeId;
+        if (user.role === 'TECNICO' && user.sectorId) {
+          whereClause.sectorId = user.sectorId;
+        }
       } else if (user.role === 'ADMIN') {
         // Admin vê tudo
       }
@@ -90,6 +95,14 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       // Aplicar filtro de status
       if (status) {
         whereClause.status = status;
+      }
+
+      // Filtros adicionais
+      if (sectorId) {
+        whereClause.sectorId = sectorId;
+      }
+      if (problemTypeId) {
+        whereClause.problemTypeId = problemTypeId;
       }
 
       // Aplicar busca textual (titulo, solicitante.nome, unidade.nome)
@@ -143,25 +156,9 @@ export async function ticketRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 3. Endpoints de Apoio (devem ficar antes das rotas com parâmetro :id para evitar conflito)
-  fastify.get(
-    '/api/tickets/tipos-problema',
-    { preHandler: [authRequired, requirePasswordChange] },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const tipos = [
-        { label: 'Hardware', value: 'HARDWARE' },
-        { label: 'Software', value: 'SOFTWARE' },
-        { label: 'Rede e Internet', value: 'REDE_INTERNET' },
-        { label: 'E-mail', value: 'EMAIL' },
-        { label: 'Impressora', value: 'IMPRESSORA' },
-        { label: 'Acesso e Senhas', value: 'ACESSO_SENHA' },
-        { label: 'Sistema Interno', value: 'SISTEMA_INTERNO' },
-        { label: 'Outro', value: 'OUTRO' },
-      ];
-      return reply.send(tipos);
-    }
-  );
 
+
+  // 3. Endpoints de Apoio (devem ficar antes das rotas com parâmetro :id para evitar conflito)
   fastify.get(
     '/api/tickets/niveis-urgencia',
     { preHandler: [authRequired, requirePasswordChange] },

@@ -9,16 +9,7 @@ export const TicketStatusEnum = z.enum([
   'REABERTO',
 ]);
 
-export const TipoProblemaEnum = z.enum([
-  'HARDWARE',
-  'SOFTWARE',
-  'REDE_INTERNET',
-  'EMAIL',
-  'IMPRESSORA',
-  'ACESSO_SENHA',
-  'SISTEMA_INTERNO',
-  'OUTRO',
-]);
+
 
 export const NivelUrgenciaEnum = z.enum([
   'BAIXA',
@@ -36,7 +27,8 @@ export const createTicketSchema = z.object({
     .string()
     .min(10, 'A descrição deve ter no mínimo 10 caracteres')
     .max(2000, 'A descrição deve ter no máximo 2000 caracteres'),
-  tipoProblema: TipoProblemaEnum,
+  sectorId: z.number().int().positive('Setor inválido'),
+  problemTypeId: z.number().int().positive('Tipo de problema inválido'),
   urgencia: NivelUrgenciaEnum,
 });
 
@@ -78,6 +70,8 @@ export const satisfactionSchema = z.object({
 export const ticketQuerySchema = z.object({
   search: z.string().optional(),
   status: TicketStatusEnum.optional(),
+  sectorId: z.coerce.number().int().positive().optional(),
+  problemTypeId: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().default(20),
 });

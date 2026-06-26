@@ -21,6 +21,11 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
         unidadeId = request.user!.unidadeId;
       }
 
+      let sectorId: number | null = null;
+      if (request.user!.role === 'TECNICO' && request.user!.sectorId) {
+        sectorId = request.user!.sectorId;
+      }
+
       const [cards, trend] = await Promise.all([
         prisma.$queryRaw<any[]>`
           SELECT
@@ -30,6 +35,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             COUNT(*) FILTER (WHERE urgencia = 'CRITICA' AND status <> 'FECHADO')::int as criticos
           FROM "Ticket"
           WHERE (${unidadeId}::int IS NULL OR "unidadeId" = ${unidadeId}::int)
+            AND (${sectorId}::int IS NULL OR "sectorId" = ${sectorId}::int)
         `,
         prisma.$queryRaw<any[]>`
           WITH days AS (
@@ -47,10 +53,12 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
           LEFT JOIN "Ticket" t_abertos
             ON t_abertos."criadoEm"::date = days.date
             AND (${unidadeId}::int IS NULL OR t_abertos."unidadeId" = ${unidadeId}::int)
+            AND (${sectorId}::int IS NULL OR t_abertos."sectorId" = ${sectorId}::int)
           LEFT JOIN "Ticket" t_fechados
             ON t_fechados."atualizadoEm"::date = days.date
             AND t_fechados.status = 'FECHADO'
             AND (${unidadeId}::int IS NULL OR t_fechados."unidadeId" = ${unidadeId}::int)
+            AND (${sectorId}::int IS NULL OR t_fechados."sectorId" = ${sectorId}::int)
           GROUP BY days.date
           ORDER BY days.date ASC
         `

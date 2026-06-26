@@ -8,6 +8,11 @@ interface Unidade {
   nome: string;
 }
 
+interface Sector {
+  id: number;
+  nome: string;
+}
+
 interface UserListItem {
   id: number;
   nome: string;
@@ -18,12 +23,14 @@ interface UserListItem {
   ativo: boolean;
   passwordResetRequired: boolean;
   criadoEm: string;
+  sectorId?: number;
 }
 
 export const Usuarios: React.FC = () => {
   const { user: currentUser } = useAuth();
   const [usuarios, setUsuarios] = useState<UserListItem[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
+  const [sectors, setSectors] = useState<Sector[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +44,7 @@ export const Usuarios: React.FC = () => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'SOLICITANTE' | 'TECNICO' | 'GESTOR_TI' | 'DIRETOR' | 'ADMIN'>('SOLICITANTE');
   const [unidadeId, setUnidadeId] = useState<number>(0);
+  const [sectorId, setSectorId] = useState<number | ''>('');
   const [senha, setSenha] = useState('');
   
   const [modalError, setModalError] = useState<string | null>(null);
@@ -80,9 +88,19 @@ export const Usuarios: React.FC = () => {
     }
   };
 
+  const fetchSectors = async () => {
+    try {
+      const response = await apiClient.get<Sector[]>('/api/sectors');
+      setSectors(response.data);
+    } catch (err) {
+      console.error('Erro ao carregar setores:', err);
+    }
+  };
+
   useEffect(() => {
     fetchUsuarios();
     fetchUnidades();
+    fetchSectors();
   }, [currentUser]);
 
   const handleOpenCreateModal = () => {
@@ -93,6 +111,7 @@ export const Usuarios: React.FC = () => {
     setRole('SOLICITANTE');
     // Se for admin, usa a primeira unidade, senão a dele
     setUnidadeId(currentUser?.role === 'ADMIN' ? (unidades[0]?.id || 0) : (currentUser?.unidadeId || 0));
+    setSectorId('');
     setSenha('');
     setModalError(null);
     setFieldErrors({});
@@ -106,6 +125,7 @@ export const Usuarios: React.FC = () => {
     setEmail(userItem.email);
     setRole(userItem.role);
     setUnidadeId(userItem.unidadeId);
+    setSectorId(userItem.sectorId || '');
     setSenha('');
     setModalError(null);
     setFieldErrors({});
@@ -125,6 +145,15 @@ export const Usuarios: React.FC = () => {
       unidadeId: Number(unidadeId),
     };
 
+    if (role === 'TECNICO') {
+      if (!sectorId) {
+        setFieldErrors({ sectorId: 'Setor é obrigatório para Técnicos' });
+        setSubmitting(false);
+        return;
+      }
+      payload.sectorId = Number(sectorId);
+    }
+
     // Senha temporária só é exigida no cadastro, ou se preenchida no edit
     if (senha) {
       payload.senha = senha;
@@ -139,6 +168,7 @@ export const Usuarios: React.FC = () => {
       if (formatted.email) errors.email = formatted.email._errors[0];
       if (formatted.role) errors.role = formatted.role._errors[0];
       if (formatted.unidadeId) errors.unidadeId = formatted.unidadeId._errors[0];
+      if (formatted.sectorId) errors.sectorId = formatted.sectorId._errors[0];
       if (formatted.senha) errors.senha = formatted.senha._errors[0];
       
       setFieldErrors(errors);
@@ -390,6 +420,24 @@ export const Usuarios: React.FC = () => {
                   </select>
                   {fieldErrors.unidadeId && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.unidadeId}</span>}
                 </div>
+
+                {role === 'TECNICO' && (
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Setor</label>
+                    <select
+                      className="input-field"
+                      value={sectorId}
+                      onChange={(e) => setSectorId(e.target.value ? Number(e.target.value) : '')}
+                      disabled={submitting}
+                    >
+                      <option value="">Selecione um setor...</option>
+                      {sectors.map((s) => (
+                        <option key={s.id} value={s.id}>{s.nome}</option>
+                      ))}
+                    </select>
+                    {fieldErrors.sectorId && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.sectorId}</span>}
+                  </div>
+                )}
               </div>
 
               <div className="form-group" style={{ marginBottom: '24px' }}>

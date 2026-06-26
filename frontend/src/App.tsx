@@ -11,6 +11,8 @@ import { Dashboard } from './pages/Dashboard.js';
 import { Relatorios } from './pages/Relatorios.js';
 import { Usuarios } from './pages/usuarios/Usuarios.js';
 import { Unidades } from './pages/unidades/Unidades.js';
+import { Setores } from './pages/setores/Setores.js';
+import { TiposProblema } from './pages/tipos-problema/TiposProblema.js';
 import { AbrirChamado } from './pages/AbrirChamado.js';
 import { Chamados } from './pages/Chamados.js';
 import { DetalhesChamado } from './pages/DetalhesChamado.js';
@@ -109,6 +111,26 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
               <Unidades />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Gestão de Setores - Apenas Admin */}
+        <Route
+          path="/setores"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <Setores />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Gestão de Tipos de Problema - Apenas Admin */}
+        <Route
+          path="/tipos-problema"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <TiposProblema />
             </ProtectedRoute>
           }
         />

@@ -81,6 +81,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       email: user.email,
       role: user.role,
       unidadeId: user.unidadeId,
+      sectorId: user.sectorId,
       mustChangePassword: user.passwordResetRequired,
       nome: user.nome,
     });
@@ -93,6 +94,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         email: user.email,
         role: user.role,
         unidadeId: user.unidadeId,
+        sectorId: user.sectorId,
         passwordResetRequired: user.passwordResetRequired,
       },
     });
@@ -127,6 +129,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           email: user.email,
           role: user.role,
           unidadeId: user.unidadeId,
+          sectorId: user.sectorId,
           unidadeNome: user.unidade.nome,
           passwordResetRequired: user.passwordResetRequired,
         },

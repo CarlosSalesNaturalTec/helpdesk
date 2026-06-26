@@ -99,12 +99,26 @@ export const Layout: React.FC = () => {
           )}
 
           {showUnidades && (
-            <Link 
-              to="/unidades" 
-              className={`nav-link ${location.pathname.startsWith('/unidades') ? 'active' : ''}`}
-            >
-              Unidades
-            </Link>
+            <>
+              <Link 
+                to="/unidades" 
+                className={`nav-link ${location.pathname.startsWith('/unidades') ? 'active' : ''}`}
+              >
+                Unidades
+              </Link>
+              <Link 
+                to="/setores" 
+                className={`nav-link ${location.pathname.startsWith('/setores') ? 'active' : ''}`}
+              >
+                Setores
+              </Link>
+              <Link 
+                to="/tipos-problema" 
+                className={`nav-link ${location.pathname.startsWith('/tipos-problema') ? 'active' : ''}`}
+              >
+                Tipos de Problema
+              </Link>
+            </>
           )}
         </nav>
 
