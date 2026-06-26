@@ -5,23 +5,25 @@ import { getDashboardData } from '../api/dashboard.js';
 import { StatusCard } from '../components/StatusCard.js';
 import { TrendChart } from '../components/TrendChart.js';
 import { UnitSelector } from '../components/UnitSelector.js';
+import { SectorSelector } from '../components/SectorSelector.js';
 
 // 2.1 Hook useDashboard(unidadeId?) com React Query chamando GET /api/dashboard
-export function useDashboard(unidadeId?: number | null) {
+export function useDashboard(unidadeId?: number | null, sectorId?: number | null) {
   return useQuery({
-    queryKey: ['dashboard', unidadeId],
-    queryFn: () => getDashboardData(unidadeId),
+    queryKey: ['dashboard', unidadeId, sectorId],
+    queryFn: () => getDashboardData(unidadeId, sectorId),
   });
 }
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
+  const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null);
 
   const isAdmin = user?.role === 'ADMIN';
 
   // Chamar o hook com a unidade selecionada (ou nulo para Admin consolidado)
-  const { data, isLoading, isError, error } = useDashboard(isAdmin ? selectedUnitId : null);
+  const { data, isLoading, isError, error } = useDashboard(isAdmin ? selectedUnitId : null, isAdmin ? selectedSectorId : null);
 
   if (!user) return null;
 
@@ -41,10 +43,11 @@ export const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* 4.1 UnitSelector visível apenas para Admin */}
+        {/* 4.1 UnitSelector e SectorSelector visíveis apenas para Admin */}
         {isAdmin && (
-          <div className="glass-panel" style={{ padding: '16px 24px', alignSelf: 'flex-start' }}>
+          <div className="glass-panel" style={{ padding: '16px 24px', alignSelf: 'flex-start', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
             <UnitSelector selectedUnitId={selectedUnitId} onChange={setSelectedUnitId} />
+            <SectorSelector selectedSectorId={selectedSectorId} onChange={setSelectedSectorId} />
           </div>
         )}
       </div>

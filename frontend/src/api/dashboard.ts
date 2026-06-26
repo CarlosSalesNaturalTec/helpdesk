@@ -14,9 +14,13 @@ export interface DashboardData {
   }[];
 }
 
-export const getDashboardData = async (unidadeId?: number | null) => {
+export const getDashboardData = async (unidadeId?: number | null, sectorId?: number | null) => {
+  const params: any = {};
+  if (unidadeId) params.unidadeId = unidadeId;
+  if (sectorId) params.sectorId = sectorId;
+
   const response = await apiClient.get<DashboardData>('/api/dashboard', {
-    params: unidadeId ? { unidadeId } : {},
+    params,
   });
   return response.data;
 };

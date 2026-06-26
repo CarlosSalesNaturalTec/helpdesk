@@ -132,6 +132,12 @@ export async function ticketRoutes(fastify: FastifyInstance) {
           unidade: {
             select: { id: true, nome: true },
           },
+          sector: {
+            select: { id: true, nome: true },
+          },
+          problemType: {
+            select: { id: true, nome: true },
+          },
           _count: {
             select: { history: true },
           },
@@ -193,6 +199,12 @@ export async function ticketRoutes(fastify: FastifyInstance) {
             select: { id: true, nome: true, email: true },
           },
           unidade: {
+            select: { id: true, nome: true },
+          },
+          sector: {
+            select: { id: true, nome: true },
+          },
+          problemType: {
             select: { id: true, nome: true },
           },
           _count: {

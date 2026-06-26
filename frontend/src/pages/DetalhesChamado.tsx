@@ -207,7 +207,7 @@ export const DetalhesChamado: React.FC = () => {
       case 'ABERTURA':
         return (
           <div>
-            Abertura do chamado registrada com urgência <strong>{content.urgencia}</strong> e tipo <strong>{content.tipoProblema?.replace('_', ' ')}</strong>.
+            Abertura do chamado registrada com urgência <strong>{content.urgencia}</strong> e tipo <strong>{ticket.problemType?.nome}</strong> no setor <strong>{ticket.sector?.nome}</strong>.
             <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--primary)' }}>
               {content.descricao}
             </div>
@@ -341,7 +341,7 @@ export const DetalhesChamado: React.FC = () => {
                     Urgência {ticket.urgencia}
                   </span>
                   <span style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center' }}>
-                    Tipo: {ticket.tipoProblema.replace('_', ' ')}
+                    Setor: {ticket.sector?.nome} | Tipo: {ticket.problemType?.nome}
                   </span>
                 </div>
               </div>

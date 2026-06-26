@@ -22,7 +22,15 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       }
 
       let sectorId: number | null = null;
-      if (request.user!.role === 'TECNICO' && request.user!.sectorId) {
+      if (request.user!.role === 'ADMIN') {
+        const query = request.query as { sectorId?: string };
+        if (query.sectorId) {
+          const parsed = parseInt(query.sectorId, 10);
+          if (!isNaN(parsed)) {
+            sectorId = parsed;
+          }
+        }
+      } else if (request.user!.role === 'TECNICO' && request.user!.sectorId) {
         sectorId = request.user!.sectorId;
       }
 
