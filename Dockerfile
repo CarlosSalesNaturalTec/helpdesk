@@ -47,8 +47,12 @@ COPY --from=build /app/shared/dist/ /app/shared/dist/
 COPY --from=build /app/backend/package.json /app/backend/
 COPY --from=build /app/backend/dist/ /app/backend/dist/
 
-# Copy all node_modules (preserves workspace symlinks)
+# Copy all root node_modules (preserves workspace symlinks)
 COPY --from=build /app/node_modules/ /app/node_modules/
+
+# Copy nested node_modules if they exist (using glob trick to avoid failure if they don't)
+COPY --from=build /app/backend/node_module[s]/ /app/backend/node_modules/
+COPY --from=build /app/shared/node_module[s]/ /app/shared/node_modules/
 
 # Copy Prisma schema and generated client
 COPY --from=build /app/prisma/ /app/prisma/
