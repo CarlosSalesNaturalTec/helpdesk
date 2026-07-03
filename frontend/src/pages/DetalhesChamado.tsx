@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -10,6 +10,8 @@ import {
   closeTicket,
   adminCloseTicket,
   reopenTicket,
+  replaceAttachment,
+  removeAttachment,
 } from '../api/tickets.js';
 import { useAuth } from '../context/AuthContext.js';
 import { StarRating } from '../components/StarRating.js';
@@ -38,6 +40,10 @@ export const DetalhesChamado: React.FC = () => {
 
   const [messageText, setMessageText] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Estados para gerenciamento de anexo
+  const [showRemoveAnexoModal, setShowRemoveAnexoModal] = useState(false);
+  const anexoInputRef = useRef<HTMLInputElement>(null);
 
   // Queries
   const { data: ticket, isLoading: loadingTicket, isError: ticketError } = useQuery({
@@ -136,6 +142,41 @@ export const DetalhesChamado: React.FC = () => {
     },
     onError: (err: any) => setActionError(err.response?.data?.error || 'Erro ao enviar mensagem.'),
   });
+
+  // Mutations de Anexo
+  const replaceAnexoMutation = useMutation({
+    mutationFn: (file: File) => replaceAttachment(id, file),
+    onSuccess: () => {
+      invalidateQueries();
+    },
+    onError: (err: any) => setActionError(err.response?.data?.error || 'Erro ao substituir anexo.'),
+  });
+
+  const removeAnexoMutation = useMutation({
+    mutationFn: () => removeAttachment(id),
+    onSuccess: () => {
+      setShowRemoveAnexoModal(false);
+      invalidateQueries();
+    },
+    onError: (err: any) => setActionError(err.response?.data?.error || 'Erro ao remover anexo.'),
+  });
+
+  const handleReplaceAnexo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ALLOWED = ['image/jpeg', 'image/png', 'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!ALLOWED.includes(file.type)) {
+      setActionError('Tipo de arquivo não permitido. Tipos aceitos: JPG, PNG, PDF, DOCX');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setActionError('O arquivo excede o tamanho máximo de 5 MB');
+      return;
+    }
+    setActionError(null);
+    replaceAnexoMutation.mutate(file);
+  };
 
   if (loadingTicket) {
     return (
@@ -404,6 +445,88 @@ export const DetalhesChamado: React.FC = () => {
                 {ticket.descricao}
               </p>
             </div>
+
+            {/* Seção de Anexo */}
+            {ticket.anexoUrl && (
+              <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '12px', fontSize: '14px', fontWeight: 500 }}>Anexo</span>
+
+                {/* Imagem inline */}
+                {ticket.anexoTipo?.startsWith('image/') && (
+                  <img
+                    src={ticket.anexoUrl}
+                    alt={ticket.anexoNome || 'Anexo'}
+                    style={{ maxWidth: '100%', borderRadius: '8px', border: '1px solid var(--border)', display: 'block' }}
+                  />
+                )}
+
+                {/* PDF */}
+                {ticket.anexoTipo === 'application/pdf' && (
+                  <a
+                    href={ticket.anexoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    📄 Abrir PDF — {ticket.anexoNome}
+                  </a>
+                )}
+
+                {/* DOCX */}
+                {ticket.anexoTipo === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
+                  <a
+                    href={ticket.anexoUrl}
+                    download={ticket.anexoNome}
+                    className="btn btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    📝 Baixar Documento — {ticket.anexoNome}
+                  </a>
+                )}
+
+                {/* Botões de Gerenciamento (apenas para o solicitante dono do chamado) */}
+                {isSolicitante && ticket.solicitanteId === user?.id && (
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '16px', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ fontSize: '13px' }}
+                      onClick={() => anexoInputRef.current?.click()}
+                      disabled={replaceAnexoMutation.isPending}
+                    >
+                      {replaceAnexoMutation.isPending ? 'Substituindo...' : '🔄 Substituir Anexo'}
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      style={{ fontSize: '13px' }}
+                      onClick={() => setShowRemoveAnexoModal(true)}
+                      disabled={removeAnexoMutation.isPending}
+                    >
+                      🗑 Remover Anexo
+                    </button>
+                    {/* Input de arquivo oculto para substituição */}
+                    <input
+                      ref={anexoInputRef}
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.pdf,.docx"
+                      style={{ display: 'none' }}
+                      onChange={handleReplaceAnexo}
+                      onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Seção de Anexo — Quando não há anexo e o solicitante pode adicionar */}
+            {!ticket.anexoUrl && isSolicitante && ticket.solicitanteId === user?.id && (
+              <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Anexo</span>
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
+                  Este chamado não possui anexo.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Timeline (Tarefa 13.2) */}
@@ -843,6 +966,36 @@ export const DetalhesChamado: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Remoção de Anexo */}
+      {showRemoveAnexoModal && (
+        <div className="modal-overlay">
+          <div className="glass-panel modal-content" style={{ textAlign: 'center' }}>
+            <h3 style={{ fontSize: '20px', marginBottom: '12px' }}>Remover Anexo</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>
+              Tem certeza que deseja remover o anexo <strong>{ticket.anexoNome}</strong>? Esta ação não pode ser desfeita.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowRemoveAnexoModal(false)}
+                disabled={removeAnexoMutation.isPending}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => removeAnexoMutation.mutate()}
+                disabled={removeAnexoMutation.isPending}
+              >
+                {removeAnexoMutation.isPending ? 'Removendo...' : 'Confirmar Remoção'}
+              </button>
+            </div>
           </div>
         </div>
       )}

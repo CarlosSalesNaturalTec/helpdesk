@@ -1,9 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
 import { validateTransition } from '../lib/workflow.js';
 import { NotificationService } from '../services/notification.js';
+import { uploadFile, deleteFile, extractGcsPath } from '../lib/storage.js';
+import { validateAttachment } from '../lib/attachment.js';
 import {
   createTicketSchema,
   ticketStatusSchema,
@@ -12,20 +15,129 @@ import {
   ticketQuerySchema,
 } from '@helpdesk/shared';
 
+
 export async function ticketRoutes(fastify: FastifyInstance) {
-  // 1. Criar Chamado
+  // 1. Criar Chamado (multipart/form-data com anexo opcional)
   fastify.post(
     '/api/tickets',
     { preHandler: [authRequired, requirePasswordChange] },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const parseResult = createTicketSchema.safeParse(request.body);
+      const user = request.user!;
+      const bucketName = process.env.GCS_BUCKET_NAME;
+
+      // Parsear multipart/form-data
+      const parts = request.parts();
+      const fields: Record<string, string> = {};
+      let fileBuffer: Buffer | null = null;
+      let fileName = '';
+      let fileMime = '';
+      let fileSize = 0;
+
+      for await (const part of parts) {
+        if (part.type === 'file') {
+          const chunks: Buffer[] = [];
+          for await (const chunk of part.file) {
+            chunks.push(chunk);
+          }
+          fileBuffer = Buffer.concat(chunks);
+          fileSize = fileBuffer.length;
+          fileName = part.filename || '';
+          fileMime = part.mimetype || '';
+        } else {
+          fields[part.fieldname] = part.value as string;
+        }
+      }
+
+      // Converter campos numéricos
+      const rawData = {
+        titulo: fields['titulo'],
+        descricao: fields['descricao'],
+        sectorId: fields['sectorId'] ? parseInt(fields['sectorId'], 10) : undefined,
+        problemTypeId: fields['problemTypeId'] ? parseInt(fields['problemTypeId'], 10) : undefined,
+        urgencia: fields['urgencia'],
+      };
+
+      // Validar campos via Zod (schema compartilhado)
+      const parseResult = createTicketSchema.safeParse(rawData);
       if (!parseResult.success) {
         return reply.status(400).send({ error: parseResult.error.format() });
       }
 
       const { titulo, descricao, sectorId, problemTypeId, urgencia } = parseResult.data;
-      const user = request.user!;
 
+      // Validar e fazer upload do anexo (se fornecido)
+      let anexoUrl: string | null = null;
+      let anexoNome: string | null = null;
+      let anexoTipo: string | null = null;
+      let anexoTamanho: number | null = null;
+
+      if (fileBuffer && fileBuffer.length > 0) {
+        // Validar tipo e tamanho
+        const validation = validateAttachment(fileName, fileMime, fileSize);
+        if (!validation.valid) {
+          return reply.status(400).send({ error: validation.error });
+        }
+
+        if (!bucketName) {
+          return reply.status(500).send({ error: 'Configuração de armazenamento ausente (GCS_BUCKET_NAME).' });
+        }
+
+        // Criar ticket provisoriamente para obter o ID (necessário para o path do GCS)
+        // Usamos uma transação: criar ticket, fazer upload, atualizar campos de anexo
+        const tempTicket = await prisma.ticket.create({
+          data: {
+            titulo,
+            descricao,
+            sectorId,
+            problemTypeId,
+            urgencia,
+            solicitanteId: user.id,
+            unidadeId: user.unidadeId,
+            status: 'ABERTO',
+          },
+        });
+
+        const uuid = randomUUID();
+        const filePath = `tickets/${tempTicket.id}/${uuid}-${fileName}`;
+
+        try {
+          anexoUrl = await uploadFile(bucketName, filePath, fileBuffer, fileMime);
+          anexoNome = fileName;
+          anexoTipo = fileMime;
+          anexoTamanho = fileSize;
+        } catch (uploadErr) {
+          // Se o upload falhar, desfazer a criação do ticket
+          await prisma.ticket.delete({ where: { id: tempTicket.id } });
+          fastify.log.error(uploadErr);
+          return reply.status(502).send({ error: 'Falha ao fazer upload do anexo. Tente novamente.' });
+        }
+
+        // Atualizar ticket com campos de anexo
+        const ticket = await prisma.ticket.update({
+          where: { id: tempTicket.id },
+          data: { anexoUrl, anexoNome, anexoTipo, anexoTamanho },
+        });
+
+        // Registrar no histórico
+        await prisma.ticketHistory.create({
+          data: {
+            ticketId: ticket.id,
+            type: 'ABERTURA',
+            content: { titulo, descricao, sectorId, problemTypeId, urgencia },
+            authorId: user.id,
+          },
+        });
+
+        return reply.status(201).send({
+          id: ticket.id,
+          numero: ticket.numero.toString(),
+          status: ticket.status,
+          criadoEm: ticket.criadoEm,
+          message: 'Chamado criado com sucesso!',
+        });
+      }
+
+      // Sem anexo — fluxo original
       const ticket = await prisma.ticket.create({
         data: {
           titulo,
@@ -39,18 +151,11 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         },
       });
 
-      // Registrar no histórico
       await prisma.ticketHistory.create({
         data: {
           ticketId: ticket.id,
           type: 'ABERTURA',
-          content: {
-            titulo,
-            descricao,
-            sectorId,
-            problemTypeId,
-            urgencia,
-          },
+          content: { titulo, descricao, sectorId, problemTypeId, urgencia },
           authorId: user.id,
         },
       });
@@ -274,7 +379,136 @@ export async function ticketRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // 5b. Substituir Anexo (PATCH /api/tickets/:id/anexo)
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/anexo',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const user = request.user!;
+      const bucketName = process.env.GCS_BUCKET_NAME;
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      // Apenas o solicitante pode substituir o anexo
+      if (ticket.solicitanteId !== user.id) {
+        return reply.status(403).send({ error: 'Apenas o solicitante pode alterar o anexo' });
+      }
+
+      if (!bucketName) {
+        return reply.status(500).send({ error: 'Configuração de armazenamento ausente (GCS_BUCKET_NAME).' });
+      }
+
+      // Parsear arquivo do multipart
+      const parts = request.parts();
+      let fileBuffer: Buffer | null = null;
+      let fileName = '';
+      let fileMime = '';
+      let fileSize = 0;
+
+      for await (const part of parts) {
+        if (part.type === 'file') {
+          const chunks: Buffer[] = [];
+          for await (const chunk of part.file) {
+            chunks.push(chunk);
+          }
+          fileBuffer = Buffer.concat(chunks);
+          fileSize = fileBuffer.length;
+          fileName = part.filename || '';
+          fileMime = part.mimetype || '';
+        }
+      }
+
+      if (!fileBuffer || fileBuffer.length === 0) {
+        return reply.status(400).send({ error: 'Nenhum arquivo enviado.' });
+      }
+
+      const validation = validateAttachment(fileName, fileMime, fileSize);
+      if (!validation.valid) {
+        return reply.status(400).send({ error: validation.error });
+      }
+
+      // Deletar arquivo antigo do GCS (se existir)
+      if (ticket.anexoUrl) {
+        const oldPath = extractGcsPath(ticket.anexoUrl, bucketName);
+        await deleteFile(bucketName, oldPath);
+      }
+
+      // Upload do novo arquivo
+      const uuid = randomUUID();
+      const filePath = `tickets/${id}/${uuid}-${fileName}`;
+      const anexoUrl = await uploadFile(bucketName, filePath, fileBuffer, fileMime);
+
+      const updated = await prisma.ticket.update({
+        where: { id },
+        data: {
+          anexoUrl,
+          anexoNome: fileName,
+          anexoTipo: fileMime,
+          anexoTamanho: fileSize,
+        },
+      });
+
+      return reply.send({
+        id: updated.id,
+        anexoUrl: updated.anexoUrl,
+        anexoNome: updated.anexoNome,
+        anexoTipo: updated.anexoTipo,
+        anexoTamanho: updated.anexoTamanho,
+        message: 'Anexo substituído com sucesso!',
+      });
+    }
+  );
+
+  // 5c. Remover Anexo (DELETE /api/tickets/:id/anexo)
+  fastify.delete<{ Params: { id: string } }>(
+    '/api/tickets/:id/anexo',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const user = request.user!;
+      const bucketName = process.env.GCS_BUCKET_NAME;
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      // Apenas o solicitante pode remover o anexo
+      if (ticket.solicitanteId !== user.id) {
+        return reply.status(403).send({ error: 'Apenas o solicitante pode alterar o anexo' });
+      }
+
+      if (!ticket.anexoUrl) {
+        return reply.status(404).send({ error: 'Este chamado não possui anexo' });
+      }
+
+      // Deletar do GCS
+      if (bucketName) {
+        const filePath = extractGcsPath(ticket.anexoUrl, bucketName);
+        await deleteFile(bucketName, filePath);
+      }
+
+      // Limpar campos no banco
+      await prisma.ticket.update({
+        where: { id },
+        data: {
+          anexoUrl: null,
+          anexoNome: null,
+          anexoTipo: null,
+          anexoTamanho: null,
+        },
+      });
+
+      return reply.send({ message: 'Anexo removido com sucesso!' });
+    }
+  );
+
   // 6. Auto-atribuição de Chamado (Técnico assume)
+
   fastify.patch<{ Params: { id: string } }>(
     '/api/tickets/:id/assign',
     { preHandler: [authRequired, requirePasswordChange, requireRole(['TECNICO', 'GESTOR_TI', 'DIRETOR'])] },

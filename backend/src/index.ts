@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import multipart from '@fastify/multipart';
 import { authRoutes } from './routes/auth.js';
 import { unidadeRoutes } from './routes/unidades.js';
 import { usuarioRoutes } from './routes/usuarios.js';
@@ -10,6 +11,14 @@ import { sectorRoutes } from './routes/sectors.js';
 import { problemTypeRoutes } from './routes/problem-types.js';
 
 const fastify = Fastify({ logger: true });
+
+// Plugin de upload multipart (limite de 5 MB por arquivo)
+fastify.register(multipart, {
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB
+  },
+});
+
 
 // CORS Hook
 fastify.addHook('onRequest', async (request, reply) => {

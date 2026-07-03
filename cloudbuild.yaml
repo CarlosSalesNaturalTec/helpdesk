@@ -9,6 +9,7 @@ substitutions:
   _CLOUD_SQL_INSTANCE: helpdesk-db
   _FRONTEND_BUCKET: helpdesk-frontend-helpdesk-499614
   _VITE_API_URL: https://helpdesk-backend-503116182148.us-central1.run.app
+  _GCS_BUCKET_NAME: helpdesk-attachments-helpdesk-499614
 
 steps:
   # -----------------------------------------------------------------------
@@ -39,6 +40,9 @@ steps:
   # -----------------------------------------------------------------------
   # Stage 2: Deploy to Cloud Run
   # -----------------------------------------------------------------------
+  # IMPORTANT: The Cloud Run service account must be granted the "Storage Object Admin"
+  # role (roles/storage.objectAdmin) in IAM or directly on the ${_GCS_BUCKET_NAME} bucket
+  # to be able to upload and delete ticket attachments.
   - id: 'deploy-cloud-run'
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
@@ -57,7 +61,7 @@ steps:
           --concurrency=80 \
           --timeout=300 \
           --port=3001 \
-          --set-env-vars=NODE_ENV=production,HOST=0.0.0.0 \
+          --set-env-vars=NODE_ENV=production,HOST=0.0.0.0,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME} \
           --set-env-vars=FROM_EMAIL=noreply@helpdesk.local \
           --set-env-vars=ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com \
           --set-secrets=DATABASE_URL=helpdesk-database-url:latest \

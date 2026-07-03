@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createTicket, getNiveisUrgencia } from '../api/tickets.js';
 import { apiClient } from '../api/client.js';
 import { createTicketSchema } from '@helpdesk/shared';
 import { useAuth } from '../context/AuthContext.js';
 import { Link } from 'react-router-dom';
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+const ALLOWED_EXTENSIONS = '.jpg,.jpeg,.png,.pdf,.docx';
+const ALLOWED_TYPES_LABEL = 'JPG, PNG, PDF ou DOCX';
 
 export const AbrirChamado: React.FC = () => {
   const { user } = useAuth();
@@ -13,6 +19,11 @@ export const AbrirChamado: React.FC = () => {
   const [sectorId, setSectorId] = useState<number | ''>('');
   const [problemTypeId, setProblemTypeId] = useState<number | ''>('');
   const [urgencia, setUrgencia] = useState('');
+
+  // Estado do anexo
+  const [anexoFile, setAnexoFile] = useState<File | null>(null);
+  const [anexoError, setAnexoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -53,14 +64,61 @@ export const AbrirChamado: React.FC = () => {
       setSectorId('');
       setProblemTypeId('');
       setUrgencia('');
+      setAnexoFile(null);
       setValidationErrors({});
       setSubmitError(null);
+      setAnexoError(null);
     },
     onError: (error: any) => {
       const errMsg = error.response?.data?.error || 'Ocorreu um erro ao enviar o chamado.';
       setSubmitError(errMsg);
     },
   });
+
+  /**
+   * Valida o arquivo selecionado (tipo e tamanho) com feedback imediato.
+   */
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAnexoError(null);
+    if (!file) {
+      setAnexoFile(null);
+      return;
+    }
+    // Validar tipo
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setAnexoError(`Tipo de arquivo não permitido. Tipos aceitos: ${ALLOWED_TYPES_LABEL}`);
+      setAnexoFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    // Validar tamanho
+    if (file.size > MAX_FILE_SIZE) {
+      setAnexoError('O arquivo excede o tamanho máximo de 5 MB');
+      setAnexoFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+    setAnexoFile(file);
+  };
+
+  const handleRemoveFile = () => {
+    setAnexoFile(null);
+    setAnexoError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return '🖼️';
+    if (type === 'application/pdf') return '📄';
+    return '📝';
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +133,7 @@ export const AbrirChamado: React.FC = () => {
       urgencia: urgencia as any,
     };
 
-    // Validação Zod no frontend (Tarefa 11.3)
+    // Validação Zod no frontend
     const result = createTicketSchema.safeParse(formData);
     if (!result.success) {
       const errorsMap: Record<string, string> = {};
@@ -87,7 +145,10 @@ export const AbrirChamado: React.FC = () => {
       return;
     }
 
-    createMutation.mutate(formData);
+    createMutation.mutate({
+      ...formData,
+      anexo: anexoFile,
+    });
   };
 
   if (successData) {
@@ -144,7 +205,7 @@ export const AbrirChamado: React.FC = () => {
       )}
 
       <div className="glass-panel" style={{ padding: '32px' }}>
-        {/* Dados do Solicitante (Read-only) - Tarefa 11.2 */}
+        {/* Dados do Solicitante (Read-only) */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -173,7 +234,6 @@ export const AbrirChamado: React.FC = () => {
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <label className="form-label">Título do Chamado</label>
-              {/* Contador de caracteres (Tarefa 11.5) */}
               <span style={{
                 fontSize: '12px',
                 color: titulo.length === 0 ? 'var(--text-muted)' : isTituloValid ? 'var(--success-main)' : 'var(--danger-main)'
@@ -274,7 +334,6 @@ export const AbrirChamado: React.FC = () => {
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <label className="form-label">Descrição Detalhada</label>
-              {/* Contador de caracteres (Tarefa 11.5) */}
               <span style={{
                 fontSize: '12px',
                 color: descricao.length === 0 ? 'var(--text-muted)' : isDescricaoValid ? 'var(--success-main)' : 'var(--danger-main)'
@@ -297,12 +356,98 @@ export const AbrirChamado: React.FC = () => {
             )}
           </div>
 
+          {/* Anexo (Opcional) */}
+          <div className="form-group" style={{ marginTop: '8px' }}>
+            <label className="form-label">
+              Anexo <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(opcional — {ALLOWED_TYPES_LABEL}, máx. 5 MB)</span>
+            </label>
+
+            {!anexoFile ? (
+              <div
+                id="anexo-dropzone"
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border: `2px dashed ${anexoError ? 'var(--danger-main)' : 'var(--border-color)'}`,
+                  borderRadius: '8px',
+                  padding: '24px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.01)',
+                  transition: 'border-color 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--primary-main)')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = anexoError ? 'var(--danger-main)' : 'var(--border-color)')}
+              >
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📎</div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: 0 }}>
+                  Clique para selecionar um arquivo
+                </p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px' }}>
+                  {ALLOWED_TYPES_LABEL} — até 5 MB
+                </p>
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 16px',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                background: 'rgba(99, 102, 241, 0.05)',
+              }}>
+                <span style={{ fontSize: '24px' }}>{getFileIcon(anexoFile.type)}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {anexoFile.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {formatFileSize(anexoFile.size)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--danger-main)',
+                    fontSize: '18px',
+                    padding: '4px',
+                    lineHeight: 1,
+                  }}
+                  title="Remover arquivo"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Input de arquivo oculto */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              id="anexo-input"
+              accept={ALLOWED_EXTENSIONS}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+
+            {/* Feedback de erro de validação de arquivo */}
+            {anexoError && (
+              <span style={{ color: 'var(--danger-main)', fontSize: '12px', marginTop: '6px', display: 'block' }}>
+                ⚠ {anexoError}
+              </span>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
             <button
               type="submit"
               className="btn btn-primary"
               style={{ flexGrow: 1 }}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || !!anexoError}
             >
               {createMutation.isPending ? 'Enviando chamado...' : 'Enviar Chamado'}
             </button>

@@ -195,6 +195,7 @@ export const Chamados: React.FC = () => {
                   {!isSolicitante && <th>Solicitante</th>}
                   <th>Status</th>
                   <th>Urgência</th>
+                  <th style={{ textAlign: 'center', width: '70px' }}>Anexo</th>
                   <th>Abertura</th>
                   <th>Tempo em Aberto</th>
                   <th style={{ paddingRight: '24px', textAlign: 'right', width: '120px' }}>Ações</th>
@@ -230,6 +231,22 @@ export const Chamados: React.FC = () => {
                       <span className={`urgencia-badge ${getUrgenciaBadgeClass(ticket.urgencia)}`}>
                         {ticket.urgencia}
                       </span>
+                    </td>
+                    {/* Coluna Anexo */}
+                    <td style={{ textAlign: 'center' }}>
+                      {ticket.anexoUrl ? (
+                        <a
+                          href={ticket.anexoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={ticket.anexoNome || 'Ver anexo'}
+                          style={{ fontSize: '20px', textDecoration: 'none', cursor: 'pointer' }}
+                        >
+                          {ticket.anexoTipo?.startsWith('image/') ? '🖼️' : '📄'}
+                        </a>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>—</span>
+                      )}
                     </td>
                     <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                       {formatData(ticket.criadoEm)}

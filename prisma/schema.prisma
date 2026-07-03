@@ -114,6 +114,10 @@ model Ticket {
   history       TicketHistory[]
   satisfaction  Satisfaction?
   notifications Notification[]
+  anexoUrl      String?
+  anexoNome     String?
+  anexoTipo     String?
+  anexoTamanho  Int?
   criadoEm      DateTime        @default(now())
   atualizadoEm  DateTime        @updatedAt
 }
