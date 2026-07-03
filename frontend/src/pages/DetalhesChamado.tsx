@@ -207,7 +207,7 @@ export const DetalhesChamado: React.FC = () => {
       case 'ABERTURA':
         return (
           <div>
-            Abertura do chamado registrada com urgência <strong>{content.urgencia}</strong> e tipo <strong>{ticket.problemType?.nome}</strong> no setor <strong>{ticket.sector?.nome}</strong>.
+            Abertura do chamado registrada com urgência <strong>{content.urgencia}</strong> e tipo <strong>{ticket.problemType?.nome}</strong> no tipo de ocorrência <strong>{ticket.sector?.nome}</strong>.
             <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--primary)' }}>
               {content.descricao}
             </div>
@@ -341,7 +341,7 @@ export const DetalhesChamado: React.FC = () => {
                     Urgência {ticket.urgencia}
                   </span>
                   <span style={{ fontSize: '13px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center' }}>
-                    Setor: {ticket.sector?.nome} | Tipo: {ticket.problemType?.nome}
+                    Tipo de Ocorrência: {ticket.sector?.nome} | Tipo: {ticket.problemType?.nome}
                   </span>
                 </div>
               </div>
@@ -378,7 +378,7 @@ export const DetalhesChamado: React.FC = () => {
                 <strong style={{ color: 'var(--text-main)' }}>{ticket.unidade.nome}</strong>
               </div>
               <div>
-                <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Setor</span>
+                <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Tipo de Ocorrência</span>
                 <strong style={{ color: 'var(--text-main)' }}>{ticket.sector?.nome || '-'}</strong>
               </div>
               <div>

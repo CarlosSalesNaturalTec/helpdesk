@@ -115,7 +115,7 @@ function AppRoutes() {
           }
         />
 
-        {/* Gestão de Setores - Apenas Admin */}
+        {/* Gestão de Tipos de Ocorrência - Apenas Admin */}
         <Route
           path="/setores"
           element={

@@ -147,7 +147,7 @@ export const Usuarios: React.FC = () => {
 
     if (role === 'TECNICO') {
       if (!sectorId) {
-        setFieldErrors({ sectorId: 'Setor é obrigatório para Técnicos' });
+        setFieldErrors({ sectorId: 'Tipo de Ocorrência é obrigatório para Técnicos' });
         setSubmitting(false);
         return;
       }
@@ -423,14 +423,14 @@ export const Usuarios: React.FC = () => {
 
                 {role === 'TECNICO' && (
                   <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label">Setor</label>
+                    <label className="form-label">Tipo de Ocorrência</label>
                     <select
                       className="input-field"
                       value={sectorId}
                       onChange={(e) => setSectorId(e.target.value ? Number(e.target.value) : '')}
                       disabled={submitting}
                     >
-                      <option value="">Selecione um setor...</option>
+                      <option value="">Selecione um tipo de ocorrência...</option>
                       {sectors.map((s) => (
                         <option key={s.id} value={s.id}>{s.nome}</option>
                       ))}

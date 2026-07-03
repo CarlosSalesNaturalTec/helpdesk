@@ -57,7 +57,7 @@ export const Relatorios: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'relatorio_helpdesk.pdf';
+      a.download = 'relatorio_helpdesk_instituto_setes.pdf';
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (e) {

@@ -35,7 +35,7 @@ export async function problemTypeRoutes(fastify: FastifyInstance) {
       // Check if sector exists
       const sector = await prisma.sector.findUnique({ where: { id: sectorId } });
       if (!sector) {
-        return reply.status(404).send({ error: 'Setor não encontrado' });
+        return reply.status(404).send({ error: 'Tipo de ocorrência não encontrado' });
       }
 
       const novoProblemType = await prisma.problemType.create({
@@ -73,7 +73,7 @@ export async function problemTypeRoutes(fastify: FastifyInstance) {
       // Check if sector exists
       const sector = await prisma.sector.findUnique({ where: { id: sectorId } });
       if (!sector) {
-        return reply.status(404).send({ error: 'Setor não encontrado' });
+        return reply.status(404).send({ error: 'Tipo de ocorrência não encontrado' });
       }
 
       const problemTypeAtualizado = await prisma.problemType.update({

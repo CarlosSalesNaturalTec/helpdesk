@@ -127,7 +127,7 @@ export const TiposProblema: React.FC = () => {
         <div>
           <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Tipos de Problema</h1>
           <p style={{ color: 'var(--text-muted)' }}>
-            Gerenciamento de categorias de problemas por setor e seus respectivos SLAs.
+            Gerenciamento de categorias de problemas por tipo de ocorrência e seus respectivos SLAs.
           </p>
         </div>
         {isAdmin && (
@@ -152,7 +152,7 @@ export const TiposProblema: React.FC = () => {
               <tr>
                 <th>ID</th>
                 <th>Nome</th>
-                <th>Setor</th>
+                <th>Tipo de Ocorrência</th>
                 <th>SLA (minutos)</th>
                 <th>Status</th>
                 {isAdmin && <th style={{ textAlign: 'right' }}>Ações</th>}
@@ -228,14 +228,14 @@ export const TiposProblema: React.FC = () => {
               </div>
 
               <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Setor</label>
+                <label className="form-label">Tipo de Ocorrência</label>
                 <select
                   className="input-field"
                   value={sectorId}
                   onChange={(e) => setSectorId(e.target.value ? Number(e.target.value) : '')}
                   disabled={submitting}
                 >
-                  <option value="">Selecione o setor...</option>
+                  <option value="">Selecione o tipo de ocorrência...</option>
                   {sectors.map(s => (
                     <option key={s.id} value={s.id}>{s.nome}</option>
                   ))}

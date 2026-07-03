@@ -199,7 +199,7 @@ export const AbrirChamado: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {/* Setor */}
             <div className="form-group">
-              <label className="form-label">Setor</label>
+              <label className="form-label">Tipo de Ocorrência</label>
               <select
                 className={`input-field ${validationErrors.sectorId ? 'input-error' : ''}`}
                 value={sectorId}
@@ -209,7 +209,7 @@ export const AbrirChamado: React.FC = () => {
                 }}
                 disabled={loadingSectors}
               >
-                <option value="">Selecione o setor...</option>
+                <option value="">Selecione o tipo de ocorrência...</option>
                 {sectors?.map((sector) => (
                   <option key={sector.id} value={sector.id}>
                     {sector.nome}

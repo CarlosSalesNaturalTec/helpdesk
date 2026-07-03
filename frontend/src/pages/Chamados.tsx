@@ -132,7 +132,7 @@ export const Chamados: React.FC = () => {
             value={sectorFilter}
             onChange={handleSectorChange}
           >
-            <option value="">Todos os setores</option>
+            <option value="">Todos os tipos de ocorrência</option>
             {sectors?.map((sector) => (
               <option key={sector.id} value={sector.id}>
                 {sector.nome}

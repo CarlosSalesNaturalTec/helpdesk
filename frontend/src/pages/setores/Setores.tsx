@@ -33,7 +33,7 @@ export const Setores: React.FC = () => {
       setSetores(response.data);
     } catch (err: any) {
       console.error('Erro ao listar setores:', err);
-      setError('Não foi possível carregar a lista de setores.');
+      setError('Não foi possível carregar a lista de tipos de ocorrência.');
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export const Setores: React.FC = () => {
     } catch (err: any) {
       console.error('Erro ao salvar setor:', err);
       const apiError = err.response?.data?.error;
-      setModalError(typeof apiError === 'string' ? apiError : 'Falha ao salvar o setor.');
+      setModalError(typeof apiError === 'string' ? apiError : 'Falha ao salvar o tipo de ocorrência.');
     } finally {
       setSubmitting(false);
     }
@@ -96,14 +96,14 @@ export const Setores: React.FC = () => {
     <div className="main-content">
       <div className="flex-row-between" style={{ marginBottom: '32px' }}>
         <div>
-          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Setores</h1>
+          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>Tipos de Ocorrência</h1>
           <p style={{ color: 'var(--text-muted)' }}>
-            Gerenciamento de setores do Instituto.
+            Gerenciamento de tipos de ocorrência do Instituto.
           </p>
         </div>
         {isAdmin && (
           <button onClick={handleOpenCreateModal} className="btn btn-primary">
-            Novo Setor
+            Novo Tipo de Ocorrência
           </button>
         )}
       </div>
@@ -115,14 +115,14 @@ export const Setores: React.FC = () => {
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px' }}>Carregando setores...</div>
+        <div style={{ textAlign: 'center', padding: '40px' }}>Carregando tipos de ocorrência...</div>
       ) : (
         <div className="glass-panel data-table-container">
           <table className="data-table">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Nome do Setor</th>
+                <th>Nome do Tipo de Ocorrência</th>
                 <th>Status</th>
                 <th>Criado Em</th>
                 {isAdmin && <th style={{ textAlign: 'right' }}>Ações</th>}
@@ -132,7 +132,7 @@ export const Setores: React.FC = () => {
               {setores.length === 0 ? (
                 <tr>
                   <td colSpan={isAdmin ? 5 : 4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                    Nenhum setor cadastrado.
+                    Nenhum tipo de ocorrência cadastrado.
                   </td>
                 </tr>
               ) : (
@@ -172,7 +172,7 @@ export const Setores: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-content glass-panel" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
             <h3 style={{ fontSize: '20px', marginBottom: '24px' }}>
-              {modalMode === 'create' ? 'Novo Setor' : 'Editar Setor'}
+              {modalMode === 'create' ? 'Novo Tipo de Ocorrência' : 'Editar Tipo de Ocorrência'}
             </h3>
 
             {modalError && (
@@ -183,7 +183,7 @@ export const Setores: React.FC = () => {
 
             <form onSubmit={handleSaveSector}>
               <div className="form-group" style={{ marginBottom: '16px' }}>
-                <label className="form-label">Nome do Setor</label>
+                <label className="form-label">Nome do Tipo de Ocorrência</label>
                 <input
                   type="text"
                   className="input-field"

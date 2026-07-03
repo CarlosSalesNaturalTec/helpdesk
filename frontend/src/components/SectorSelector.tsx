@@ -33,7 +33,7 @@ export const SectorSelector: React.FC<SectorSelectorProps> = ({ selectedSectorId
           letterSpacing: '0.05em',
         }}
       >
-        Filtrar por Setor:
+        Filtrar por Tipo de Ocorrência:
       </label>
       
       <select
@@ -65,7 +65,7 @@ export const SectorSelector: React.FC<SectorSelectorProps> = ({ selectedSectorId
           e.target.style.boxShadow = 'none';
         }}
       >
-        <option value="">Todos os Setores</option>
+        <option value="">Todos os Tipos de Ocorrência</option>
         {sectors?.map((sector) => (
           <option key={sector.id} value={sector.id}>
             {sector.nome}
@@ -75,7 +75,7 @@ export const SectorSelector: React.FC<SectorSelectorProps> = ({ selectedSectorId
       
       {isLoading && (
         <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-          Carregando setores...
+          Carregando tipos de ocorrência...
         </span>
       )}
     </div>

@@ -42,7 +42,7 @@ export const Layout: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <header className="navbar">
         <div className="nav-brand">
-          HelpDesk <span>Instituto</span>
+          HelpDesk <span>Instituto SETES</span>
         </div>
 
         <nav className="nav-links">
@@ -110,7 +110,7 @@ export const Layout: React.FC = () => {
                 to="/setores" 
                 className={`nav-link ${location.pathname.startsWith('/setores') ? 'active' : ''}`}
               >
-                Setores
+                Tipos de Ocorrência
               </Link>
               <Link 
                 to="/tipos-problema" 

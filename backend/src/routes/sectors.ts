@@ -32,7 +32,7 @@ export async function sectorRoutes(fastify: FastifyInstance) {
         where: { nome },
       });
       if (existing) {
-        return reply.status(400).send({ error: 'Já existe um setor com este nome' });
+        return reply.status(400).send({ error: 'Já existe um tipo de ocorrência com este nome' });
       }
 
       const novoSector = await prisma.sector.create({
@@ -64,14 +64,14 @@ export async function sectorRoutes(fastify: FastifyInstance) {
         where: { id },
       });
       if (!target) {
-        return reply.status(404).send({ error: 'Setor não encontrado' });
+        return reply.status(404).send({ error: 'Tipo de ocorrência não encontrado' });
       }
 
       const existing = await prisma.sector.findUnique({
         where: { nome },
       });
       if (existing && existing.id !== id) {
-        return reply.status(400).send({ error: 'Já existe outro setor com este nome' });
+        return reply.status(400).send({ error: 'Já existe outro tipo de ocorrência com este nome' });
       }
 
       const sectorAtualizado = await prisma.sector.update({
@@ -97,7 +97,7 @@ export async function sectorRoutes(fastify: FastifyInstance) {
         where: { id },
       });
       if (!target) {
-        return reply.status(404).send({ error: 'Setor não encontrado' });
+        return reply.status(404).send({ error: 'Tipo de ocorrência não encontrado' });
       }
 
       const userCount = await prisma.user.count({
@@ -110,7 +110,7 @@ export async function sectorRoutes(fastify: FastifyInstance) {
 
       if (userCount > 0 || ticketCount > 0) {
         return reply.status(400).send({
-          error: `Este setor não pode ser excluído pois está vinculado a ${userCount} usuários e ${ticketCount} chamados`,
+          error: `Este tipo de ocorrência não pode ser excluído pois está vinculado a ${userCount} usuários e ${ticketCount} chamados`,
         });
       }
 
@@ -121,7 +121,7 @@ export async function sectorRoutes(fastify: FastifyInstance) {
 
       if (problemTypeCount > 0) {
         return reply.status(400).send({
-          error: `Este setor não pode ser excluído pois possui ${problemTypeCount} tipos de problemas associados`,
+          error: `Este tipo de ocorrência não pode ser excluído pois possui ${problemTypeCount} tipos de problemas associados`,
         });
       }
 

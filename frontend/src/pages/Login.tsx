@@ -68,7 +68,7 @@ export const Login: React.FC = () => {
       }}>
         <div style={{ marginBottom: '32px' }}>
           <h2 style={{ fontSize: '28px', background: 'linear-gradient(135deg, #a5b4fc, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>
-            HelpDesk
+            HelpDesk Instituto SETES
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
             Entre na sua conta para acessar o portal
