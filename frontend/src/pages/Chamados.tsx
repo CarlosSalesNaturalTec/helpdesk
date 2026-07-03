@@ -190,6 +190,8 @@ export const Chamados: React.FC = () => {
                 <tr>
                   <th style={{ paddingLeft: '24px', width: '90px' }}>Número</th>
                   <th>Título</th>
+                  <th>Tipo de Ocorrência</th>
+                  <th>Tipo de Problema</th>
                   {!isSolicitante && <th>Solicitante</th>}
                   <th>Status</th>
                   <th>Urgência</th>
@@ -206,9 +208,12 @@ export const Chamados: React.FC = () => {
                     </td>
                     <td>
                       <div style={{ fontWeight: 500, color: 'var(--text-main)' }}>{ticket.titulo}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {ticket.sector?.nome ? `${ticket.sector.nome} > ${ticket.problemType?.nome}` : ticket.tipoProblema?.replace('_', ' ')}
-                      </div>
+                    </td>
+                    <td>
+                      <div style={{ color: 'var(--text-main)', fontSize: '14px' }}>{ticket.sector?.nome || '-'}</div>
+                    </td>
+                    <td>
+                      <div style={{ color: 'var(--text-main)', fontSize: '14px' }}>{ticket.problemType?.nome || ticket.tipoProblema?.replace('_', ' ') || '-'}</div>
                     </td>
                     {!isSolicitante && (
                       <td>
