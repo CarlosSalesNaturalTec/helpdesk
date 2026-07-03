@@ -14,6 +14,9 @@ COPY prisma/ prisma/
 # Install all dependencies (including devDependencies for build)
 RUN npm ci
 
+# Ensure nested node_modules directories exist so COPY doesn't fail later
+RUN mkdir -p /app/backend/node_modules /app/shared/node_modules
+
 # Copy source code
 COPY shared/src/ shared/src/
 COPY backend/src/ backend/src/
@@ -50,9 +53,9 @@ COPY --from=build /app/backend/dist/ /app/backend/dist/
 # Copy all root node_modules (preserves workspace symlinks)
 COPY --from=build /app/node_modules/ /app/node_modules/
 
-# Copy nested node_modules if they exist (using glob trick to avoid failure if they don't)
-COPY --from=build /app/backend/node_module[s]/ /app/backend/node_modules/
-COPY --from=build /app/shared/node_module[s]/ /app/shared/node_modules/
+# Copy nested node_modules (which are guaranteed to exist now)
+COPY --from=build /app/backend/node_modules/ /app/backend/node_modules/
+COPY --from=build /app/shared/node_modules/ /app/shared/node_modules/
 
 # Copy Prisma schema and generated client
 COPY --from=build /app/prisma/ /app/prisma/
