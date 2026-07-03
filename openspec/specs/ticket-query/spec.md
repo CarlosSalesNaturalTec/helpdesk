@@ -1,66 +1,9 @@
-# Spec: Busca e Filtro de Chamados (ticket-query)
+# Delta Spec: ticket-query
 
-Sistema de busca textual combinada com filtro por status, permitindo que Técnicos, Gestores e Diretores localizem rapidamente chamados específicos no volume diário de sua Unidade.
-
-## Purpose
-TBD
-
-## Requirements
-
-### Requirement: Busca textual por título, solicitante e unidade
-O sistema SHALL permitir busca textual nos chamados visíveis ao usuário logado, pesquisando nos campos: título, nome do solicitante e nome da Unidade. A busca DEVE ser case-insensitive e retornar chamados cujo texto contenha o termo digitado em qualquer um desses campos.
-
-#### Scenario: Busca por termo no título
-- **WHEN** um Técnico digita "impressora" no campo de busca e aciona "Buscar"
-- **THEN** o sistema retorna apenas os chamados de sua Unidade cujo título contenha "impressora" (ex: "Impressora não liga", "Troca de tonner da impressora")
-
-#### Scenario: Busca por nome do solicitante
-- **WHEN** um Gestor de TI digita "Maria" no campo de busca
-- **THEN** o sistema retorna os chamados de sua Unidade onde o nome do solicitante contenha "Maria"
-
-#### Scenario: Busca sem resultados
-- **WHEN** o termo buscado não é encontrado em nenhum chamado visível
-- **THEN** o sistema exibe "Nenhum chamado encontrado" e o contador mostra 0
-
-### Requirement: Filtro por status
-O sistema SHALL permitir filtrar os chamados visíveis por status, com as opções: Aberto, Em Andamento, Aguardando, Resolvido, Fechado, Reaberto.
-
-#### Scenario: Filtro por status único
-- **WHEN** um Técnico seleciona o filtro "Em Andamento"
-- **THEN** apenas os chamados com este status de sua Unidade são exibidos
-
-#### Scenario: Filtro sem resultados
-- **WHEN** o filtro selecionado não encontra chamados correspondentes
-- **THEN** o sistema exibe "Nenhum chamado encontrado" com contador zerado
-
-### Requirement: Combinação de busca e filtro
-O sistema SHALL permitir combinar busca textual e filtro por status simultaneamente. O resultado DEVE ser a interseção dos critérios (chamados que atendem a busca E o filtro). O total de chamados encontrados DEVE ser exibido como "X chamados encontrados".
-
-#### Scenario: Busca + filtro combinados
-- **WHEN** um Técnico aplica filtro "Aberto" e busca por "impressora"
-- **THEN** o sistema exibe apenas os chamados de sua Unidade com status "Aberto" E que contenham "impressora" no título, solicitante ou unidade
-
-#### Scenario: Contador reflete combinação
-- **WHEN** uma busca combinada com filtro retorna 3 chamados
-- **THEN** o sistema exibe "3 chamados encontrados"
-
-### Requirement: Escopo de busca restrito por Unidade e Setor
-O sistema SHALL restringir a busca e filtro ao escopo de visão do usuário logado. Gestores e Diretores DEVEM buscar apenas dentro dos chamados de sua Unidade, englobando todos os setores. Técnicos DEVEM buscar apenas dentro dos chamados de sua Unidade E pertencentes ao seu Setor de atuação. Solicitantes DEVEM buscar apenas entre seus próprios chamados. O Administrador do Sistema DEVE buscar em todas as Unidades e Setores.
-
-#### Scenario: Técnico busca apenas na sua Unidade e Setor
-- **WHEN** um Técnico da "Unidade A" do setor "Tecnologia" realiza qualquer busca ou filtro
-- **THEN** o sistema aplica o critério de busca SOMENTE sobre os chamados da "Unidade A" que pertencem ao setor "Tecnologia"
-
-#### Scenario: Gestor busca em todos os setores da Unidade
-- **WHEN** um Gestor da "Unidade A" realiza uma busca
-- **THEN** o sistema busca em chamados de qualquer setor dentro da "Unidade A"
-
-#### Scenario: Admin busca em todas as Unidades e Setores
-- **WHEN** o Administrador do Sistema realiza uma busca sem filtrar Unidade ou Setor
-- **THEN** o sistema busca em chamados de todas as Unidades e todos os Setores
+## MODIFIED Requirements
 
 ### Requirement: Retorno de dados relacionais nas queries de chamado
-A API de chamados SHALL retornar os objetos completos relacionados ao `Sector` e `ProblemType` quando listar ou consultar um chamado específico, permitindo a exibição de dados ricos (como o nome do Setor e do Tipo de Problema) no frontend sem necessidade de queries adicionais.
+A API de chamados SHALL retornar os objetos completos relacionados ao `Sector` e `ProblemType` quando listar ou consultar um chamado específico, permitindo a exibição de dados ricos (como o nome do Setor e do Tipo de Problema) no frontend sem necessidade de queries adicionais. A API SHALL também retornar os campos de anexo (`anexoUrl`, `anexoNome`, `anexoTipo`, `anexoTamanho`) para exibição de preview na listagem e visualização completa nos detalhes.
 
 #### Scenario: Detalhes do chamado retorna dados de Setor e Tipo
 - **WHEN** o frontend consulta os detalhes de um chamado via `GET /api/tickets/:id`
@@ -69,3 +12,19 @@ A API de chamados SHALL retornar os objetos completos relacionados ao `Sector` e
 #### Scenario: Listagem de chamados retorna dados de Setor
 - **WHEN** o frontend consulta a lista de chamados via `GET /api/tickets`
 - **THEN** cada ticket no array de resposta inclui o objeto `sector` e `problemType` para exibição em colunas ou cards
+
+#### Scenario: Listagem retorna dados de anexo
+- **WHEN** o frontend consulta a lista de chamados via `GET /api/tickets`
+- **THEN** cada ticket no array inclui os campos `anexoUrl`, `anexoNome`, `anexoTipo`, `anexoTamanho` (null se sem anexo) para exibição de preview na coluna de anexo
+
+#### Scenario: Detalhes retorna dados de anexo
+- **WHEN** o frontend consulta os detalhes de um chamado via `GET /api/tickets/:id`
+- **THEN** o payload inclui os campos `anexoUrl`, `anexoNome`, `anexoTipo`, `anexoTamanho` para exibição do anexo em tamanho original
+
+#### Scenario: Listagem retorna dados de anexo
+- **WHEN** o frontend consulta a lista de chamados via `GET /api/tickets`
+- **THEN** cada ticket no array inclui os campos `anexoUrl`, `anexoNome`, `anexoTipo`, `anexoTamanho` (null se sem anexo) para exibição de preview na coluna de anexo
+
+#### Scenario: Detalhes retorna dados de anexo
+- **WHEN** o frontend consulta os detalhes de um chamado via `GET /api/tickets/:id`
+- **THEN** o payload inclui os campos `anexoUrl`, `anexoNome`, `anexoTipo`, `anexoTamanho` para exibição do anexo em tamanho original
