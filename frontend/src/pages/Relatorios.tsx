@@ -6,6 +6,7 @@ import { getReportMetrics, generateReportPdf } from '../api/reports.js';
 import { UnitSelector } from '../components/UnitSelector.js';
 import { StatusCard } from '../components/StatusCard.js';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BRANDING_SLUG } from '../config.js';
 
 export const Relatorios: React.FC = () => {
   const { user } = useAuth();
@@ -57,7 +58,7 @@ export const Relatorios: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'relatorio_helpdesk_instituto_setes.pdf';
+      a.download = `relatorio_${BRANDING_SLUG}.pdf`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (e) {
