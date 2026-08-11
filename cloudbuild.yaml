@@ -10,6 +10,15 @@ substitutions:
   _FRONTEND_BUCKET: helpdesk-frontend-helpdesk-499614
   _VITE_API_URL: https://helpdesk-backend-503116182148.us-central1.run.app
   _GCS_BUCKET_NAME: helpdesk-attachments-helpdesk-499614
+  # Remetente dos e-mails de notificação. Deve ser um sender/domínio verificado
+  # no SendGrid, caso contrário as mensagens são rejeitadas na entrega.
+  _EMAIL_FROM: helpdesk@naturaltec.com.br
+  # URL base do frontend, usada para montar os links dos e-mails
+  # (${FRONTEND_URL}/chamados/{id}). Aponte para o domínio customizado /
+  # load balancer quando houver: o endpoint direto do bucket não reescreve
+  # rotas do SPA, então links profundos só resolvem atrás de um LB com
+  # fallback para index.html.
+  _FRONTEND_URL: https://helpdesk-frontend-helpdesk-499614.storage.googleapis.com
 
 steps:
   # -----------------------------------------------------------------------
@@ -62,7 +71,7 @@ steps:
           --timeout=300 \
           --port=3001 \
           --set-env-vars=NODE_ENV=production,HOST=0.0.0.0,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME} \
-          --set-env-vars=FROM_EMAIL=noreply@helpdesk.local \
+          --set-env-vars=EMAIL_FROM=${_EMAIL_FROM},FRONTEND_URL=${_FRONTEND_URL} \
           --set-env-vars=ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com \
           --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
           --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest \

@@ -203,9 +203,11 @@ The Cloud Run service account needs `roles/storage.objectAdmin` on the attachmen
 
 ### Environment Variables
 
-See `.env.example` for the full documented list. Required: `DATABASE_URL`, `JWT_SECRET`. Optional/contextual: `SENDGRID_API_KEY`, `ALLOWED_ORIGIN`, `PORT`, `HOST`, `GCS_BUCKET_NAME` (required for attachments), `VITE_API_URL` (frontend build-time).
+See `.env.example` for the full documented list. Required: `DATABASE_URL`, `JWT_SECRET`. Optional/contextual: `SENDGRID_API_KEY`, `EMAIL_FROM`, `FRONTEND_URL`, `ALLOWED_ORIGIN`, `PORT`, `HOST`, `GCS_BUCKET_NAME` (required for attachments), `VITE_API_URL` (frontend build-time).
 
-⚠️ **Known mismatch:** `backend/src/services/email.ts` reads `EMAIL_FROM` and `FRONTEND_URL`, but `cloudbuild.yaml` and `.env.example` define `FROM_EMAIL` and never set `FRONTEND_URL`. In production the sender falls back to `helpdesk@naturaltec.com.br` and email ticket links fall back to `http://localhost:5173`. Fix either the code or the deployment config when touching email — don't assume the deployed values match the documented names.
+The email variables are wired through the `_EMAIL_FROM` and `_FRONTEND_URL` substitutions in `cloudbuild.yaml`, and both names must stay in sync with `backend/src/services/email.ts` — it reads exactly `EMAIL_FROM` and `FRONTEND_URL`, silently falling back to `helpdesk@naturaltec.com.br` and `http://localhost:5173` when they are unset.
+
+⚠️ `EMAIL_FROM` must be a sender/domain verified in SendGrid or delivery is rejected. `FRONTEND_URL` should point at a custom domain or load balancer in production: the email links are deep links (`/chamados/{id}`), and the direct Cloud Storage bucket endpoint serves objects without SPA rewriting, so those paths 404 until the frontend sits behind a load balancer with an `index.html` fallback.
 
 ## OpenSpec (Spec-Driven Development)
 
