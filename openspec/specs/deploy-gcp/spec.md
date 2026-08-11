@@ -28,7 +28,8 @@ O projeto DEVE conter um arquivo `.env.example` na raiz documentando todas as va
 
 #### Scenario: Desenvolvedor configura ambiente a partir do .env.example
 - **WHEN** um desenvolvedor copia `.env.example` para `.env` e preenche as variáveis
-- **THEN** todas as variáveis necessárias estão documentadas com comentários explicativos, incluindo: `DATABASE_URL`, `JWT_SECRET`, `SENDGRID_API_KEY`, `FROM_EMAIL`, `ALLOWED_ORIGIN`, `PORT`, `HOST`
+- **THEN** todas as variáveis necessárias estão documentadas com comentários explicativos, incluindo: `DATABASE_URL`, `JWT_SECRET`, `SENDGRID_API_KEY`, `EMAIL_FROM`, `FRONTEND_URL`, `ALLOWED_ORIGIN`, `PORT`, `HOST`, `GCS_BUCKET_NAME`, `VITE_API_URL`
+- **THEN** os nomes documentados correspondem exatamente aos lidos pelo backend, já que uma variável com nome divergente não gera erro e o serviço passa a usar silenciosamente o valor padrão do código
 
 ### Requirement: CORS parametrizável no backend
 O backend DEVE ler a origem permitida para CORS da variável de ambiente `ALLOWED_ORIGIN`, com fallback para `*` quando a variável não estiver definida, mantendo compatibilidade com desenvolvimento local.
