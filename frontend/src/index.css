@@ -273,12 +273,13 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Table styles */
 .data-table-container {
-  overflow: hidden;
+  overflow-x: auto;
   margin-top: 24px;
 }
 
 .data-table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -421,6 +422,270 @@ h1, h2, h3, h4, h5, h6 {
   0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
   70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* ============ Responsividade ============ */
+
+.page-title {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+/* Painéis de autenticação (Login / Troca de Senha) */
+.auth-panel {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-panel--wide {
+  max-width: 460px;
+}
+
+/* Barra de filtros (Chamados) */
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-field-grow {
+  flex-grow: 1;
+  min-width: 250px;
+}
+
+.filter-field {
+  width: 200px;
+}
+
+/* Grids que colapsam para 1 coluna em telas menores */
+.grid-2-1 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.grid-1-1 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Tabela de Chamados: colunas com largura fixa no desktop */
+.col-numero { padding-left: 24px; width: 90px; }
+.col-anexo { text-align: center; width: 70px; }
+.col-acoes { padding-right: 24px; text-align: right; width: 120px; }
+
+/* Cartões de chamado (exibidos no lugar da tabela em telas pequenas) */
+.ticket-cards {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ticket-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.ticket-card-numero {
+  font-family: monospace;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.ticket-card-title {
+  font-weight: 500;
+  color: var(--text-main);
+  font-size: 15px;
+}
+
+.ticket-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ticket-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.ticket-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.ticket-card-data {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Notificações */
+.notification-bell-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  z-index: 1000;
+}
+
+/* Navbar colapsável */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  font-size: 22px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 8px;
+}
+
+.nav-toggle:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-collapsible {
+  display: contents;
+}
+
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 24px;
+  }
+
+  .page-title {
+    font-size: 26px;
+  }
+
+  .navbar {
+    padding: 0 20px;
+    flex-wrap: wrap;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav-collapsible {
+    display: none;
+    order: 10;
+    width: 100%;
+  }
+
+  .nav-collapsible.nav-open {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    width: 100%;
+    gap: 4px;
+    padding-top: 12px;
+  }
+
+  .nav-link {
+    width: 100%;
+    padding: 12px 16px;
+  }
+
+  .navbar-user {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 12px;
+    padding: 16px 0;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn,
+  .nav-link,
+  .input-field {
+    min-height: 44px;
+  }
+
+  .grid-2-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-actions-panel {
+    position: static !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-content {
+    padding: 16px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .auth-panel,
+  .auth-panel--wide {
+    max-width: 100%;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+  }
+
+  .filter-field,
+  .filter-field-grow {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .grid-1-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-table-wrapper {
+    display: none;
+  }
+
+  .ticket-cards {
+    display: flex;
+  }
+
+  .notification-dropdown {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: 70vh;
+  }
 }
 
 /* Timeline Styles */
