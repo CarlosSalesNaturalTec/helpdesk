@@ -1,0 +1,47 @@
+site_name: !ENV [APP_NAME, 'SOLUTUS']
+site_description: Manual do sistema
+docs_dir: docs/manual
+site_dir: frontend/dist/manual
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  language: pt-BR
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search:
+      lang: pt
+
+nav:
+  - Início: index.md
+  - Perfis:
+      - Solicitante: perfis/solicitante.md
+      - Técnico: perfis/tecnico.md
+      - Gestor de TI e Diretor: perfis/gestor-diretor.md
+      - Administrador: perfis/administrador.md
+  - Funcionalidades:
+      - Ciclo de vida do chamado: funcionalidades/ciclo-de-vida.md
+      - Anexos: funcionalidades/anexos.md
+      - Notificações: funcionalidades/notificacoes.md
+      - Relatórios e dashboard: funcionalidades/relatorios-dashboard.md
+  - Operação:
+      - Arquitetura: operacao/arquitetura.md
+      - Deploy: operacao/deploy.md
+      - Acesso e segurança: operacao/acesso-e-seguranca.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true

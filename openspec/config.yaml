@@ -18,3 +18,4 @@ rules:
     - Always include a "Non-goals" section
   tasks:
     - Break tasks into chunks of max 4 hours for solo developer
+    - If the change adds a feature or alters user-facing behavior, include "atualizar docs/manual/" as a standard item in the verification section

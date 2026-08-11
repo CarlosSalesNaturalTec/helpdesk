@@ -227,6 +227,19 @@ OpenSpec CLI commands are available via `.claude/commands/opsx/` (slash commands
 
 Rules from `openspec/config.yaml`: proposals under 500 words, always include a "Non-goals" section, tasks broken into max 4-hour chunks.
 
+## Documentação
+
+The user manual lives in `docs/manual/` (Markdown, built with **MkDocs** + Material theme via `mkdocs.yml` at the repo root) and is organized by persona (`perfis/`) and by feature (`funcionalidades/`, `operacao/`). **Every feature or behavior change updates `docs/manual/` in the same PR as the code change** — treat it as part of the change, not a follow-up. This is also a standing checklist item for OpenSpec changes (see `openspec/config.yaml` conventions and each change's `tasks.md`).
+
+Publishing is **exclusively** through the `main` push trigger: the `build-docs` stage in `cloudbuild.yaml` runs `mkdocs build` straight into `frontend/dist/manual/` (same tree the Vite build produces), and the existing `gsutil rsync` in `deploy-frontend` uploads it alongside the app. **Never publish the manual manually from a branch** — there is no separate deploy path, and doing so would require excluding it from the next `rsync -d`, which would then delete it again on the next real deploy.
+
+Local commands:
+```bash
+pip install -r requirements-docs.txt
+mkdocs serve          # local preview at http://localhost:8000
+mkdocs build --strict # validation build, fails on broken links
+```
+
 ## Key Constraints
 
 - **Data isolation is paramount** — never expose another Unidade's data to a non-Admin user. Always filter by `unidadeId` in backend queries, and by `sectorId` as well for Técnico.

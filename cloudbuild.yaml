@@ -1,6 +1,6 @@
 # Cloud Build CI/CD Pipeline — HelpDesk
 # Trigger: push to main branch
-# Architecture: 4 sequential stages (backend → frontend)
+# Architecture: 5 sequential stages (backend → frontend → docs manual)
 
 substitutions:
   _REGION: us-central1
@@ -103,7 +103,25 @@ steps:
     waitFor: ['deploy-cloud-run']
 
   # -----------------------------------------------------------------------
-  # Stage 4: Upload frontend to Cloud Storage
+  # Stage 4: Build documentation manual (MkDocs)
+  # -----------------------------------------------------------------------
+  # Runs after build-frontend (which cleans frontend/dist/ before the Vite
+  # build) and before deploy-frontend, so the manual survives inside the
+  # same tree that gets uploaded. site_dir in mkdocs.yml points directly at
+  # frontend/dist/manual/, so the manual is published by the same rsync
+  # below — no separate bucket or upload step needed.
+  - id: 'build-docs'
+    name: 'python:3.12-slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install --no-cache-dir -r requirements-docs.txt
+        APP_NAME="${_APP_NAME}" mkdocs build --strict
+    waitFor: ['build-frontend']
+
+  # -----------------------------------------------------------------------
+  # Stage 5: Upload frontend to Cloud Storage
   # -----------------------------------------------------------------------
   - id: 'deploy-frontend'
     name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -115,7 +133,8 @@ steps:
         gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.js
         gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.css
         gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/index.html
-    waitFor: ['build-frontend']
+        gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/manual/**/*.html
+    waitFor: ['build-docs']
 
 # ---------------------------------------------------------------------------
 # Options
