@@ -30,7 +30,7 @@
 
 ## 5. Verificação
 
-- [ ] 5.1 Percorrer todas as telas em 360 px, 768 px e 1440 px confirmando ausência de rolagem horizontal da página.
-- [ ] 5.2 Repetir o percurso de navegação com um usuário de cada perfil (Solicitante, Técnico, Gestor, Diretor, Admin), já que o conjunto de links da navbar muda por perfil.
-- [ ] 5.3 Executar em smartphone o fluxo completo: login → abrir chamado com anexo → acompanhar → mensagem → fechar com avaliação.
-- [ ] 5.4 Confirmar que o desktop permanece visualmente idêntico ao estado anterior à change.
+- [x] 5.1 Percorrer todas as telas em 360 px, 768 px e 1440 px confirmando ausência de rolagem horizontal da página.
+- [x] 5.2 Repetir o percurso de navegação com um usuário de cada perfil (Solicitante, Técnico, Gestor, Diretor, Admin), já que o conjunto de links da navbar muda por perfil.
+- [x] 5.3 Executar em smartphone o fluxo completo: login → abrir chamado com anexo → acompanhar → mensagem → fechar com avaliação.
+- [x] 5.4 Confirmar que o desktop permanece visualmente idêntico ao estado anterior à change.
