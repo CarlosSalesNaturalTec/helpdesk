@@ -16,6 +16,9 @@ substitutions:
   # Nome da aplicação e do cliente, usados para compor o branding exibido no
   # frontend (título, navbar, login), nos e-mails de notificação e no relatório
   # em PDF. Ver backend/src/lib/branding.ts e frontend/src/config.ts.
+  # ATENÇÃO: estes valores contêm espaços — sempre entre aspas onde forem
+  # expandidos, e no --set-env-vars use o delimitador alternativo (^@^) para
+  # tolerar vírgulas em nomes de cliente.
   _APP_NAME: SOLUTUS
   _CLIENT_NAME: Instituto Setes
   # URL base do frontend, usada para montar os links dos e-mails
@@ -75,10 +78,10 @@ steps:
           --concurrency=80 \
           --timeout=300 \
           --port=3001 \
-          --set-env-vars=NODE_ENV=production,HOST=0.0.0.0,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME} \
-          --set-env-vars=EMAIL_FROM=${_EMAIL_FROM},FRONTEND_URL=${_FRONTEND_URL} \
-          --set-env-vars=APP_NAME=${_APP_NAME},CLIENT_NAME=${_CLIENT_NAME} \
-          --set-env-vars=ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com \
+          --set-env-vars="NODE_ENV=production,HOST=0.0.0.0,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME}" \
+          --set-env-vars="EMAIL_FROM=${_EMAIL_FROM},FRONTEND_URL=${_FRONTEND_URL}" \
+          --set-env-vars="^@^APP_NAME=${_APP_NAME}@CLIENT_NAME=${_CLIENT_NAME}" \
+          --set-env-vars="ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com" \
           --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
           --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest \
           --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest \
@@ -96,7 +99,7 @@ steps:
       - |
         npm ci
         npm run build --workspace=shared
-        VITE_API_URL=${_VITE_API_URL} VITE_APP_NAME=${_APP_NAME} VITE_CLIENT_NAME=${_CLIENT_NAME} npm run build --workspace=frontend
+        VITE_API_URL="${_VITE_API_URL}" VITE_APP_NAME="${_APP_NAME}" VITE_CLIENT_NAME="${_CLIENT_NAME}" npm run build --workspace=frontend
     waitFor: ['deploy-cloud-run']
 
   # -----------------------------------------------------------------------
