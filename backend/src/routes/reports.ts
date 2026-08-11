@@ -1,9 +1,12 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
+import path from 'path';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
 import { fullName, brandingSlug } from '../lib/branding.js';
+
+const LOGO_PRINT_PATH = path.join(__dirname, '../../src/assets/logo-print.png');
 
 interface MetricsQuery {
   periodo: string;
@@ -30,6 +33,16 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     const isSemDados = cards.total === 0;
 
     // Cabeçalho
+    const logoWidth = 80;
+    const headerStartY = doc.y;
+    try {
+      doc.image(LOGO_PRINT_PATH, doc.page.width / 2 - logoWidth / 2, headerStartY, { width: logoWidth });
+      doc.y = headerStartY + logoWidth * (204 / 240) + 10;
+    } catch (e) {
+      // Ativo indisponível: segue apenas com o cabeçalho textual abaixo
+      doc.y = headerStartY;
+    }
+
     doc.fontSize(20).text(`Relatório ${fullName}`, { align: 'center' });
     doc.moveDown(1);
     

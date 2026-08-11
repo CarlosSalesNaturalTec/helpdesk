@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import { NotificationBell } from './NotificationBell.js';
+import { BrandLogo } from './BrandLogo.js';
 import { APP_NAME, CLIENT_NAME } from '../config.js';
 
 export const Layout: React.FC = () => {
@@ -43,6 +44,7 @@ export const Layout: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <header className="navbar">
         <div className="nav-brand">
+          <BrandLogo variant="horizontal" height={40} />
           {APP_NAME} <span>{CLIENT_NAME}</span>
         </div>
 
