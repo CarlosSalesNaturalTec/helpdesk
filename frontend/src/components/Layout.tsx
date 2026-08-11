@@ -60,104 +60,117 @@ export const Layout: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <header className="navbar">
+      <header className="navbar" ref={navRef}>
         <div className="nav-brand">
           <BrandLogo variant="horizontal" height={40} />
           {APP_NAME} <span>{CLIENT_NAME}</span>
         </div>
 
-        <nav className="nav-links">
-          {user.role === 'SOLICITANTE' && (
-            <>
-              <Link 
-                to="/chamados" 
-                className={`nav-link ${location.pathname === '/chamados' ? 'active' : ''}`}
-              >
-                Meus Chamados
-              </Link>
-              <Link 
-                to="/abrir-chamado" 
-                className={`nav-link ${location.pathname === '/abrir-chamado' ? 'active' : ''}`}
-              >
-                Abrir Chamado
-              </Link>
-            </>
-          )}
+        <div className={`nav-collapsible ${menuOpen ? 'nav-open' : ''}`}>
+          <nav className="nav-links">
+            {user.role === 'SOLICITANTE' && (
+              <>
+                <Link
+                  to="/chamados"
+                  className={`nav-link ${location.pathname === '/chamados' ? 'active' : ''}`}
+                >
+                  Meus Chamados
+                </Link>
+                <Link
+                  to="/abrir-chamado"
+                  className={`nav-link ${location.pathname === '/abrir-chamado' ? 'active' : ''}`}
+                >
+                  Abrir Chamado
+                </Link>
+              </>
+            )}
 
-          {user.role !== 'SOLICITANTE' && (
-            <>
-              <Link 
-                to="/dashboard" 
-                className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/chamados" 
-                className={`nav-link ${location.pathname.startsWith('/chamados') ? 'active' : ''}`}
-              >
-                Chamados
-              </Link>
-            </>
-          )}
+            {user.role !== 'SOLICITANTE' && (
+              <>
+                <Link
+                  to="/dashboard"
+                  className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/chamados"
+                  className={`nav-link ${location.pathname.startsWith('/chamados') ? 'active' : ''}`}
+                >
+                  Chamados
+                </Link>
+              </>
+            )}
 
-          {showUsuarios && (
-            <Link 
-              to="/relatorios" 
-              className={`nav-link ${location.pathname.startsWith('/relatorios') ? 'active' : ''}`}
-            >
-              Relatórios
-            </Link>
-          )}
-          
-          {showUsuarios && (
-            <Link 
-              to="/usuarios" 
-              className={`nav-link ${location.pathname.startsWith('/usuarios') ? 'active' : ''}`}
-            >
-              Usuários
-            </Link>
-          )}
+            {showUsuarios && (
+              <Link
+                to="/relatorios"
+                className={`nav-link ${location.pathname.startsWith('/relatorios') ? 'active' : ''}`}
+              >
+                Relatórios
+              </Link>
+            )}
 
-          {showUnidades && (
-            <>
-              <Link 
-                to="/unidades" 
-                className={`nav-link ${location.pathname.startsWith('/unidades') ? 'active' : ''}`}
+            {showUsuarios && (
+              <Link
+                to="/usuarios"
+                className={`nav-link ${location.pathname.startsWith('/usuarios') ? 'active' : ''}`}
               >
-                Unidades
+                Usuários
               </Link>
-              <Link 
-                to="/setores" 
-                className={`nav-link ${location.pathname.startsWith('/setores') ? 'active' : ''}`}
-              >
-                Tipos de Ocorrência
-              </Link>
-              <Link 
-                to="/tipos-problema" 
-                className={`nav-link ${location.pathname.startsWith('/tipos-problema') ? 'active' : ''}`}
-              >
-                Tipos de Problema
-              </Link>
-            </>
-          )}
-        </nav>
+            )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <NotificationBell />
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-main)' }}>
-              {user.nome}
-            </span>
-            <span className={`user-badge ${getBadgeClass(user.role)}`} style={{ marginTop: '2px' }}>
-              {getRoleLabel(user.role)}
-            </span>
+            {showUnidades && (
+              <>
+                <Link
+                  to="/unidades"
+                  className={`nav-link ${location.pathname.startsWith('/unidades') ? 'active' : ''}`}
+                >
+                  Unidades
+                </Link>
+                <Link
+                  to="/setores"
+                  className={`nav-link ${location.pathname.startsWith('/setores') ? 'active' : ''}`}
+                >
+                  Tipos de Ocorrência
+                </Link>
+                <Link
+                  to="/tipos-problema"
+                  className={`nav-link ${location.pathname.startsWith('/tipos-problema') ? 'active' : ''}`}
+                >
+                  Tipos de Problema
+                </Link>
+              </>
+            )}
+          </nav>
+
+          <div className="navbar-user">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-main)' }}>
+                {user.nome}
+              </span>
+              <span className={`user-badge ${getBadgeClass(user.role)}`} style={{ marginTop: '2px' }}>
+                {getRoleLabel(user.role)}
+              </span>
+            </div>
+
+            <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '14px' }}>
+              Sair
+            </button>
           </div>
-
-          <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: '14px' }}>
-            Sair
-          </button>
         </div>
+
+        <NotificationBell />
+
+        <button
+          type="button"
+          className="nav-toggle"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+          aria-expanded={menuOpen}
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
       </header>
 
       <main style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>

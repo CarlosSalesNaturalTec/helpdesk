@@ -231,6 +231,18 @@ h1, h2, h3, h4, h5, h6 {
 .nav-links {
   display: flex;
   gap: 16px;
+  order: 2;
+}
+
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  order: 4;
+}
+
+.navbar .notification-bell-wrapper {
+  order: 3;
 }
 
 .nav-link {
@@ -566,6 +578,7 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 44px;
   min-width: 44px;
   border-radius: 8px;
+  order: 5;
 }
 
 .nav-toggle:hover {
