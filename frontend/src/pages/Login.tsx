@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import { loginSchema } from '@helpdesk/shared';
+import { BrandLogo } from '../components/BrandLogo.js';
 import { FULL_NAME } from '../config.js';
 
 export const Login: React.FC = () => {
@@ -68,6 +69,9 @@ export const Login: React.FC = () => {
         textAlign: 'center',
       }}>
         <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <BrandLogo variant="vertical" height={120} />
+          </div>
           <h2 style={{ fontSize: '28px', background: 'linear-gradient(135deg, #a5b4fc, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>
             {FULL_NAME}
           </h2>

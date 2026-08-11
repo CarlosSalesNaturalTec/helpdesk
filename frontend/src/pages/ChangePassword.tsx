@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import { apiClient } from '../api/client.js';
 import { changePasswordSchema } from '@helpdesk/shared';
+import { BrandLogo } from '../components/BrandLogo.js';
 
 export const ChangePassword: React.FC = () => {
   const { user, refreshUser, logout } = useAuth();
@@ -84,6 +85,9 @@ export const ChangePassword: React.FC = () => {
         padding: '40px',
       }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <BrandLogo variant="mark" height={64} />
+          </div>
           <h2 style={{ fontSize: '24px', color: 'var(--text-main)', marginBottom: '8px' }}>
             {user?.passwordResetRequired ? 'Alteração de Senha Obrigatória' : 'Alterar Senha'}
           </h2>

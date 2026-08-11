@@ -50,6 +50,10 @@ COPY --from=build /app/shared/dist/ /app/shared/dist/
 COPY --from=build /app/backend/package.json /app/backend/
 COPY --from=build /app/backend/dist/ /app/backend/dist/
 
+# Copy backend static assets (e.g. logo-print.png used by PDFKit reports),
+# read at runtime relative to dist/ — see LOGO_PRINT_PATH in routes/reports.ts
+COPY --from=build /app/backend/src/assets/ /app/backend/src/assets/
+
 # Copy all root node_modules (preserves workspace symlinks)
 COPY --from=build /app/node_modules/ /app/node_modules/
 
