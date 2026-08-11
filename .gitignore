@@ -20,6 +20,5 @@ yarn-error.log*
 .vscode/
 .idea/
 .agent
-.claude
 .gemini
 instructions.json
