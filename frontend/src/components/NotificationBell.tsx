@@ -130,7 +130,7 @@ export const NotificationBell: React.FC = () => {
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-block' }}>
+    <div ref={dropdownRef} className="notification-bell-wrapper">
       {/* Botão do Sino */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -180,18 +180,13 @@ export const NotificationBell: React.FC = () => {
       {/* Dropdown de Notificações */}
       {isOpen && (
         <div
+          className="notification-dropdown"
           style={{
-            position: 'absolute',
-            top: '46px',
-            right: '0',
-            width: '360px',
-            maxHeight: '480px',
             backgroundColor: 'rgba(30, 30, 40, 0.95)',
             backdropFilter: 'blur(12px)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '12px',
             boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-            zIndex: 1000,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',

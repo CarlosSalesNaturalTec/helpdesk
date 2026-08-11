@@ -361,7 +361,7 @@ export const DetalhesChamado: React.FC = () => {
       )}
 
       {/* Grid Principal */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', alignItems: 'start' }}>
+      <div className="grid-2-1">
         
         {/* Esquerda: Informações e Timeline */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -615,7 +615,7 @@ export const DetalhesChamado: React.FC = () => {
         </div>
 
         {/* Direita: Ações Disponíveis */}
-        <div className="glass-panel" style={{ padding: '24px', position: 'sticky', top: '94px' }}>
+        <div className="glass-panel ticket-actions-panel" style={{ padding: '24px', position: 'sticky', top: '94px' }}>
           <h3 style={{ fontSize: '18px', marginBottom: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
             Ações do Chamado
           </h3>

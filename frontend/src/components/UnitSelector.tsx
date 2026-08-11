@@ -22,7 +22,7 @@ export const UnitSelector: React.FC<UnitSelectorProps> = ({ selectedUnitId, onCh
   });
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
       <label
         htmlFor="unit-filter"
         style={{
@@ -55,6 +55,7 @@ export const UnitSelector: React.FC<UnitSelectorProps> = ({ selectedUnitId, onCh
           cursor: 'pointer',
           outline: 'none',
           transition: 'var(--transition-smooth)',
+          maxWidth: '100%',
         }}
         onFocus={(e) => {
           e.target.style.borderColor = 'var(--primary)';

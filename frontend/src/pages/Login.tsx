@@ -63,8 +63,7 @@ export const Login: React.FC = () => {
       background: 'radial-gradient(circle at top, #1e293b, #0f172a, #0b0f19)',
       padding: '20px'
     }}>
-      <div className="glass-panel" style={{
-        width: '420px',
+      <div className="glass-panel auth-panel" style={{
         padding: '40px',
         textAlign: 'center',
       }}>

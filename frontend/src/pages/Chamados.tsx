@@ -4,6 +4,7 @@ import { getTickets } from '../api/tickets.js';
 import { useAuth } from '../context/AuthContext.js';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
+import { TicketCard } from '../components/TicketCard.js';
 
 export const Chamados: React.FC = () => {
   const { user } = useAuth();
@@ -116,8 +117,8 @@ export const Chamados: React.FC = () => {
       </div>
 
       {/* Painel de Filtros (Tarefa 12.1) */}
-      <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-        <div style={{ flexGrow: 1, minWidth: '250px' }}>
+      <div className="glass-panel filter-bar" style={{ padding: '20px', marginBottom: '24px' }}>
+        <div className="filter-field-grow">
           <input
             type="text"
             className="input-field"
@@ -126,7 +127,7 @@ export const Chamados: React.FC = () => {
             onChange={handleSearchChange}
           />
         </div>
-        <div style={{ width: '200px' }}>
+        <div className="filter-field">
           <select
             className="input-field"
             value={sectorFilter}
@@ -140,7 +141,7 @@ export const Chamados: React.FC = () => {
             ))}
           </select>
         </div>
-        <div style={{ width: '200px' }}>
+        <div className="filter-field">
           <select
             className="input-field"
             value={statusFilter}
@@ -183,28 +184,28 @@ export const Chamados: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* Tabela de chamados (Tarefa 12.2) */}
-          <div className="glass-panel" style={{ padding: '0', overflowX: 'auto', marginBottom: '24px' }}>
-            <table className="table">
+          {/* Tabela de chamados (Tarefa 12.2) — oculta abaixo de 640px */}
+          <div className="glass-panel data-table-container ticket-table-wrapper" style={{ padding: '0', marginBottom: '24px' }}>
+            <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ paddingLeft: '24px', width: '90px' }}>Número</th>
+                  <th className="col-numero">Número</th>
                   <th>Título</th>
                   <th>Tipo de Ocorrência</th>
                   <th>Tipo de Problema</th>
                   {!isSolicitante && <th>Solicitante</th>}
                   <th>Status</th>
                   <th>Urgência</th>
-                  <th style={{ textAlign: 'center', width: '70px' }}>Anexo</th>
+                  <th className="col-anexo">Anexo</th>
                   <th>Abertura</th>
                   <th>Tempo em Aberto</th>
-                  <th style={{ paddingRight: '24px', textAlign: 'right', width: '120px' }}>Ações</th>
+                  <th className="col-acoes">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {data.data.map((ticket) => (
                   <tr key={ticket.id}>
-                    <td style={{ paddingLeft: '24px', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                    <td className="col-numero" style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
                       #{ticket.numero}
                     </td>
                     <td>
@@ -233,7 +234,7 @@ export const Chamados: React.FC = () => {
                       </span>
                     </td>
                     {/* Coluna Anexo */}
-                    <td style={{ textAlign: 'center' }}>
+                    <td className="col-anexo">
                       {ticket.anexoUrl ? (
                         <a
                           href={ticket.anexoUrl}
@@ -252,19 +253,19 @@ export const Chamados: React.FC = () => {
                       {formatData(ticket.criadoEm)}
                     </td>
                     <td>
-                      <span style={{ 
-                        fontSize: '13px', 
+                      <span style={{
+                        fontSize: '13px',
                         fontWeight: 500,
-                        color: ticket.status === 'FECHADO' 
-                          ? 'var(--text-muted)' 
-                          : ticket.urgencia === 'CRITICA' || ticket.urgencia === 'ALTA' 
-                            ? 'var(--danger-main)' 
-                            : 'var(--text-main)' 
+                        color: ticket.status === 'FECHADO'
+                          ? 'var(--text-muted)'
+                          : ticket.urgencia === 'CRITICA' || ticket.urgencia === 'ALTA'
+                            ? 'var(--danger-main)'
+                            : 'var(--text-main)'
                       }}>
                         {getDiasEmAberto(ticket.criadoEm, ticket.status)}
                       </span>
                     </td>
-                    <td style={{ paddingRight: '24px', textAlign: 'right' }}>
+                    <td className="col-acoes">
                       <Link to={`/chamados/${ticket.id}`} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>
                         Ver Detalhes
                       </Link>
@@ -273,6 +274,13 @@ export const Chamados: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Cartões de chamado (Tarefa 3.3) — exibidos no lugar da tabela abaixo de 640px */}
+          <div className="ticket-cards" style={{ marginBottom: '24px' }}>
+            {data.data.map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} isSolicitante={isSolicitante} />
+            ))}
           </div>
 
           {/* Paginação (Tarefa 12.4) */}
