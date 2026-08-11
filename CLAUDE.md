@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**HelpDesk Instituto SETES** — a centralized ticketing platform for IT support across an Instituto with multiple Unidades. The system supports 5 personas (Solicitante, Técnico, Gestor de TI, Diretor, Administrador do Sistema) with strict data isolation between units (Unidades).
+**SOLUTUS** (currently deployed for the client **Instituto Setes**) — a centralized ticketing platform for IT support across an Instituto with multiple Unidades. The system supports 5 personas (Solicitante, Técnico, Gestor de TI, Diretor, Administrador do Sistema) with strict data isolation between units (Unidades).
+
+The displayed name is configurable at build/deploy time, not hardcoded: `APP_NAME` (default `SOLUTUS`) and `CLIENT_NAME` (default `Instituto Setes`) are two distinct concepts — see [Branding](#branding-configurable-app-name--client-name).
 
 **Tech Stack:** React 18 + TypeScript (frontend), Node.js 20 + TypeScript + Fastify 4 (backend), PostgreSQL 15 + Prisma 5 (ORM), Zod (shared validation), JWT + bcryptjs (auth), PDFKit (PDF generation), Recharts + html-to-image (charts & chart snapshots), TanStack React Query (data fetching), React Router v6 (routing), `@fastify/multipart` + `@google-cloud/storage` (attachments), `@sendgrid/mail` (email notifications).
 
@@ -15,6 +17,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The Prisma model `Sector` is surfaced to users as **"Tipo de Ocorrência"**, not "Setor". The rename happened at the UI/copy layer only — the database model, API paths (`/api/sectors`), and code identifiers (`sectorId`, `Sector`) kept the original names. Frontend files still live under `pages/setores/`. Do not rename code identifiers when touching this area; do keep all user-facing strings as "Tipo de Ocorrência".
 
 `ProblemType` ("Tipo de Problema") is a child of `Sector` and carries the SLA in minutes.
+
+### Branding (configurable app name / client name)
+
+The application's displayed identity is not hardcoded — it is composed from two independent, build/deploy-time env vars: `APP_NAME` (the product, default `SOLUTUS`) and `CLIENT_NAME` (the current client, default `Instituto Setes`). `backend/src/lib/branding.ts` is the backend source of truth (`appName`, `clientName`, `fullName`, `brandingSlug()`); `frontend/src/config.ts` mirrors it for the frontend, reading `VITE_APP_NAME`/`VITE_CLIENT_NAME` (Vite requires the `VITE_` prefix to expose vars to client code). Both sides compose `fullName` as `` `${appName} — ${clientName}` `` (or just `appName` when `clientName` is empty), and derive a slug for downloaded filenames. Onboarding a new client is a new deploy with different env vars/substitutions, not a code change — see the `_APP_NAME`/`_CLIENT_NAME` substitutions in `cloudbuild.yaml`. There is no runtime/admin-UI branding configuration and no multi-tenancy — one deployed instance serves one client.
 
 ## Repository Structure
 
@@ -203,7 +209,7 @@ The Cloud Run service account needs `roles/storage.objectAdmin` on the attachmen
 
 ### Environment Variables
 
-See `.env.example` for the full documented list. Required: `DATABASE_URL`, `JWT_SECRET`. Optional/contextual: `SENDGRID_API_KEY`, `EMAIL_FROM`, `FRONTEND_URL`, `ALLOWED_ORIGIN`, `PORT`, `HOST`, `GCS_BUCKET_NAME` (required for attachments), `VITE_API_URL` (frontend build-time).
+See `.env.example` for the full documented list. Required: `DATABASE_URL`, `JWT_SECRET`. Optional/contextual: `SENDGRID_API_KEY`, `EMAIL_FROM`, `FRONTEND_URL`, `ALLOWED_ORIGIN`, `PORT`, `HOST`, `GCS_BUCKET_NAME` (required for attachments), `VITE_API_URL` (frontend build-time), `APP_NAME`/`CLIENT_NAME` and their frontend build-time counterparts `VITE_APP_NAME`/`VITE_CLIENT_NAME` (see [Branding](#branding-configurable-app-name--client-name)).
 
 The email variables are wired through the `_EMAIL_FROM` and `_FRONTEND_URL` substitutions in `cloudbuild.yaml`, and both names must stay in sync with `backend/src/services/email.ts` — it reads exactly `EMAIL_FROM` and `FRONTEND_URL`, silently falling back to `helpdesk@naturaltec.com.br` and `http://localhost:5173` when they are unset.
 

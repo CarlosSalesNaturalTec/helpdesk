@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import { loginSchema } from '@helpdesk/shared';
+import { FULL_NAME } from '../config.js';
 
 export const Login: React.FC = () => {
   const { login, user } = useAuth();
@@ -68,7 +69,7 @@ export const Login: React.FC = () => {
       }}>
         <div style={{ marginBottom: '32px' }}>
           <h2 style={{ fontSize: '28px', background: 'linear-gradient(135deg, #a5b4fc, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>
-            HelpDesk Instituto SETES
+            {FULL_NAME}
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
             Entre na sua conta para acessar o portal

@@ -1,7 +1,7 @@
 schema: spec-driven
 
 context: |
-  System name: HelpDesk Instituto SETES
+  System name: SOLUTUS — Instituto Setes. Branding is configurable at build/deploy time via APP_NAME/CLIENT_NAME (backend) and VITE_APP_NAME/VITE_CLIENT_NAME (frontend), both defaulting to "SOLUTUS" / "Instituto Setes" — see backend/src/lib/branding.ts and frontend/src/config.ts.
   Repo layout: npm workspaces monorepo — shared/ (@helpdesk/shared: Zod schemas + inferred types), backend/ (@helpdesk/backend: Fastify API), frontend/ (Vite SPA), prisma/ at repo root (schema, migrations, seed), openspec/, docs/. Build shared before backend/frontend.
   Tech stack: React 18 + TypeScript + React Router v6 + TanStack React Query + Axios (frontend), Node.js 20 + TypeScript + Fastify 4 (backend), PostgreSQL 15 + Prisma 5 (ORM), Zod validation shared front↔back, JWT (15 min) + bcryptjs auth, PDFKit (server-side PDF), Recharts + html-to-image (charts, chart snapshot posted to the PDF endpoint), @fastify/multipart + @google-cloud/storage (ticket attachments), @sendgrid/mail (email)
   Infrastructure (production, Google Cloud Platform, region us-central1): Cloud Run (helpdesk-backend, port 3001, 512 MiB / 1 vCPU, min-instances=0, max-instances=3), Cloud SQL PostgreSQL 15 (helpdesk-db, db-g1-small in production / db-f1-micro for dev), Cloud Storage (one bucket for the static frontend, one for ticket attachments with public objects), Artifact Registry (helpdesk-repo), Secret Manager (database URL, JWT secret, SendGrid key), Cloud Build CI/CD triggered on push to main (cloudbuild.yaml), SendGrid for email. The container runs `prisma migrate deploy` on start, so every deploy applies pending migrations.

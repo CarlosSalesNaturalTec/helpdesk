@@ -13,6 +13,11 @@ substitutions:
   # Remetente dos e-mails de notificação. Deve ser um sender/domínio verificado
   # no SendGrid, caso contrário as mensagens são rejeitadas na entrega.
   _EMAIL_FROM: helpdesk@naturaltec.com.br
+  # Nome da aplicação e do cliente, usados para compor o branding exibido no
+  # frontend (título, navbar, login), nos e-mails de notificação e no relatório
+  # em PDF. Ver backend/src/lib/branding.ts e frontend/src/config.ts.
+  _APP_NAME: SOLUTUS
+  _CLIENT_NAME: Instituto Setes
   # URL base do frontend, usada para montar os links dos e-mails
   # (${FRONTEND_URL}/chamados/{id}). Aponte para o domínio customizado /
   # load balancer quando houver: o endpoint direto do bucket não reescreve
@@ -72,6 +77,7 @@ steps:
           --port=3001 \
           --set-env-vars=NODE_ENV=production,HOST=0.0.0.0,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME} \
           --set-env-vars=EMAIL_FROM=${_EMAIL_FROM},FRONTEND_URL=${_FRONTEND_URL} \
+          --set-env-vars=APP_NAME=${_APP_NAME},CLIENT_NAME=${_CLIENT_NAME} \
           --set-env-vars=ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com \
           --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
           --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest \
@@ -90,7 +96,7 @@ steps:
       - |
         npm ci
         npm run build --workspace=shared
-        VITE_API_URL=${_VITE_API_URL} npm run build --workspace=frontend
+        VITE_API_URL=${_VITE_API_URL} VITE_APP_NAME=${_APP_NAME} VITE_CLIENT_NAME=${_CLIENT_NAME} npm run build --workspace=frontend
     waitFor: ['deploy-cloud-run']
 
   # -----------------------------------------------------------------------

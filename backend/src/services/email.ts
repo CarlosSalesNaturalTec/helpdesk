@@ -1,4 +1,5 @@
 import sgMail from '@sendgrid/mail';
+import { fullName } from '../lib/branding.js';
 
 const apiKey = process.env.SENDGRID_API_KEY || 'SG.dummy_key';
 const emailFrom = process.env.EMAIL_FROM || 'helpdesk@naturaltec.com.br';
@@ -52,7 +53,7 @@ Para acompanhar o chamado, acesse o link abaixo:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
@@ -70,7 +71,7 @@ Por favor, responda diretamente no sistema acessando o link abaixo para dar anda
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
@@ -85,7 +86,7 @@ Por favor, acesse o sistema para verificar a solução e confirmar o fechamento 
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
@@ -100,7 +101,7 @@ Você pode revisar o histórico do chamado a qualquer momento pelo link abaixo:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
@@ -118,7 +119,7 @@ Acesse o chamado no sistema para continuar o atendimento:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
@@ -136,7 +137,7 @@ Acesse o chamado pelo link abaixo para responder:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
@@ -152,7 +153,7 @@ Acesse o chamado no link abaixo para iniciar o atendimento:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
@@ -167,7 +168,7 @@ Para acompanhar o chamado, acesse o link abaixo:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
-HelpDesk Instituto SETES.`;
+${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 }

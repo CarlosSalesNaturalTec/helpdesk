@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
+import { fullName, brandingSlug } from '../lib/branding.js';
 
 interface MetricsQuery {
   periodo: string;
@@ -21,7 +22,7 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
     reply.header('Content-Type', 'application/pdf');
-    reply.header('Content-Disposition', 'attachment; filename="relatorio_helpdesk_instituto_setes.pdf"');
+    reply.header('Content-Disposition', `attachment; filename="relatorio_${brandingSlug()}.pdf"`);
     
     // We can just return the document stream and pipe it to the reply
     reply.send(doc);
@@ -29,7 +30,7 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     const isSemDados = cards.total === 0;
 
     // Cabeçalho
-    doc.fontSize(20).text('Relatório HelpDesk Instituto SETES', { align: 'center' });
+    doc.fontSize(20).text(`Relatório ${fullName}`, { align: 'center' });
     doc.moveDown(1);
     
     doc.fontSize(12);
