@@ -45,7 +45,7 @@ export const Dashboard: React.FC = () => {
 
         {/* 4.1 UnitSelector e SectorSelector visíveis apenas para Admin */}
         {isAdmin && (
-          <div className="glass-panel" style={{ padding: '16px 24px', alignSelf: 'flex-start', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+          <div className="glass-panel" style={{ padding: '16px 24px', alignSelf: 'flex-start', display: 'flex', gap: '24px', flexWrap: 'wrap', maxWidth: '100%' }}>
             <UnitSelector selectedUnitId={selectedUnitId} onChange={setSelectedUnitId} />
             <SectorSelector selectedSectorId={selectedSectorId} onChange={setSelectedSectorId} />
           </div>

@@ -22,7 +22,7 @@ export const SectorSelector: React.FC<SectorSelectorProps> = ({ selectedSectorId
   });
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
       <label
         htmlFor="sector-filter"
         style={{
@@ -55,6 +55,7 @@ export const SectorSelector: React.FC<SectorSelectorProps> = ({ selectedSectorId
           cursor: 'pointer',
           outline: 'none',
           transition: 'var(--transition-smooth)',
+          maxWidth: '100%',
         }}
         onFocus={(e) => {
           e.target.style.borderColor = 'var(--primary)';
