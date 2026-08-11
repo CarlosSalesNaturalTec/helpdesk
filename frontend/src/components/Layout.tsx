@@ -111,6 +111,10 @@ export const Layout: React.FC = () => {
               </Link>
             )}
 
+            <a href="/manual/" target="_blank" rel="noopener noreferrer" className="nav-link">
+              Manual
+            </a>
+
             {showUsuarios && (
               <Link
                 to="/usuarios"
