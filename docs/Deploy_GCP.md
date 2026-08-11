@@ -231,13 +231,23 @@ gcloud run deploy helpdesk-backend `
   --timeout=300 `
   --port=3001 `
   --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 `
-  --set-env-vars=FROM_EMAIL=noreply@helpdesk.local `
+  --set-env-vars=EMAIL_FROM=helpdesk@naturaltec.com.br `
+  --set-env-vars=FRONTEND_URL=https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID> `
   --set-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com `
+  --set-env-vars=GCS_BUCKET_NAME=helpdesk-attachments-<PROJECT_ID> `
   --set-secrets=DATABASE_URL=helpdesk-database-url:latest `
   --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest `
   --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest `
   --add-cloudsql-instances=<PROJECT_ID>:us-central1:helpdesk-db
 ```
+
+> **Atenção aos nomes das variáveis de e-mail:** o backend lê exatamente `EMAIL_FROM` e `FRONTEND_URL` (veja `backend/src/services/email.ts`). Se os nomes forem grafados de outra forma, não há erro — o serviço apenas cai nos valores padrão do código (`helpdesk@naturaltec.com.br` e `http://localhost:5173`), e os links dos e-mails de notificação apontam para `localhost`.
+
+> **`EMAIL_FROM`** precisa ser um remetente (ou domínio) verificado no SendGrid, caso contrário as mensagens são rejeitadas na entrega.
+
+> **`FRONTEND_URL`** é usada para montar os links dos e-mails (`${FRONTEND_URL}/chamados/{id}`). O valor acima só será definitivo no Passo 8, quando o bucket do frontend existir — volte aqui e atualize com `gcloud run services update` (veja 11.3). Note que o endpoint direto do Cloud Storage **não reescreve rotas de SPA**: esses links profundos só resolvem quando o frontend estiver atrás de um domínio customizado / load balancer com fallback para `index.html`. Até lá, o usuário precisa navegar pelo sistema até o chamado.
+
+> **`GCS_BUCKET_NAME`** é obrigatória para o upload de anexos de chamados; sem ela, as requisições de anexo falham com HTTP 500. A criação e as permissões desse bucket (incluindo `roles/storage.objectAdmin` para a service account do Cloud Run) estão em [`gcs-bucket-setup.md`](./gcs-bucket-setup.md).
 
 Após o deploy, anote a URL do serviço:
 
@@ -374,15 +384,18 @@ Acesse o frontend em:
 https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>/index.html
 ```
 
-### 11.3 Atualizar CORS no Cloud Run
+### 11.3 Atualizar CORS e a URL do frontend no Cloud Run
 
-Após o deploy do frontend, atualize o `ALLOWED_ORIGIN` no Cloud Run:
+Após o deploy do frontend, atualize o `ALLOWED_ORIGIN` e o `FRONTEND_URL` no Cloud Run:
 
 ```powershell
 gcloud run services update helpdesk-backend `
   --region=us-central1 `
-  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
+  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com `
+  --update-env-vars=FRONTEND_URL=https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>
 ```
+
+> `ALLOWED_ORIGIN` é a **origem** (esquema + host, sem caminho e sem barra no final) usada na validação de CORS; `FRONTEND_URL` é a **URL base** usada para montar os links dos e-mails, e por isso inclui o caminho do bucket. Quando houver domínio customizado, ambas passam a apontar para ele.
 
 ---
 
@@ -433,10 +446,12 @@ gcloud builds triggers create github `
   --repo-owner="<GITHUB_USER_OR_ORG>" `
   --branch-pattern="^main$" `
   --build-config="cloudbuild.yaml" `
-  --substitutions="_REGION=us-central1,_ARTIFACT_REGISTRY_REPO=helpdesk-repo,_CLOUD_RUN_SERVICE=helpdesk-backend,_CLOUD_SQL_INSTANCE=helpdesk-db,_FRONTEND_BUCKET=helpdesk-frontend-<PROJECT_ID>,_VITE_API_URL=<CLOUD_RUN_URL>"
+  --substitutions="_REGION=us-central1,_ARTIFACT_REGISTRY_REPO=helpdesk-repo,_CLOUD_RUN_SERVICE=helpdesk-backend,_CLOUD_SQL_INSTANCE=helpdesk-db,_FRONTEND_BUCKET=helpdesk-frontend-<PROJECT_ID>,_VITE_API_URL=<CLOUD_RUN_URL>,_GCS_BUCKET_NAME=helpdesk-attachments-<PROJECT_ID>,_EMAIL_FROM=helpdesk@naturaltec.com.br,_FRONTEND_URL=https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>"
 ```
 
 > **Nota:** Substitua `<CLOUD_RUN_URL>` pela URL real do serviço Cloud Run (ex: `https://helpdesk-backend-xxxxx-uc.a.run.app`).
+
+> Todas essas substituições já têm valores padrão no `cloudbuild.yaml`; informá-las no trigger serve para sobrescrevê-las sem editar o arquivo versionado. `_EMAIL_FROM` e `_FRONTEND_URL` alimentam as variáveis `EMAIL_FROM` e `FRONTEND_URL` do Cloud Run.
 
 ### 12.3 Testar o trigger
 
@@ -626,8 +641,14 @@ docker history us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-ba
 | `NODE_ENV`         | Cloud Run env   | Sempre `production`                            |
 | `PORT`             | Cloud Run env   | Porta do servidor (sempre `3001`)              |
 | `HOST`             | Cloud Run env   | Endereço de bind (sempre `0.0.0.0`)            |
-| `FROM_EMAIL`       | Cloud Run env   | Remetente dos e-mails                          |
-| `ALLOWED_ORIGIN`   | Cloud Run env   | Origem permitida para CORS (URL do frontend)   |
+| `EMAIL_FROM`       | Cloud Run env   | Remetente dos e-mails; precisa ser verificado no SendGrid. Padrão do código: `helpdesk@naturaltec.com.br` |
+| `FRONTEND_URL`     | Cloud Run env   | URL base do frontend, usada nos links dos e-mails (`${FRONTEND_URL}/chamados/{id}`). Padrão do código: `http://localhost:5173` |
+| `ALLOWED_ORIGIN`   | Cloud Run env   | Origem permitida para CORS (origem do frontend, sem caminho). Padrão do código: `*` |
+| `GCS_BUCKET_NAME`  | Cloud Run env   | Bucket dos anexos de chamados; obrigatória para upload/remoção de anexos |
+
+> Todas as variáveis de ambiente acima são definidas pelo pipeline em `cloudbuild.yaml`, via as substituições `_EMAIL_FROM`, `_FRONTEND_URL`, `_FRONTEND_BUCKET` e `_GCS_BUCKET_NAME` — ajuste-as lá (ou no trigger) para que o próximo build não sobrescreva alterações feitas manualmente com `gcloud run services update`.
+
+> Os nomes precisam corresponder exatamente aos lidos pelo backend. Uma variável com nome errado não gera erro de deploy: o serviço sobe normalmente e usa o valor padrão do código, o que torna esse tipo de falha silenciosa.
 
 ---
 
