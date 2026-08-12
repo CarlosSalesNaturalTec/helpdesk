@@ -7,7 +7,8 @@ A documentação atual está fragmentada e é técnica: `docs/` reúne PRD, guia
 - Criar `docs/manual/` com o manual do sistema em Markdown, organizado por persona (5 perfis) e por funcionalidade (chamados, anexos, notificações, relatórios, dashboard, administração), mais uma seção de arquitetura/operação para quem mantém o sistema.
 - Adicionar `mkdocs.yml` na raiz com o tema **Material for MkDocs**, navegação, busca e suporte a português.
 - Publicar o site **junto com a aplicação**: o build do MkDocs gera `frontend/dist/manual/`, que sobe no mesmo `gsutil rsync` já existente, ficando acessível em `<url-do-frontend>/manual/`. Sem GitHub Pages, sem bucket adicional.
-- Adicionar um link "Manual" na navbar, apontando para o site.
+- Adicionar um link "Manual" na navbar, apontando para o site — como **último** item, depois dos itens administrativos.
+- Gerar o site com `use_directory_urls: false`, para que cada página seja um `.html` real. O endpoint direto do bucket (`storage.googleapis.com`) não resolve índice de diretório, então URLs terminadas em `/` retornam `NoSuchKey` — verificado em produção após o primeiro deploy.
 - Atualizar o `CLAUDE.md` com a política de documentação: toda feature ou alteração de comportamento atualiza `docs/manual/` no mesmo PR, e a **publicação ocorre somente após merge em `main`** — garantido pelo fato de o pipeline do Cloud Build ser disparado apenas por push em `main`.
 
 ## Capabilities
@@ -23,7 +24,7 @@ A documentação atual está fragmentada e é técnica: `docs/` reúne PRD, guia
 
 - **Documentação:** nova árvore `docs/manual/`, novo `mkdocs.yml`, novo `requirements-docs.txt`.
 - **Infra:** `cloudbuild.yaml` (etapa de build do MkDocs dentro do estágio de frontend); `.gitignore` para o diretório de saída intermediário.
-- **Frontend:** `Layout.tsx` (link do manual).
+- **Frontend:** `Layout.tsx` (link do manual: destino `/manual/index.html` e posição no fim do nav).
 - **Backend / banco de dados:** nenhum impacto.
 - **Instruções do agente:** `CLAUDE.md` ganha a seção de política de documentação.
 

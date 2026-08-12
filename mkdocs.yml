@@ -3,6 +3,16 @@ site_description: Manual do sistema
 docs_dir: docs/manual
 site_dir: frontend/dist/manual
 
+# Gera uma página por arquivo .html real, em vez do padrão do MkDocs
+# (`pagina/index.html`, com links internos apontando para `pagina/`).
+# O manual é servido pelo endpoint direto do Cloud Storage
+# (`<bucket>.storage.googleapis.com`), que é a XML API: ela devolve objetos
+# pela chave exata e NÃO aplica `MainPageSuffix` — isso só vale no endpoint
+# de website ou atrás de um load balancer. Com o padrão, toda URL terminada
+# em `/` responde `404 NoSuchKey`. Não remova sem colocar um load balancer
+# na frente do bucket antes. Ver docs/manual/operacao/deploy.md.
+use_directory_urls: false
+
 theme:
   name: material
   logo: assets/logo.png

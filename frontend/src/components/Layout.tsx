@@ -111,10 +111,6 @@ export const Layout: React.FC = () => {
               </Link>
             )}
 
-            <a href="/manual/" target="_blank" rel="noopener noreferrer" className="nav-link">
-              Manual
-            </a>
-
             {showUsuarios && (
               <Link
                 to="/usuarios"
@@ -146,6 +142,18 @@ export const Layout: React.FC = () => {
                 </Link>
               </>
             )}
+
+            {/* Último item do nav. O destino é `index.html` explícito: o
+                endpoint do bucket resolve apenas chaves exatas, e `/manual/`
+                retorna 404. Ver use_directory_urls em mkdocs.yml. */}
+            <a
+              href="/manual/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nav-link"
+            >
+              Manual
+            </a>
           </nav>
 
           <div className="navbar-user">
