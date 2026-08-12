@@ -65,3 +65,8 @@ Achados do primeiro deploy em `main` (ver 4.3). Duas falhas independentes.
 ### Fora do escopo desta correção
 
 Colocar um load balancer na frente do bucket, que resolveria `/manual/` e também os deep links do SPA (`/chamados/{id}` dos e-mails, hoje em 404). É infra fora do repositório, com custo recorrente, e merece change própria. As duas soluções coexistem.
+
+## 8. Specs
+
+- [x] 8.1 Escrever os deltas em `specs/` para as três capacidades declaradas no proposal (`system-documentation` nova, `core-ui` e `deploy-gcp` modificadas) — a change nunca teve deltas, e é por isso que `openspec validate` reprovava. `openspec validate 2026-08-11-documentacao-mkdocs` passa; `openspec validate --all` confirma zero regressão nas outras specs (as 3 falhas restantes no repo, em `ticket-creation`/`ticket-management`/`ticket-query`, são pré-existentes — spec sem seção `## Purpose` — e não relacionadas a esta change).
+- [x] 8.2 Sincronizar os deltas com as specs base: `openspec/specs/system-documentation/spec.md` criado; `openspec/specs/core-ui/spec.md` e `openspec/specs/deploy-gcp/spec.md` atualizados preservando o conteúdo existente.

@@ -1,17 +1,4 @@
-# Capability: core-ui
-
-## Purpose
-TBD
-
-## Requirements
-
-### Requirement: System Identity
-The system MUST be identified as "HelpDesk Instituto SETES" in all user-facing global identifiers, including the browser page title and application headers.
-
-#### Scenario: User views the page
-- **WHEN** user loads any page in the browser
-- **THEN** the browser tab title MUST display "HelpDesk Instituto SETES"
-- **THEN** the main header/logo area MUST display "HelpDesk Instituto SETES"
+## ADDED Requirements
 
 ### Requirement: Link para o manual do usuário na navbar
 A navbar DEVE exibir um link "Manual" que abre o manual do sistema em uma nova aba, visível a todas as personas. O link DEVE ser o **último** item da lista de navegação, depois dos itens administrativos (Usuários, Unidades, Tipos de Ocorrência, Tipos de Problema quando visíveis ao perfil do usuário) — o manual é referência auxiliar, não área de trabalho, e não deve interromper o agrupamento desses itens.
