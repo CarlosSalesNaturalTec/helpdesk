@@ -1,5 +1,11 @@
 site_name: !ENV [APP_NAME, 'SOLUTUS']
 site_description: Manual do sistema
+# URL pública completa do manual, com o prefixo /manual/. Sem isso, o MkDocs
+# enraíza os links absolutos de 404.html em "/" (ex.: /assets/logo.png),
+# ignorando o prefixo do site — o 404.html fica com CSS/JS/nav quebrados.
+# O default cobre `mkdocs serve`/`mkdocs build` local; o pipeline substitui
+# pela URL real do frontend (ver a etapa build-docs em cloudbuild.yaml).
+site_url: !ENV [SITE_URL, 'http://localhost:8000/manual/']
 docs_dir: docs/manual
 site_dir: frontend/dist/manual
 

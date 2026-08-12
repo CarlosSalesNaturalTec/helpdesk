@@ -60,7 +60,7 @@ Achados do primeiro deploy em `main` (ver 4.3). Duas falhas independentes.
   - `/manual/perfis/solicitante/index.html` (chave do layout antigo) → 404 — confirma que o deploy substituiu o conteúdo anterior.
   - `/manual/` (URL de diretório) → 404, como esperado: essa URL nunca é usada pela aplicação (o link e os links internos do manual usam `.html` explícito); o 404 aqui não é o bug original, é a limitação de endpoint que a mudança contorna evitando essa forma de URL.
 
-- [ ] 7.6 (achado lateral, não bloqueante) `manual/404.html` é gerado pelo MkDocs com caminhos absolutos a partir da raiz do site (`/perfis/solicitante.html`), que resolvem para a raiz do bucket e não para `/manual/`. Hoje é inerte: sem configuração de website, o endpoint devolve o próprio 404 XML e nunca serve esse arquivo. Passaria a importar se um load balancer for adicionado — resolve-se definindo `site_url` no `mkdocs.yml`. Pré-existente, não introduzido pela seção 7.
+- [x] 7.6 (achado lateral, não bloqueante) `manual/404.html` era gerado pelo MkDocs com caminhos absolutos a partir da raiz do site (`/perfis/solicitante.html`), que resolviam para a raiz do bucket e não para `/manual/`. **Corrigido:** `mkdocs.yml` ganhou `site_url: !ENV [SITE_URL, 'http://localhost:8000/manual/']`, e a etapa `build-docs` do `cloudbuild.yaml` passa `SITE_URL="${_FRONTEND_URL}/manual/"` (reaproveitando a substituição já usada pelo backend para os links de e-mail, em vez de hardcodar o bucket). Verificado: `404.html` reconstruído com essa `SITE_URL` passou a referenciar `/manual/assets/...` e `/manual/perfis/...`; a varredura das 329 referências internas das páginas servidas continua em 0 quebradas, 0 URLs de diretório — sem regressão.
 
 ### Fora do escopo desta correção
 

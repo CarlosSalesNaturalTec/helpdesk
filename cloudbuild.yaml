@@ -117,7 +117,7 @@ steps:
       - '-c'
       - |
         pip install --no-cache-dir -r requirements-docs.txt
-        APP_NAME="${_APP_NAME}" mkdocs build --strict
+        APP_NAME="${_APP_NAME}" SITE_URL="${_FRONTEND_URL}/manual/" mkdocs build --strict
     waitFor: ['build-frontend']
 
   # -----------------------------------------------------------------------
