@@ -378,9 +378,11 @@ gsutil -m setmeta -h 'Cache-Control:no-cache' `
   gs://helpdesk-frontend-<PROJECT_ID>/index.html
 ```
 
-> **Manual do sistema:** o pipeline do Cloud Build também publica o manual de uso (MkDocs) dentro deste mesmo bucket, em `frontend/dist/manual/`, acessível em `<url-do-frontend>/manual/`. Veja `docs/manual/operacao/deploy.md` para detalhes da etapa `build-docs`.
+> **Manual do sistema:** o pipeline do Cloud Build também publica o manual de uso (MkDocs) dentro deste mesmo bucket, em `frontend/dist/manual/`, acessível em `<url-do-frontend>/manual/index.html`. Veja `docs/manual/operacao/deploy.md` para detalhes da etapa `build-docs`.
 >
-> **Atenção com load balancer:** o endpoint direto do bucket serve arquivos estáticos reais e `/manual/` funciona sem configuração adicional. Se este frontend for colocado atrás de um load balancer com regra de reescrita de SPA (fallback de qualquer rota para `index.html` da aplicação), essa regra **deve excluir o prefixo `/manual/`** — senão a aplicação captura as rotas do manual antes delas chegarem aos arquivos estáticos gerados pelo MkDocs.
+> **Atenção — URLs terminadas em `/` não funcionam neste endpoint.** `<bucket>.storage.googleapis.com` é a XML API: ela devolve objetos pela chave exata e **não aplica `MainPageSuffix`**. `/manual/` retorna `404 NoSuchKey` mesmo com o objeto `manual/index.html` presente, porque `manual/` não é uma chave. Por isso o `mkdocs.yml` usa `use_directory_urls: false` e o link da navbar aponta para `/manual/index.html`. O mesmo motivo explica por que os deep links do SPA (`/chamados/{id}`, usados nos e-mails de notificação) retornam 404 no endpoint direto do bucket.
+>
+> **Atenção com load balancer:** se este frontend for colocado atrás de um load balancer com regra de reescrita de SPA (fallback de qualquer rota para `index.html` da aplicação), essa regra **deve excluir o prefixo `/manual/`** — senão a aplicação captura as rotas do manual antes delas chegarem aos arquivos estáticos gerados pelo MkDocs. O load balancer também resolve os dois 404 descritos acima.
 
 Acesse o frontend em:
 

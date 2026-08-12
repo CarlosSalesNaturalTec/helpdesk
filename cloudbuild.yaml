@@ -133,7 +133,13 @@ steps:
         gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.js
         gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.css
         gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/index.html
-        gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/manual/**/*.html
+        # `manual/**.html` (e não `manual/**/*.html`): no gsutil o `**` casa
+        # qualquer profundidade, mas `**/*.html` exige a barra seguinte e por
+        # isso deixaria `manual/index.html` de fora — justamente a home do
+        # manual. Com use_directory_urls: false as páginas são .html soltos
+        # (`manual/perfis/solicitante.html`), então o glob precisa alcançar
+        # tanto a raiz quanto os subdiretórios.
+        gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/manual/**.html
     waitFor: ['build-docs']
 
 # ---------------------------------------------------------------------------

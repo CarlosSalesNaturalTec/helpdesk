@@ -49,11 +49,13 @@
 
 Achados do primeiro deploy em `main` (ver 4.3). Duas falhas independentes.
 
-- [ ] 7.1 Definir `use_directory_urls: false` no `mkdocs.yml` e rodar `mkdocs build --strict`, conferindo que a saída passa a ter `frontend/dist/manual/perfis/solicitante.html` (e não `.../solicitante/index.html`), e que os links internos gerados apontam para os arquivos `.html`.
-- [ ] 7.2 Alterar o link do manual em `frontend/src/components/Layout.tsx`: destino `/manual/index.html` (não `/manual/`) e **mover para o fim** da lista de itens do nav, depois do bloco `showUnidades` (Unidades / Tipos de Ocorrência / Tipos de Problema).
-- [ ] 7.3 Documentar em `docs/manual/operacao/deploy.md` por que `use_directory_urls: false` existe — a XML API do Cloud Storage não aplica `MainPageSuffix`, então URLs de diretório retornam `NoSuchKey`. Sem essa nota, o flag parece preferência estética e será removido.
-- [ ] 7.4 Conferir se a etapa `deploy-frontend` do `cloudbuild.yaml` ainda casa os arquivos do manual no `setmeta` de `manual/**/*.html` depois da mudança de layout dos arquivos. Ajustar o glob se necessário. **Decisão em aberto:** manter `no-cache` ou passar o manual para `max-age=3600`, já que muda pouco.
+- [x] 7.1 Definir `use_directory_urls: false` no `mkdocs.yml` e rodar `mkdocs build --strict`, conferindo que a saída passa a ter `frontend/dist/manual/perfis/solicitante.html` (e não `.../solicitante/index.html`), e que os links internos gerados apontam para os arquivos `.html`. Verificado: 13 páginas `.html` no layout novo; varredura das 329 referências internas das páginas servidas acusou **0 links quebrados e 0 URLs de diretório**.
+- [x] 7.2 Alterar o link do manual em `frontend/src/components/Layout.tsx`: destino `/manual/index.html` (não `/manual/`) e **mover para o fim** da lista de itens do nav, depois do bloco `showUnidades` (Unidades / Tipos de Ocorrência / Tipos de Problema).
+- [x] 7.3 Documentar em `docs/manual/operacao/deploy.md` por que `use_directory_urls: false` existe — a XML API do Cloud Storage não aplica `MainPageSuffix`, então URLs de diretório retornam `NoSuchKey`. Sem essa nota, o flag parece preferência estética e será removido. A mesma correção foi aplicada a `docs/Deploy_GCP.md`, que repetia a premissa errada de que "`/manual/` funciona sem configuração adicional".
+- [x] 7.4 Conferir se a etapa `deploy-frontend` do `cloudbuild.yaml` ainda casa os arquivos do manual no `setmeta` de `manual/**/*.html` depois da mudança de layout dos arquivos. **Bug encontrado e corrigido:** no gsutil, `**/*.html` exige a barra seguinte e portanto **nunca casou `manual/index.html`** — a home do manual vinha sem a regra de cache desde o primeiro deploy. Glob trocado por `manual/**.html`, que alcança raiz e subdiretórios. **Decisão mantida:** `no-cache` (status quo da tarefa 4.2); passar para `max-age=3600` continua em aberto.
 - [ ] 7.5 Após o deploy, revalidar 4.3: `/manual/index.html` abre e a navegação interna do manual (perfis, funcionalidades, operação) e a busca funcionam sem 404.
+
+- [ ] 7.6 (achado lateral, não bloqueante) `manual/404.html` é gerado pelo MkDocs com caminhos absolutos a partir da raiz do site (`/perfis/solicitante.html`), que resolvem para a raiz do bucket e não para `/manual/`. Hoje é inerte: sem configuração de website, o endpoint devolve o próprio 404 XML e nunca serve esse arquivo. Passaria a importar se um load balancer for adicionado — resolve-se definindo `site_url` no `mkdocs.yml`. Pré-existente, não introduzido pela seção 7.
 
 ### Fora do escopo desta correção
 
