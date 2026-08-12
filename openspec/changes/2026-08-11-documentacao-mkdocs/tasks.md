@@ -26,10 +26,11 @@
 
 - [x] 4.1 Adicionar a etapa `build-docs` (`python:3.12-slim`) ao `cloudbuild.yaml`, com `waitFor: ['build-frontend']` e antes de `deploy-frontend`.
 - [x] 4.2 Ajustar `deploy-frontend` para depender de `build-docs` e adicionar `Cache-Control: no-cache` para `manual/**/*.html`.
-- [ ] 4.3 Confirmar em um build de teste que `frontend/dist/manual/` sobrevive ao `rsync -d` e que o manual abre em `<url-do-frontend>/manual/`. **Executado após o merge em `main`, com resultado parcial:**
+- [x] 4.3 Confirmar em um build de teste que `frontend/dist/manual/` sobrevive ao `rsync -d` e que o manual abre em `<url-do-frontend>/manual/`. **Primeira execução (pré-#10):**
   - ✅ O `rsync -d` preserva o manual — os objetos `manual/**` estão no bucket.
-  - ❌ O manual **não abre** em `/manual/`: retorna `404 NoSuchKey`. Idem para todo link interno (`/manual/perfis/solicitante/`). Só resolvem as chaves exatas (`/manual/index.html`, `/manual/perfis/solicitante/index.html`).
-  - Causa raiz e correção na seção 7. Reabrir esta verificação depois dela.
+  - ❌ O manual **não abria**: `404 NoSuchKey` em `/manual/` e em todo link interno. Só resolviam chaves exatas.
+  - Causa raiz e correção na seção 7 (PR #10, merge `e174bbf`).
+  - **Revalidado após o deploy do PR #10** (ver 7.5): fechada.
 - [x] 4.4 Registrar em `docs/Deploy_GCP.md` que a regra de reescrita de SPA do load balancer deve excluir o prefixo `/manual/`.
 
 ## 5. Link na aplicação e política de manutenção
@@ -43,7 +44,7 @@
 
 - [x] 6.1 Rodar `mkdocs build --strict` e confirmar zero links quebrados.
 - [x] 6.2 Revisar o manual em um smartphone (o tema Material é responsivo) e conferir a busca em português. Verificado com Chromium em viewport de 390px (iPhone) e busca por "chamados" retornando resultados com stemming ("chamado").
-- [ ] 6.3 Confirmar, após merge em `main`, que o site publicado reflete o conteúdo do commit. **Pendente:** só pode ser verificado após o merge desta change e a execução do trigger de `main` no Cloud Build.
+- [x] 6.3 Confirmar, após merge em `main`, que o site publicado reflete o conteúdo do commit. Confirmado após o merge do PR #10 (`e174bbf`): a chave nova do layout `use_directory_urls: false` (`/manual/perfis/solicitante.html`) está no ar em 200, e a chave antiga do layout anterior (`/manual/perfis/solicitante/index.html`) responde 404 — prova de que o `rsync -d` do deploy mais recente substituiu o conteúdo publicado.
 
 ## 7. Correção pós-deploy — URLs do manual e ordem no nav
 
@@ -53,7 +54,11 @@ Achados do primeiro deploy em `main` (ver 4.3). Duas falhas independentes.
 - [x] 7.2 Alterar o link do manual em `frontend/src/components/Layout.tsx`: destino `/manual/index.html` (não `/manual/`) e **mover para o fim** da lista de itens do nav, depois do bloco `showUnidades` (Unidades / Tipos de Ocorrência / Tipos de Problema).
 - [x] 7.3 Documentar em `docs/manual/operacao/deploy.md` por que `use_directory_urls: false` existe — a XML API do Cloud Storage não aplica `MainPageSuffix`, então URLs de diretório retornam `NoSuchKey`. Sem essa nota, o flag parece preferência estética e será removido. A mesma correção foi aplicada a `docs/Deploy_GCP.md`, que repetia a premissa errada de que "`/manual/` funciona sem configuração adicional".
 - [x] 7.4 Conferir se a etapa `deploy-frontend` do `cloudbuild.yaml` ainda casa os arquivos do manual no `setmeta` de `manual/**/*.html` depois da mudança de layout dos arquivos. **Bug encontrado e corrigido:** no gsutil, `**/*.html` exige a barra seguinte e portanto **nunca casou `manual/index.html`** — a home do manual vinha sem a regra de cache desde o primeiro deploy. Glob trocado por `manual/**.html`, que alcança raiz e subdiretórios. **Decisão mantida:** `no-cache` (status quo da tarefa 4.2); passar para `max-age=3600` continua em aberto.
-- [ ] 7.5 Após o deploy, revalidar 4.3: `/manual/index.html` abre e a navegação interna do manual (perfis, funcionalidades, operação) e a busca funcionam sem 404.
+- [x] 7.5 Após o deploy, revalidar 4.3: `/manual/index.html` abre e a navegação interna do manual (perfis, funcionalidades, operação) e a busca funcionam sem 404. **Confirmado em produção pós-merge do PR #10:**
+  - `/manual/index.html` → 200, `Cache-Control: no-cache`.
+  - `/manual/perfis/solicitante.html` (chave do layout novo) → 200, `no-cache`.
+  - `/manual/perfis/solicitante/index.html` (chave do layout antigo) → 404 — confirma que o deploy substituiu o conteúdo anterior.
+  - `/manual/` (URL de diretório) → 404, como esperado: essa URL nunca é usada pela aplicação (o link e os links internos do manual usam `.html` explícito); o 404 aqui não é o bug original, é a limitação de endpoint que a mudança contorna evitando essa forma de URL.
 
 - [ ] 7.6 (achado lateral, não bloqueante) `manual/404.html` é gerado pelo MkDocs com caminhos absolutos a partir da raiz do site (`/perfis/solicitante.html`), que resolvem para a raiz do bucket e não para `/manual/`. Hoje é inerte: sem configuração de website, o endpoint devolve o próprio 404 XML e nunca serve esse arquivo. Passaria a importar se um load balancer for adicionado — resolve-se definindo `site_url` no `mkdocs.yml`. Pré-existente, não introduzido pela seção 7.
 
