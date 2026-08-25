@@ -332,7 +332,7 @@ export const Usuarios: React.FC = () => {
                           <button
                             onClick={() => handleOpenDeactivateDialog(userItem)}
                             className="btn btn-danger"
-                            style={{ padding: '6px 12px', fontSize: '13px', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--danger)' }}
+                            style={{ padding: '6px 12px', fontSize: '13px', background: 'transparent', border: '1px solid var(--hue-red-border)', color: 'var(--danger)' }}
                           >
                             Desativar
                           </button>

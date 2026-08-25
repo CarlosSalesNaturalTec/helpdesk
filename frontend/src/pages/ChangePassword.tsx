@@ -77,7 +77,7 @@ export const ChangePassword: React.FC = () => {
       width: '100vw',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at top, #1e293b, #0f172a, #0b0f19)',
+      background: 'linear-gradient(180deg, var(--bg-main-from) 0%, var(--bg-main-to) 100%)',
       padding: '20px'
     }}>
       <div className="glass-panel auth-panel auth-panel--wide" style={{
@@ -85,7 +85,9 @@ export const ChangePassword: React.FC = () => {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-            <BrandLogo variant="mark" height={64} />
+            <div className="brand-logo-capsule">
+              <BrandLogo variant="mark" height={64} />
+            </div>
           </div>
           <h2 style={{ fontSize: '24px', color: 'var(--text-main)', marginBottom: '8px' }}>
             {user?.passwordResetRequired ? 'Alteração de Senha Obrigatória' : 'Alterar Senha'}

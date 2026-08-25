@@ -12,7 +12,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) =>
       case 'abertos':
         return {
           glowColor: 'var(--primary-glow)',
-          borderColor: 'rgba(99, 102, 241, 0.2)',
+          borderColor: 'var(--primary-tint-border)',
           iconColor: 'var(--primary)',
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -27,7 +27,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) =>
       case 'emAndamento':
         return {
           glowColor: 'var(--warning-glow)',
-          borderColor: 'rgba(245, 158, 11, 0.2)',
+          borderColor: 'var(--hue-amber-border)',
           iconColor: 'var(--warning)',
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,7 +38,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) =>
       case 'resolvidos':
         return {
           glowColor: 'var(--success-glow)',
-          borderColor: 'rgba(16, 185, 129, 0.2)',
+          borderColor: 'var(--hue-green-border)',
           iconColor: 'var(--success)',
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -50,7 +50,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) =>
       case 'criticos':
         return {
           glowColor: 'var(--danger-glow)',
-          borderColor: 'rgba(239, 68, 68, 0.2)',
+          borderColor: 'var(--hue-red-border)',
           iconColor: 'var(--danger)',
           icon: (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

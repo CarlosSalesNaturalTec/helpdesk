@@ -37,11 +37,11 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data }) => {
       return (
         <div
           style={{
-            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            backgroundColor: 'var(--bg-card-solid)',
             border: '1px solid var(--border)',
             borderRadius: '8px',
             padding: '12px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--shadow-lg)',
             backdropFilter: 'blur(8px)',
           }}
         >
@@ -76,7 +76,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data }) => {
             data={data}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="date"
               tickFormatter={formatDate}
@@ -100,18 +100,18 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data }) => {
             <Line
               type="monotone"
               dataKey="abertos"
-              stroke="#3B82F6"
+              stroke="var(--chart-series-1)"
               strokeWidth={3}
-              dot={{ r: 4, stroke: '#3B82F6', strokeWidth: 2, fill: '#0b0f19' }}
+              dot={{ r: 4, stroke: 'var(--chart-series-1)', strokeWidth: 2, fill: 'var(--bg-card-solid)' }}
               activeDot={{ r: 6 }}
               name="Novos Chamados"
             />
             <Line
               type="monotone"
               dataKey="fechados"
-              stroke="#10B981"
+              stroke="var(--chart-series-2)"
               strokeWidth={3}
-              dot={{ r: 4, stroke: '#10B981', strokeWidth: 2, fill: '#0b0f19' }}
+              dot={{ r: 4, stroke: 'var(--chart-series-2)', strokeWidth: 2, fill: 'var(--bg-card-solid)' }}
               activeDot={{ r: 6 }}
               name="Chamados Fechados"
             />

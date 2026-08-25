@@ -39,6 +39,7 @@ export const Relatorios: React.FC = () => {
     try {
       let chartImage: string | undefined;
       if (chartRef.current && data.distribuicao.length > 0) {
+        // html-to-image aplica isto via canvas fillStyle e clone destacado do DOM: var() não resolve aqui, precisa do literal
         chartImage = await toPng(chartRef.current, { backgroundColor: '#ffffff', pixelRatio: 2 });
       }
 
@@ -69,7 +70,14 @@ export const Relatorios: React.FC = () => {
     }
   };
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#FF66B2'];
+  const COLORS = [
+    'var(--chart-cat-1)',
+    'var(--chart-cat-2)',
+    'var(--chart-cat-3)',
+    'var(--chart-cat-4)',
+    'var(--chart-cat-5)',
+    'var(--chart-cat-6)',
+  ];
 
   return (
     <div className="main-content">
@@ -127,7 +135,7 @@ export const Relatorios: React.FC = () => {
       </div>
 
       {isLoading && <p>Carregando relatórios...</p>}
-      {isError && <p style={{ color: 'red' }}>Erro ao carregar dados: {(error as any)?.message}</p>}
+      {isError && <p style={{ color: 'var(--danger)' }}>Erro ao carregar dados: {(error as any)?.message}</p>}
 
       {data && !isLoading && !isError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -140,9 +148,9 @@ export const Relatorios: React.FC = () => {
 
           <div className="glass-panel" style={{ padding: '24px' }}>
             <h3 style={{ marginBottom: '24px' }}>Distribuição por {dimensao}</h3>
-            <div ref={chartRef} style={{ height: 400, backgroundColor: 'white', padding: '16px' }}>
+            <div ref={chartRef} style={{ height: 400, backgroundColor: 'var(--bg-card-solid)', padding: '16px' }}>
               {data.distribuicao.length === 0 ? (
-                <p style={{ textAlign: 'center', marginTop: '150px', color: '#666' }}>Não há dados disponíveis para os filtros selecionados</p>
+                <p style={{ textAlign: 'center', marginTop: '150px', color: 'var(--text-muted)' }}>Não há dados disponíveis para os filtros selecionados</p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   {(dimensao === 'status' || dimensao === 'satisfacao') ? (
@@ -161,7 +169,7 @@ export const Relatorios: React.FC = () => {
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="count" fill="#8884d8">
+                      <Bar dataKey="count" fill="var(--chart-cat-1)">
                         {data.distribuicao.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
