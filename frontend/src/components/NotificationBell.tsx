@@ -182,11 +182,11 @@ export const NotificationBell: React.FC = () => {
         <div
           className="notification-dropdown"
           style={{
-            backgroundColor: 'rgba(30, 30, 40, 0.95)',
+            backgroundColor: 'var(--bg-card-solid)',
             backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+            boxShadow: 'var(--shadow-lg)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -199,7 +199,7 @@ export const NotificationBell: React.FC = () => {
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '16px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              borderBottom: '1px solid var(--border)',
             }}
           >
             <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text-main)' }}>
@@ -253,10 +253,10 @@ export const NotificationBell: React.FC = () => {
                     display: 'flex',
                     gap: '12px',
                     padding: '12px 16px',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                    borderBottom: '1px solid var(--border)',
                     cursor: 'pointer',
                     transition: 'background-color 0.2s',
-                    backgroundColor: notif.lida ? 'transparent' : 'rgba(168, 85, 247, 0.03)',
+                    backgroundColor: notif.lida ? 'transparent' : 'var(--hue-purple-bg)',
                   }}
                   className="notification-item"
                 >
@@ -268,7 +268,7 @@ export const NotificationBell: React.FC = () => {
                       justifyContent: 'center',
                       width: '32px',
                       height: '32px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                      backgroundColor: 'var(--bg-surface-subtle)',
                       borderRadius: '8px',
                     }}
                   >

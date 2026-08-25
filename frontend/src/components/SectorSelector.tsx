@@ -46,7 +46,7 @@ export const SectorSelector: React.FC<SectorSelectorProps> = ({ selectedSectorId
         disabled={isLoading}
         style={{
           padding: '10px 16px',
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backgroundColor: 'var(--bg-input)',
           border: '1px solid var(--border)',
           borderRadius: '10px',
           color: 'var(--text-main)',

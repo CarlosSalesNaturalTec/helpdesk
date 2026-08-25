@@ -60,7 +60,7 @@ export const Login: React.FC = () => {
       width: '100vw',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at top, #1e293b, #0f172a, #0b0f19)',
+      background: 'linear-gradient(180deg, var(--bg-main-from) 0%, var(--bg-main-to) 100%)',
       padding: '20px'
     }}>
       <div className="glass-panel auth-panel" style={{
@@ -69,9 +69,11 @@ export const Login: React.FC = () => {
       }}>
         <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-            <BrandLogo variant="vertical" height={120} />
+            <div className="brand-logo-capsule">
+              <BrandLogo variant="vertical" height={120} />
+            </div>
           </div>
-          <h2 style={{ fontSize: '28px', background: 'linear-gradient(135deg, #a5b4fc, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: '28px', background: 'var(--brand-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px' }}>
             {FULL_NAME}
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>

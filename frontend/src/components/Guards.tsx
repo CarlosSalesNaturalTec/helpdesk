@@ -19,8 +19,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
         width: '100vw',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0f172a',
-        color: '#f8fafc',
+        background: 'linear-gradient(180deg, var(--bg-main-from) 0%, var(--bg-main-to) 100%)',
+        color: 'var(--text-main)',
         fontFamily: 'system-ui, sans-serif'
       }}>
         <div style={{ textAlign: 'center' }}>
@@ -28,8 +28,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
             height: '48px',
             width: '48px',
             borderRadius: '50%',
-            border: '4px solid #334155',
-            borderTopColor: '#6366f1',
+            border: '4px solid var(--hue-gray-border)',
+            borderTopColor: 'var(--primary)',
             animation: 'spin 1s linear infinite'
           }}></div>
           <p style={{ marginTop: '16px', fontSize: '14px', fontWeight: 500, letterSpacing: '0.05em' }}>Carregando...</p>

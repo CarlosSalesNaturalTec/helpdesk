@@ -164,7 +164,7 @@ export const AbrirChamado: React.FC = () => {
             fontSize: '32px',
             fontWeight: 'bold',
             padding: '16px',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            backgroundColor: 'var(--bg-surface-subtle)',
             border: '1px solid var(--border-color)',
             borderRadius: '8px',
             color: 'var(--primary-main)',
@@ -372,7 +372,7 @@ export const AbrirChamado: React.FC = () => {
                   padding: '24px',
                   textAlign: 'center',
                   cursor: 'pointer',
-                  background: 'rgba(255,255,255,0.01)',
+                  background: 'var(--bg-surface-subtle)',
                   transition: 'border-color 0.2s',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--primary-main)')}
@@ -394,7 +394,7 @@ export const AbrirChamado: React.FC = () => {
                 padding: '12px 16px',
                 border: '1px solid var(--border-color)',
                 borderRadius: '8px',
-                background: 'rgba(99, 102, 241, 0.05)',
+                background: 'var(--primary-tint)',
               }}>
                 <span style={{ fontSize: '24px' }}>{getFileIcon(anexoFile.type)}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>

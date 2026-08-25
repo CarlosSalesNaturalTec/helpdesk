@@ -251,7 +251,7 @@ export const DetalhesChamado: React.FC = () => {
         return (
           <div>
             Abertura do chamado registrada com urgência <strong>{content.urgencia}</strong> e tipo <strong>{ticket.problemType?.nome}</strong> no tipo de ocorrência <strong>{ticket.sector?.nome}</strong>.
-            <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--primary)' }}>
+            <div style={{ marginTop: '8px', padding: '12px', background: 'var(--bg-surface-subtle)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--primary)' }}>
               {content.descricao}
             </div>
           </div>
@@ -273,12 +273,12 @@ export const DetalhesChamado: React.FC = () => {
           <div>
             Status alterado de <span className={`status-badge ${getStatusBadgeClass(content.from)}`} style={{ padding: '2px 8px', fontSize: '10px' }}>{content.from}</span> para <span className={`status-badge ${getStatusBadgeClass(content.to)}`} style={{ padding: '2px 8px', fontSize: '10px' }}>{content.to}</span>.
             {content.mensagem && (
-              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(168, 85, 247, 0.05)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid #c084fc', color: '#e9d5ff' }}>
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--hue-purple-bg)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--hue-purple-text)', color: 'var(--hue-purple-text)' }}>
                 <strong>Motivo do Aguardo:</strong> {content.mensagem}
               </div>
             )}
             {content.solucao && (
-              <div style={{ marginTop: '8px', padding: '12px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--success)', color: '#a7f3d0' }}>
+              <div style={{ marginTop: '8px', padding: '12px', background: 'var(--hue-green-bg)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--success)', color: 'var(--hue-green-text)' }}>
                 <strong>Solução Aplicada:</strong> {content.solucao}
               </div>
             )}
@@ -289,11 +289,11 @@ export const DetalhesChamado: React.FC = () => {
           <div>
             Chamado finalizado.
             {content.adminClose ? (
-              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(107, 114, 128, 0.1)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-muted)' }}>
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--hue-gray-bg)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-muted)' }}>
                 <strong>Fechamento Administrativo por {content.fechadoPor}:</strong> {content.motivo}
               </div>
             ) : (
-              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--warning)' }}>
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--hue-amber-bg)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--warning)' }}>
                 <strong>Avaliação do Solicitante ({content.avaliadoPor}):</strong>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '4px 0', color: 'var(--warning)' }}>
                   {Array.from({ length: content.nota || 0 }).map((_, i) => <span key={i}>★</span>)}
@@ -306,7 +306,7 @@ export const DetalhesChamado: React.FC = () => {
         return (
           <div>
             Chamado reaberto por <strong>{content.reabertoPor}</strong>.
-            <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--danger)', color: '#fca5a5' }}>
+            <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--hue-red-bg)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--danger)', color: 'var(--hue-red-text)' }}>
               <strong>Motivo da Reabertura:</strong> {content.motivo}
             </div>
           </div>
@@ -319,8 +319,8 @@ export const DetalhesChamado: React.FC = () => {
             borderRadius: '12px',
             borderTopLeftRadius: isAuthorSolicitante ? '0px' : '12px',
             borderTopRightRadius: isAuthorSolicitante ? '12px' : '0px',
-            background: isAuthorSolicitante ? 'rgba(168, 85, 247, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-            border: isAuthorSolicitante ? '1px solid rgba(168, 85, 247, 0.2)' : '1px solid rgba(59, 130, 246, 0.2)',
+            background: isAuthorSolicitante ? 'var(--hue-purple-bg)' : 'var(--hue-blue-bg)',
+            border: isAuthorSolicitante ? '1px solid var(--hue-purple-border)' : '1px solid var(--hue-blue-border)',
             marginTop: '4px',
             color: 'var(--text-main)',
             wordBreak: 'break-word',
@@ -440,7 +440,7 @@ export const DetalhesChamado: React.FC = () => {
                 lineHeight: '1.6',
                 whiteSpace: 'pre-wrap',
                 padding: '16px',
-                background: 'rgba(255, 255, 255, 0.01)',
+                background: 'var(--bg-surface-subtle)',
                 border: '1px solid var(--border)',
                 borderRadius: '8px'
               }}>
@@ -587,7 +587,7 @@ export const DetalhesChamado: React.FC = () => {
                     onChange={(e) => setMessageText(e.target.value)}
                     style={{
                       width: '100%',
-                      background: 'rgba(255, 255, 255, 0.02)',
+                      background: 'var(--bg-surface-subtle)',
                       border: '1px solid var(--border)',
                       borderRadius: '8px',
                       padding: '12px',

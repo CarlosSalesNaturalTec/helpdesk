@@ -26,7 +26,7 @@ export const StarRating: React.FC<StarRatingProps> = ({ rating, onChange, disabl
               border: 'none',
               cursor: disabled ? 'default' : 'pointer',
               fontSize: '36px',
-              color: active ? 'var(--warning-main)' : 'rgba(255, 255, 255, 0.15)',
+              color: active ? 'var(--warning-main)' : 'var(--hue-gray-border)',
               transition: 'color 0.15s ease, transform 0.1s ease',
               transform: !disabled && hoverRating === star ? 'scale(1.2)' : 'scale(1)',
               outline: 'none',

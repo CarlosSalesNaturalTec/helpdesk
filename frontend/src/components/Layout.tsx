@@ -62,7 +62,9 @@ export const Layout: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <header className="navbar" ref={navRef}>
         <div className="nav-brand">
-          <BrandLogo variant="horizontal" height={40} />
+          <div className="brand-logo-capsule">
+            <BrandLogo variant="horizontal" height={40} />
+          </div>
           {APP_NAME} <span>{CLIENT_NAME}</span>
         </div>
 
