@@ -39,23 +39,23 @@ export const Layout: React.FC = () => {
     switch (role) {
       case 'ADMIN': return 'badge-admin';
       case 'DIRETOR': return 'badge-diretor';
-      case 'GESTOR_TI': return 'badge-gestor';
+      case 'GESTOR': return 'badge-gestor';
       case 'TECNICO': return 'badge-tecnico';
       default: return 'badge-solicitante';
     }
   };
 
-  const getRoleLabel = (role: string) => {
+  const getRoleLabel = (role: string, sectorNome?: string) => {
     switch (role) {
       case 'ADMIN': return 'Admin';
       case 'DIRETOR': return 'Diretor';
-      case 'GESTOR_TI': return 'Gestor de TI';
+      case 'GESTOR': return sectorNome ? `Gestor de ${sectorNome}` : 'Gestor';
       case 'TECNICO': return 'Técnico';
       default: return 'Solicitante';
     }
   };
 
-  const showUsuarios = ['ADMIN', 'DIRETOR', 'GESTOR_TI'].includes(user.role);
+  const showUsuarios = ['ADMIN', 'DIRETOR', 'GESTOR'].includes(user.role);
   const showUnidades = user.role === 'ADMIN';
 
   return (
@@ -162,7 +162,7 @@ export const Layout: React.FC = () => {
                 {user.nome}
               </span>
               <span className={`user-badge ${getBadgeClass(user.role)}`} style={{ marginTop: '2px' }}>
-                {getRoleLabel(user.role)}
+                {getRoleLabel(user.role, user.sectorNome)}
               </span>
             </div>
 

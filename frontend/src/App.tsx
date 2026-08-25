@@ -79,7 +79,7 @@ function AppRoutes() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR_TI', 'TECNICO']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR', 'TECNICO']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -89,7 +89,7 @@ function AppRoutes() {
         <Route
           path="/relatorios"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR_TI']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR']}>
               <Relatorios />
             </ProtectedRoute>
           }
@@ -99,7 +99,7 @@ function AppRoutes() {
         <Route
           path="/usuarios"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR_TI']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'DIRETOR', 'GESTOR']}>
               <Usuarios />
             </ProtectedRoute>
           }

@@ -16,7 +16,7 @@ Em **Tipos de Problema**, cadastre as subcategorias vinculadas a um Tipo de Ocor
 
 ## Usuários
 
-Em **Usuários**, o Administrador cadastra, edita e desativa usuários de qualquer Unidade, define o perfil (Solicitante, Técnico, Gestor de TI, Diretor, Administrador) e, para Técnicos, o Tipo de Ocorrência ao qual pertencem.
+Em **Usuários**, o Administrador cadastra, edita e desativa usuários de qualquer Unidade e define o perfil (Solicitante, Técnico, Gestor, Diretor, Administrador). Para Técnicos e Gestores, é obrigatório selecionar o Tipo de Ocorrência ao qual pertencem — para o Gestor, essa escolha define sua área de atuação (ex.: "Gestor de Manutenção").
 
 ## Chamados e relatórios globais
 

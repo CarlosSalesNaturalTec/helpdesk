@@ -1,6 +1,6 @@
 # Bem-vindo
 
-**SOLUTUS** é a plataforma centralizada de chamados de suporte de TI do **Instituto Setes**. Ela conecta quem precisa de ajuda (Solicitante) a quem resolve (Técnico), com visibilidade de gestão (Gestor de TI, Diretor) e administração global do sistema (Administrador), mantendo os dados de cada Unidade isolados entre si.
+**SOLUTUS** é a plataforma centralizada de chamados de suporte do **Instituto Setes**. Ela conecta quem precisa de ajuda (Solicitante) a quem resolve (Técnico), com visibilidade de gestão (Gestor, Diretor) e administração global do sistema (Administrador), mantendo os dados de cada Unidade isolados entre si.
 
 Este manual descreve como usar o sistema no dia a dia, por perfil de usuário, e como suas principais funcionalidades funcionam.
 
@@ -24,7 +24,7 @@ Após 5 tentativas de login com senha incorreta, a conta fica bloqueada por 15 m
 
 - **[Solicitante](perfis/solicitante.md)** — abre chamados e acompanha o atendimento.
 - **[Técnico](perfis/tecnico.md)** — atende chamados da sua Unidade e do seu Tipo de Ocorrência.
-- **[Gestor de TI e Diretor](perfis/gestor-diretor.md)** — acompanham e gerenciam os chamados e usuários da sua Unidade.
+- **[Gestor e Diretor](perfis/gestor-diretor.md)** — acompanham e gerenciam os chamados e usuários da sua Unidade; o Gestor é escopado ao seu Tipo de Ocorrência, o Diretor vê todas as áreas.
 - **[Administrador](perfis/administrador.md)** — gerencia Unidades, Tipos de Ocorrência, Tipos de Problema e usuários em todo o sistema.
 
 ## Funcionalidades

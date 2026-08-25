@@ -10,7 +10,7 @@ generator client {
 enum Role {
   SOLICITANTE
   TECNICO
-  GESTOR_TI
+  GESTOR
   DIRETOR
   ADMIN
 }
@@ -107,8 +107,8 @@ model Ticket {
   tecnico       User?           @relation("Tecnico", fields: [tecnicoId], references: [id])
   unidadeId     Int
   unidade       Unidade         @relation(fields: [unidadeId], references: [id])
-  sectorId      Int?
-  sector        Sector?         @relation(fields: [sectorId], references: [id])
+  sectorId      Int
+  sector        Sector          @relation(fields: [sectorId], references: [id])
   problemTypeId Int?
   problemType   ProblemType?    @relation(fields: [problemTypeId], references: [id])
   history       TicketHistory[]

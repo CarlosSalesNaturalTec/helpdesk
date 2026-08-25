@@ -2,12 +2,13 @@
 
 ## Perfis
 
-O sistema tem 5 perfis (`role`): **Solicitante**, **Técnico**, **Gestor de TI**, **Diretor** e **Administrador**. Cada endpoint da API é restrito a um subconjunto de perfis; a interface esconde o que o usuário não tem permissão de usar, mas a validação real acontece sempre no backend.
+O sistema tem 5 perfis (`role`): **Solicitante**, **Técnico**, **Gestor**, **Diretor** e **Administrador**. Cada endpoint da API é restrito a um subconjunto de perfis; a interface esconde o que o usuário não tem permissão de usar, mas a validação real acontece sempre no backend.
 
 ## Isolamento por Unidade e Tipo de Ocorrência
 
 - **Solicitante** só vê os próprios chamados.
-- **Técnico, Gestor de TI e Diretor** só veem dados da própria Unidade. O **Técnico** é ainda mais restrito: apenas chamados do seu Tipo de Ocorrência dentro da Unidade.
+- **Técnico, Gestor e Diretor** só veem dados da própria Unidade. **Técnico e Gestor** são ainda mais restritos: apenas chamados do seu Tipo de Ocorrência dentro da Unidade — o Gestor não é mais um "Gestor de TI" genérico, sua área é definida pelo Tipo de Ocorrência associado ao seu cadastro (ex.: "Gestor de Manutenção").
+- **Diretor** vê todos os Tipos de Ocorrência da própria Unidade, sem essa restrição adicional.
 - **Administrador** não tem restrição — enxerga todas as Unidades.
 
 Essa regra é aplicada em toda consulta relevante do backend (listagem de chamados, dashboard, relatórios, gestão de usuários) — nunca apenas na interface.

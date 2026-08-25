@@ -5,7 +5,7 @@ import { authRequired, requirePasswordChange, requireRole } from '../middleware/
 export async function dashboardRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/api/dashboard',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'TECNICO', 'GESTOR_TI', 'DIRETOR'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'TECNICO', 'GESTOR', 'DIRETOR'])] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       let unidadeId: number | null = null;
       
@@ -30,7 +30,7 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             sectorId = parsed;
           }
         }
-      } else if (request.user!.role === 'TECNICO' && request.user!.sectorId) {
+      } else if ((request.user!.role === 'TECNICO' || request.user!.role === 'GESTOR') && request.user!.sectorId) {
         sectorId = request.user!.sectorId;
       }
 

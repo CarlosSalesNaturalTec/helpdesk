@@ -28,7 +28,7 @@ Plataforma centralizada de tickets para suporte de TI, projetada para organizaç
 - **Relatórios gerenciais** com exportação para PDF (métricas, distribuição por status/tipo/urgência)
 - **Notificações por e-mail** (SendGrid) para transições relevantes de cada ticket
 - **Isolamento de dados por unidade**: cada unidade vê apenas seus próprios chamados, técnicos e gestores
-- **5 perfis de usuário**: Solicitante, Técnico, Gestor de TI, Diretor e Administrador do Sistema
+- **5 perfis de usuário**: Solicitante, Técnico, Gestor, Diretor e Administrador do Sistema
 - **Autenticação JWT** com proteção contra força bruta (bloqueio temporário após 5 tentativas)
 
 ---
@@ -101,8 +101,8 @@ helpdesk/
 | ------------------------ | ---------------- | -------------------------------------------------------------------------------- |
 | **Solicitante**          | `SOLICITANTE`    | Abre chamados, envia mensagens, fecha tickets com avaliação de satisfação (1-5), reabre chamados |
 | **Técnico**              | `TECNICO`        | Visualiza tickets da sua unidade, assume chamados, atualiza status, envia mensagens |
-| **Gestor de TI**         | `GESTOR_TI`      | Visualiza todos os tickets da unidade, reassigna técnicos, fecha tickets administrativamente, acessa dashboard e relatórios |
-| **Diretor**              | `DIRETOR`        | Mesmas permissões do Gestor de TI + visão consolidada para tomada de decisão     |
+| **Gestor**               | `GESTOR`         | Visualiza os tickets da sua unidade e do seu Tipo de Ocorrência, reassigna técnicos da mesma área, fecha tickets administrativamente, acessa dashboard e relatórios escopados à sua área |
+| **Diretor**              | `DIRETOR`        | Mesmas permissões do Gestor, mas em todos os Tipos de Ocorrência da unidade + visão consolidada para tomada de decisão |
 | **Administrador do Sistema** | `ADMIN`      | Acesso global (todas as unidades), gerencia unidades e usuários, configura o sistema |
 
 ---
@@ -235,7 +235,9 @@ Acesse `http://localhost:5173` e faça login com uma das credenciais de teste ab
 | `solicitante2@helpdesk.com` | `user123`  | SOLICITANTE   | Filial Norte   |
 | `tecnico@helpdesk.com`      | `user123`  | TECNICO       | Matriz         |
 | `tecnico2@helpdesk.com`     | `user123`  | TECNICO       | Filial Norte   |
-| `gestor@helpdesk.com`       | `user123`  | GESTOR_TI     | Matriz         |
+| `tecnico3@helpdesk.com`     | `user123`  | TECNICO       | Matriz         |
+| `gestor@helpdesk.com`       | `user123`  | GESTOR        | Matriz         |
+| `gestor2@helpdesk.com`      | `user123`  | GESTOR        | Matriz         |
 
 > **Nota:** Usuários criados via seed possuem `passwordResetRequired: true` — na primeira tentativa de acesso serão redirecionados para a tela de troca de senha. Para testes rápidos, o seed pode configurar usuários sem essa flag.
 

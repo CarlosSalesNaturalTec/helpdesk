@@ -13,12 +13,13 @@ interface MetricsQuery {
   dataInicio?: string;
   dataFim?: string;
   unidadeId?: string;
+  sectorId?: string;
   dimensao: string;
 }
 
 export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   fastify.post('/api/reports/pdf', {
-    preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])],
+    preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR', 'DIRETOR', 'ADMIN'])],
   }, async (request, reply) => {
     const { cards, chartImage, dimensao, periodoLabel, unidadeLabel } = request.body as any;
 
@@ -102,12 +103,12 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
   });
 
   fastify.get<{ Querystring: MetricsQuery }>('/api/reports/metrics', {
-    preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])],
+    preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR', 'DIRETOR', 'ADMIN'])],
   }, async (request, reply) => {
-    const { periodo, dataInicio, dataFim, unidadeId, dimensao } = request.query;
+    const { periodo, dataInicio, dataFim, unidadeId, sectorId, dimensao } = request.query;
     const user = request.user;
 
-    if (!user || !['GESTOR_TI', 'DIRETOR', 'ADMIN'].includes(user.role)) {
+    if (!user || !['GESTOR', 'DIRETOR', 'ADMIN'].includes(user.role)) {
       return reply.status(403).send({ error: 'Acesso negado' });
     }
 
@@ -136,6 +137,14 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
       targetUnidadeId = user.unidadeId;
     }
 
+    // Escopo de Tipo de Ocorrência (Gestor é restrito à sua área; Admin pode filtrar opcionalmente)
+    let targetSectorId: number | undefined;
+    if (user.role === 'GESTOR') {
+      targetSectorId = user.sectorId ?? undefined;
+    } else if (user.role === 'ADMIN' && sectorId) {
+      targetSectorId = parseInt(sectorId);
+    }
+
     const whereClause: Prisma.TicketWhereInput = {
       criadoEm: {
         gte: startDate,
@@ -145,6 +154,9 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
 
     if (targetUnidadeId) {
       whereClause.unidadeId = targetUnidadeId;
+    }
+    if (targetSectorId) {
+      whereClause.sectorId = targetSectorId;
     }
 
     // 1. Total Tickets e Taxa Fechamento
@@ -221,8 +233,12 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
 
     const queryParams: any[] = [startDate, endDate];
     if (targetUnidadeId) {
-      tmaSql += ` AND t."unidadeId" = $3`;
       queryParams.push(targetUnidadeId);
+      tmaSql += ` AND t."unidadeId" = $${queryParams.length}`;
+    }
+    if (targetSectorId) {
+      queryParams.push(targetSectorId);
+      tmaSql += ` AND t."sectorId" = $${queryParams.length}`;
     }
 
     const tmaResult = await prisma.$queryRawUnsafe<{ tma_horas: number | null }[]>(tmaSql, ...queryParams);
@@ -261,8 +277,12 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
     
     const distParams: any[] = [startDate, endDate];
     if (targetUnidadeId) {
-      distSql += ` AND t."unidadeId" = $3`;
       distParams.push(targetUnidadeId);
+      distSql += ` AND t."unidadeId" = $${distParams.length}`;
+    }
+    if (targetSectorId) {
+      distParams.push(targetSectorId);
+      distSql += ` AND t."sectorId" = $${distParams.length}`;
     }
 
     distSql += ` GROUP BY ${col} ORDER BY count DESC`;

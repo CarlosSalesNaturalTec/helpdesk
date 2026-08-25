@@ -29,7 +29,7 @@ ABERTO ──────────▶ EM_ANDAMENTO ────────�
 - **Em Andamento → Aguardando** — exige uma mensagem explicando o que falta; notifica o Solicitante.
 - **Aguardando → Em Andamento** — automático, assim que o Solicitante envia uma nova mensagem no chamado.
 - **Em Andamento → Resolvido** — exige uma descrição da solução com pelo menos 10 caracteres; notifica o Solicitante.
-- **Resolvido → Fechado** — pelo Solicitante, informando uma nota de satisfação de 1 a 5; ou administrativamente por Gestor de TI, Diretor ou Administrador, sem exigir avaliação.
+- **Resolvido → Fechado** — pelo Solicitante, informando uma nota de satisfação de 1 a 5; ou administrativamente por Gestor, Diretor ou Administrador, sem exigir avaliação.
 - **Fechado → Reaberto** — pelo Solicitante, informando um motivo com pelo menos 10 caracteres; notifica o(s) Técnico(s) responsável(is) ou, se não houver, todos os Técnicos da Unidade.
 
 Toda transição fica registrada no histórico do chamado, visível na tela de detalhes, junto com as mensagens trocadas entre Solicitante e Técnico.

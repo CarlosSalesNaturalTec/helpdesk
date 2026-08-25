@@ -41,7 +41,7 @@ async function runTests() {
       data: { nome: 'Tec Central', email: 'tec@c.com', senhaHash, role: 'TECNICO', unidadeId: unitCentral.id, passwordResetRequired: false }
     });
     const gesCentral = await prisma.user.create({
-      data: { nome: 'Ges Central', email: 'ges@c.com', senhaHash, role: 'GESTOR_TI', unidadeId: unitCentral.id, passwordResetRequired: false }
+      data: { nome: 'Ges Central', email: 'ges@c.com', senhaHash, role: 'GESTOR', unidadeId: unitCentral.id, passwordResetRequired: false }
     });
     const tecSecundar = await prisma.user.create({
       data: { nome: 'Tec Secundar', email: 'tec@s.com', senhaHash, role: 'TECNICO', unidadeId: unitSecundar.id, passwordResetRequired: false }

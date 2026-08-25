@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**SOLUTUS** (currently deployed for the client **Instituto Setes**) — a centralized ticketing platform for IT support across an Instituto with multiple Unidades. The system supports 5 personas (Solicitante, Técnico, Gestor de TI, Diretor, Administrador do Sistema) with strict data isolation between units (Unidades).
+**SOLUTUS** (currently deployed for the client **Instituto Setes**) — a centralized ticketing platform for support across an Instituto with multiple Unidades. The system supports 5 personas (Solicitante, Técnico, Gestor, Diretor, Administrador do Sistema) with strict data isolation between units (Unidades). `Gestor` is not IT-specific: its area of responsibility is whichever Sector ("Tipo de Ocorrência") is associated with the user — see [Data Isolation](#data-isolation-rbac--unit-and-sector-scoping).
 
 The displayed name is configurable at build/deploy time, not hardcoded: `APP_NAME` (default `SOLUTUS`) and `CLIENT_NAME` (default `Instituto Setes`) are two distinct concepts — see [Branding](#branding-configurable-app-name--client-name).
 
@@ -67,13 +67,13 @@ npx prisma db seed                    # Seed sample data
 npx prisma studio                     # Visual DB browser
 ```
 
-**Seed data** (`prisma/seed.ts`): two Unidades (`Unidade Central`, `Unidade Secundária`), one Sector (`Tecnologia`) with its ProblemTypes, six users, and tickets spanning the workflow statuses. The seed deletes and recreates all tickets/history/satisfaction on every run, but upserts users and units.
+**Seed data** (`prisma/seed.ts`): two Unidades (`Unidade Central`, `Unidade Secundária`), two Sectors (`Tecnologia`, `Manutenção`) each with their own ProblemTypes, eight users, and tickets spanning the workflow statuses across both sectors. The seed deletes and recreates all tickets/history/satisfaction on every run, but upserts users and units.
 
 **Default test users** (password `user123`, except admin `admin123`):
 - `admin@helpdesk.com` (ADMIN) — global access; `passwordResetRequired: true`, so it must change its password on first login
 - `solicitante@helpdesk.com` (Unidade Central), `solicitante2@helpdesk.com` (Unidade Secundária)
-- `tecnico@helpdesk.com` (Unidade Central, sector Tecnologia), `tecnico2@helpdesk.com` (Unidade Secundária, sector Tecnologia)
-- `gestor@helpdesk.com` (GESTOR_TI, Unidade Central)
+- `tecnico@helpdesk.com` (Unidade Central, sector Tecnologia), `tecnico2@helpdesk.com` (Unidade Secundária, sector Tecnologia), `tecnico3@helpdesk.com` (Unidade Central, sector Manutenção)
+- `gestor@helpdesk.com` (GESTOR, Unidade Central, sector Tecnologia), `gestor2@helpdesk.com` (GESTOR, Unidade Central, sector Manutenção) — the two exist to exercise sector isolation between Gestores of the same Unidade
 
 There is no seeded DIRETOR user — create one through the UI/API if you need to exercise that role.
 
@@ -93,10 +93,10 @@ CORS is handled by a hand-rolled `onRequest` hook in `backend/src/index.ts` (not
 
 ### Data Isolation (RBAC + Unit and Sector Scoping)
 
-The core security model: **Técnico, Gestor de TI and Diretor only see data from their own Unidade; Técnico is further narrowed to their own Sector. Admin sees everything. Solicitante sees only their own tickets.**
+The core security model: **Técnico, Gestor, and Diretor only see data from their own Unidade; Técnico and Gestor are further narrowed to their own Sector, Diretor is not. Admin sees everything. Solicitante sees only their own tickets.**
 
 Enforced in two layers:
-- **Backend routes** apply scoping in every query. The canonical pattern is in `backend/src/routes/tickets.ts` (ticket listing, ~lines 188-198): `SOLICITANTE` → `solicitanteId = user.id`; `TECNICO/GESTOR_TI/DIRETOR` → `unidadeId = user.unidadeId`, plus `sectorId = user.sectorId` when the user is a `TECNICO` with a sector; `ADMIN` → unfiltered. `backend/src/routes/dashboard.ts` applies the same rules inside its raw SQL, and lets Admin opt into `unidadeId`/`sectorId` query filters.
+- **Backend routes** apply scoping in every query. `backend/src/lib/rbac.ts` centralizes the rule: `scopeWhere(user)` derives `{ unidadeId?, sectorId? }` from the role (SOLICITANTE → none, TECNICO/GESTOR → both, DIRETOR → unit only, ADMIN → none), and `sectorFilter(user, targetSectorId)`/`unitFilter(user, targetUnidadeId)` cover single-record checks — mirroring each other. The canonical usage is in `backend/src/routes/tickets.ts` (ticket listing, ~line 188, via `scopeWhere()`; individual-ticket routes via `unitFilter()` + `sectorFilter()`, always returning 404 rather than 403 on a scope mismatch). `backend/src/routes/dashboard.ts` and `backend/src/routes/reports.ts` apply the same rules — Admin may opt into `unidadeId`/`sectorId` query filters on both.
 - **Frontend guards** (`frontend/src/components/Guards.tsx`): `ProtectedRoute` for auth + optional role check, `PasswordChangeGuard` redirects to the password-change page when required.
 
 The `unitFilter()` helper in `backend/src/lib/rbac.ts` encapsulates the unit-scoping rule for single-record checks (Admin → always true, otherwise `user.unidadeId === targetUnidadeId`).
@@ -113,7 +113,7 @@ ABERTO → EM_ANDAMENTO → RESOLVIDO → FECHADO
 
 - `validateTransition(current, new)` enforces valid state changes server-side
 - Auto-attribution (Técnico): ABERTO → EM_ANDAMENTO (`PATCH /:id/assign`)
-- Reassignment (Gestor/Diretor/Admin): reassign to a Técnico in the same Unidade (`PATCH /:id/reassign`)
+- Reassignment (Gestor/Diretor/Admin): reassign to a Técnico or Gestor in the same Unidade and Sector as the ticket; Gestor may only reassign tickets from their own Sector (`PATCH /:id/reassign`)
 - Closing with satisfaction (Solicitante): `PATCH /:id/close` requires a nota 1-5
 - Administrative close (Gestor/Diretor/Admin): `PATCH /:id/admin-close` — bypasses the satisfaction survey
 - Reopen: `PATCH /:id/reopen` requires a motivo (min 10 chars)
@@ -148,7 +148,7 @@ In-app notifications are read through `/api/notifications`, `/api/notifications/
 
 ### Reports & Dashboard
 
-- `GET /api/reports/metrics` — metric cards + distribution by `dimensao`, filtered by `periodo` (days) or a custom `dataInicio`/`dataFim` range, scoped by unit (Admin may pass `unidadeId`). Gestor/Diretor/Admin only.
+- `GET /api/reports/metrics` — metric cards + distribution by `dimensao`, filtered by `periodo` (days) or a custom `dataInicio`/`dataFim` range, scoped by unit and, for Gestor, by Sector too (Admin may pass `unidadeId`/`sectorId`). Gestor/Diretor/Admin only.
 - `POST /api/reports/pdf` — the frontend renders the Recharts chart to a PNG data URL with `html-to-image` and posts it together with the computed cards; the backend composes the PDF with PDFKit and streams it back as an attachment. **Chart rendering happens client-side** — the backend does not recompute metrics for the PDF.
 - `GET /api/dashboard` — status cards and a 30-day trend series, both computed with `prisma.$queryRaw` (a `generate_series` day spine left-joined against tickets). Técnico/Gestor/Diretor/Admin only.
 
@@ -242,7 +242,7 @@ mkdocs build --strict # validation build, fails on broken links
 
 ## Key Constraints
 
-- **Data isolation is paramount** — never expose another Unidade's data to a non-Admin user. Always filter by `unidadeId` in backend queries, and by `sectorId` as well for Técnico.
+- **Data isolation is paramount** — never expose another Unidade's data to a non-Admin user. Always filter by `unidadeId` in backend queries, and by `sectorId` as well for Técnico and Gestor.
 - **Workflow state machine** must be respected — call `validateTransition()` before any status change, and record a `TicketHistory` entry.
 - **Password change enforcement** — users with `passwordResetRequired: true` must change their password before accessing any other feature. `requirePasswordChange` handles it server-side; `PasswordChangeGuard` handles it client-side.
 - **Consistency between enums** across the Prisma schema, the Zod enums in `shared`, and `ALLOWED_TRANSITIONS` in `workflow.ts`.

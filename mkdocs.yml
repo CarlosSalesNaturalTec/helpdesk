@@ -44,7 +44,7 @@ nav:
   - Perfis:
       - Solicitante: perfis/solicitante.md
       - Técnico: perfis/tecnico.md
-      - Gestor de TI e Diretor: perfis/gestor-diretor.md
+      - Gestor e Diretor: perfis/gestor-diretor.md
       - Administrador: perfis/administrador.md
   - Funcionalidades:
       - Ciclo de vida do chamado: funcionalidades/ciclo-de-vida.md
