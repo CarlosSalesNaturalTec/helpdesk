@@ -55,6 +55,34 @@ async function main() {
   }
   console.log('Tipos de problema criados para Tecnologia.');
 
+  // NOVO: Segundo Setor ("Manutenção") para exercitar o isolamento por área
+  const sectorManutencao = await prisma.sector.upsert({
+    where: { nome: 'Manutenção' },
+    update: {},
+    create: {
+      nome: 'Manutenção',
+    },
+  });
+  console.log(`Setor criado: ${sectorManutencao.nome}`);
+
+  const problemTypesManutencao = ['ELETRICA', 'HIDRAULICA', 'MOBILIARIO', 'OUTRO'];
+  const createdProblemTypesManutencao: Record<string, number> = {};
+
+  for (const ptName of problemTypesManutencao) {
+    let pt = await prisma.problemType.findFirst({ where: { nome: ptName, sectorId: sectorManutencao.id } });
+    if (!pt) {
+      pt = await prisma.problemType.create({
+        data: {
+          nome: ptName,
+          slaMinutes: 2880,
+          sectorId: sectorManutencao.id,
+        },
+      });
+    }
+    createdProblemTypesManutencao[ptName] = pt.id;
+  }
+  console.log('Tipos de problema criados para Manutenção.');
+
 
   // 3. Criar Admin global
   const salt = await bcrypt.genSalt(10);
@@ -116,13 +144,48 @@ async function main() {
       nome: 'Gisela Gestora',
       email: 'gestor@helpdesk.com',
       senhaHash: hashComum,
-      role: Role.GESTOR_TI,
+      role: Role.GESTOR,
       unidadeId: unidadePadrao.id,
+      sectorId: sectorTecnologia.id,
       ativo: true,
       passwordResetRequired: false,
     },
   });
-  console.log(`Usuário Gestor Central criado: ${gestorCentral.email}`);
+  console.log(`Usuário Gestor Central (Tecnologia) criado: ${gestorCentral.email}`);
+
+  // NOVO: Segundo Gestor, de "Manutenção", para exercitar o isolamento por área
+  const gestorManutencao = await prisma.user.upsert({
+    where: { email: 'gestor2@helpdesk.com' },
+    update: {},
+    create: {
+      nome: 'Marcelo Gestor de Manutenção',
+      email: 'gestor2@helpdesk.com',
+      senhaHash: hashComum,
+      role: Role.GESTOR,
+      unidadeId: unidadePadrao.id,
+      sectorId: sectorManutencao.id,
+      ativo: true,
+      passwordResetRequired: false,
+    },
+  });
+  console.log(`Usuário Gestor Central (Manutenção) criado: ${gestorManutencao.email}`);
+
+  // NOVO: Técnico de "Manutenção"
+  const tecnicoManutencao = await prisma.user.upsert({
+    where: { email: 'tecnico3@helpdesk.com' },
+    update: {},
+    create: {
+      nome: 'Tereza Técnica de Manutenção',
+      email: 'tecnico3@helpdesk.com',
+      senhaHash: hashComum,
+      role: Role.TECNICO,
+      unidadeId: unidadePadrao.id,
+      sectorId: sectorManutencao.id,
+      ativo: true,
+      passwordResetRequired: false,
+    },
+  });
+  console.log(`Usuário Técnico Central (Manutenção) criado: ${tecnicoManutencao.email}`);
 
   const solicitanteSecundario = await prisma.user.upsert({
     where: { email: 'solicitante2@helpdesk.com' },
@@ -388,6 +451,55 @@ async function main() {
     descricao: t7.descricao,
     problemType: 'SISTEMA_INTERNO',
     urgencia: t7.urgencia,
+  });
+
+  // Ticket 8: Manutenção — ABERTO (isolamento por área dentro da mesma Unidade)
+  const t8 = await prisma.ticket.create({
+    data: {
+      titulo: 'Torneira do banheiro vazando',
+      descricao: 'A torneira do banheiro do 2º andar está vazando constantemente.',
+      sectorId: sectorManutencao.id,
+      problemTypeId: createdProblemTypesManutencao['HIDRAULICA'],
+      urgencia: 'MEDIA',
+      status: 'ABERTO',
+      solicitanteId: solicitanteCentral.id,
+      unidadeId: unidadePadrao.id,
+    },
+  });
+  await createHistory(t8.id, solicitanteCentral.id, 'ABERTURA', {
+    titulo: t8.titulo,
+    descricao: t8.descricao,
+    problemType: 'HIDRAULICA',
+    urgencia: t8.urgencia,
+  });
+
+  // Ticket 9: Manutenção — EM_ANDAMENTO
+  const t9 = await prisma.ticket.create({
+    data: {
+      titulo: 'Tomada elétrica com mau contato',
+      descricao: 'A tomada da sala de reuniões está com mau contato e falha ao carregar notebooks.',
+      sectorId: sectorManutencao.id,
+      problemTypeId: createdProblemTypesManutencao['ELETRICA'],
+      urgencia: 'ALTA',
+      status: 'EM_ANDAMENTO',
+      solicitanteId: solicitanteCentral.id,
+      tecnicoId: tecnicoManutencao.id,
+      unidadeId: unidadePadrao.id,
+    },
+  });
+  await createHistory(t9.id, solicitanteCentral.id, 'ABERTURA', {
+    titulo: t9.titulo,
+    descricao: t9.descricao,
+    problemType: 'ELETRICA',
+    urgencia: t9.urgencia,
+  });
+  await createHistory(t9.id, tecnicoManutencao.id, 'ATRIBUICAO', {
+    tecnicoId: tecnicoManutencao.id,
+    tecnicoNome: tecnicoManutencao.nome,
+  });
+  await createHistory(t9.id, tecnicoManutencao.id, 'MUDANCA_STATUS', {
+    from: 'ABERTO',
+    to: 'EM_ANDAMENTO',
   });
 
   console.log('Seeding concluído com sucesso!');

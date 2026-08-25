@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const RoleEnum = z.enum(['SOLICITANTE', 'TECNICO', 'GESTOR_TI', 'DIRETOR', 'ADMIN']);
+export const RoleEnum = z.enum(['SOLICITANTE', 'TECNICO', 'GESTOR', 'DIRETOR', 'ADMIN']);
 
 export const userSchema = z.object({
   nome: z.string().min(2, 'O nome deve ter no mínimo 2 caracteres'),
@@ -14,6 +14,13 @@ export const userSchema = z.object({
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'Setor é obrigatório para técnicos',
+      path: ['sectorId'],
+    });
+  }
+  if (data.role === 'GESTOR' && !data.sectorId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Tipo de Ocorrência é obrigatório para gestores',
       path: ['sectorId'],
     });
   }

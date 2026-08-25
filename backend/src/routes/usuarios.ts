@@ -9,21 +9,21 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
   // GET /api/usuarios
   fastify.get(
     '/api/usuarios',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR_TI'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR'])] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const user = request.user!;
 
       let users;
       if (user.role === 'ADMIN') {
         users = await prisma.user.findMany({
-          include: { unidade: true },
+          include: { unidade: true, sector: true },
           orderBy: { nome: 'asc' },
         });
       } else {
-        // Diretor e Gestor de TI listam apenas de sua unidade
+        // Diretor e Gestor listam apenas de sua unidade
         users = await prisma.user.findMany({
           where: { unidadeId: user.unidadeId },
-          include: { unidade: true },
+          include: { unidade: true, sector: true },
           orderBy: { nome: 'asc' },
         });
       }
@@ -41,7 +41,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
   // POST /api/usuarios
   fastify.post(
     '/api/usuarios',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR_TI'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR'])] },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const user = request.user!;
       const parseResult = userSchema.safeParse(request.body);
@@ -51,7 +51,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
 
       const { nome, email, role, unidadeId: reqUnidadeId, sectorId, senha } = parseResult.data;
 
-      // Se Diretor/Gestor de TI, força a unidade do usuário logado
+      // Se Diretor/Gestor, força a unidade do usuário logado
       const targetUnidadeId = user.role === 'ADMIN' ? reqUnidadeId : user.unidadeId;
 
       // Validar e-mail único
@@ -92,7 +92,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
   // PUT /api/usuarios/:id
   fastify.put<{ Params: { id: string } }>(
     '/api/usuarios/:id',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR_TI'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR'])] },
     async (request, reply) => {
       const id = parseInt(request.params.id);
       if (isNaN(id)) {
@@ -116,12 +116,12 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Usuário não encontrado' });
       }
 
-      // Verificar isolamento: Diretor/Gestor de TI só editam usuários da sua própria unidade
+      // Verificar isolamento: Diretor/Gestor só editam usuários da sua própria unidade
       if (!unitFilter(user, targetUser.unidadeId)) {
         return reply.status(404).send({ error: 'Usuário não encontrado' });
       }
 
-      // Se Diretor/Gestor de TI, impede alterar para outra unidade que não seja a sua
+      // Se Diretor/Gestor, impede alterar para outra unidade que não seja a sua
       let finalUnidadeId = targetUser.unidadeId;
       if (user.role === 'ADMIN') {
         finalUnidadeId = reqUnidadeId;
@@ -169,7 +169,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
   // PATCH /api/usuarios/:id/deactivate
   fastify.patch<{ Params: { id: string }; Querystring: { force?: string } }>(
     '/api/usuarios/:id/deactivate',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR_TI'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR'])] },
     async (request, reply) => {
       const id = parseInt(request.params.id);
       if (isNaN(id)) {

@@ -17,13 +17,14 @@ interface UserListItem {
   id: number;
   nome: string;
   email: string;
-  role: 'SOLICITANTE' | 'TECNICO' | 'GESTOR_TI' | 'DIRETOR' | 'ADMIN';
+  role: 'SOLICITANTE' | 'TECNICO' | 'GESTOR' | 'DIRETOR' | 'ADMIN';
   unidadeId: number;
   unidade: Unidade;
   ativo: boolean;
   passwordResetRequired: boolean;
   criadoEm: string;
   sectorId?: number;
+  sector?: Sector | null;
 }
 
 export const Usuarios: React.FC = () => {
@@ -42,7 +43,7 @@ export const Usuarios: React.FC = () => {
   // Form Fields
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'SOLICITANTE' | 'TECNICO' | 'GESTOR_TI' | 'DIRETOR' | 'ADMIN'>('SOLICITANTE');
+  const [role, setRole] = useState<'SOLICITANTE' | 'TECNICO' | 'GESTOR' | 'DIRETOR' | 'ADMIN'>('SOLICITANTE');
   const [unidadeId, setUnidadeId] = useState<number>(0);
   const [sectorId, setSectorId] = useState<number | ''>('');
   const [senha, setSenha] = useState('');
@@ -145,9 +146,9 @@ export const Usuarios: React.FC = () => {
       unidadeId: Number(unidadeId),
     };
 
-    if (role === 'TECNICO') {
+    if (role === 'TECNICO' || role === 'GESTOR') {
       if (!sectorId) {
-        setFieldErrors({ sectorId: 'Tipo de Ocorrência é obrigatório para Técnicos' });
+        setFieldErrors({ sectorId: 'Tipo de Ocorrência é obrigatório para Técnicos e Gestores' });
         setSubmitting(false);
         return;
       }
@@ -227,11 +228,11 @@ export const Usuarios: React.FC = () => {
     }
   };
 
-  const getRoleLabel = (r: string) => {
+  const getRoleLabel = (r: string, sectorNome?: string | null) => {
     switch (r) {
       case 'ADMIN': return 'Admin';
       case 'DIRETOR': return 'Diretor';
-      case 'GESTOR_TI': return 'Gestor de TI';
+      case 'GESTOR': return sectorNome ? `Gestor de ${sectorNome}` : 'Gestor';
       case 'TECNICO': return 'Técnico';
       default: return 'Solicitante';
     }
@@ -241,7 +242,7 @@ export const Usuarios: React.FC = () => {
     switch (r) {
       case 'ADMIN': return 'badge-admin';
       case 'DIRETOR': return 'badge-diretor';
-      case 'GESTOR_TI': return 'badge-gestor';
+      case 'GESTOR': return 'badge-gestor';
       case 'TECNICO': return 'badge-tecnico';
       default: return 'badge-solicitante';
     }
@@ -304,7 +305,7 @@ export const Usuarios: React.FC = () => {
                     <td>{userItem.email}</td>
                     <td>
                       <span className={`user-badge ${getBadgeClass(userItem.role)}`}>
-                        {getRoleLabel(userItem.role)}
+                        {getRoleLabel(userItem.role, userItem.sector?.nome)}
                       </span>
                     </td>
                     <td>{userItem.unidade?.nome}</td>
@@ -399,7 +400,7 @@ export const Usuarios: React.FC = () => {
                   >
                     <option value="SOLICITANTE">Solicitante</option>
                     <option value="TECNICO">Técnico</option>
-                    <option value="GESTOR_TI">Gestor de TI</option>
+                    <option value="GESTOR">Gestor</option>
                     <option value="DIRETOR">Diretor</option>
                     {isUserAdmin && <option value="ADMIN">Administrador</option>}
                   </select>
@@ -421,7 +422,7 @@ export const Usuarios: React.FC = () => {
                   {fieldErrors.unidadeId && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.unidadeId}</span>}
                 </div>
 
-                {role === 'TECNICO' && (
+                {(role === 'TECNICO' || role === 'GESTOR') && (
                   <div className="form-group" style={{ gridColumn: 'span 2' }}>
                     <label className="form-label">Tipo de Ocorrência</label>
                     <select

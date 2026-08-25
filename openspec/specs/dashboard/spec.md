@@ -6,20 +6,24 @@ Painel inicial com indicadores numéricos de status e gráfico de tendência, of
 ## Requirements
 
 ### Requirement: Cards de status por Unidade e Setor
-O sistema SHALL exibir quatro cards numéricos no Dashboard com as seguintes regras de contagem, restritas à Unidade do usuário logado (exceto Admin) e, no caso de Técnicos, restritas ao seu **Setor**:
+O sistema SHALL exibir quatro cards numéricos no Dashboard com as seguintes regras de contagem, restritas à Unidade do usuário logado (exceto Admin) e, no caso de Técnicos e Gestores, restritas ao seu **Setor**. Diretor não sofre essa restrição adicional, vendo todos os Setores da sua Unidade.
 
 - **Abertos:** chamados com status "Aberto" ou "Reaberto"
 - **Em Andamento:** chamados com status "Em Andamento" ou "Aguardando"
 - **Resolvidos:** chamados com status "Resolvido"
 - **Críticos:** chamados com urgência "Crítica" E status diferente de "Fechado"
 
-#### Scenario: Cards para Diretor ou Gestor de TI
-- **WHEN** um Diretor ou Gestor de TI da "Unidade A" acessa o Dashboard
+#### Scenario: Cards para Diretor
+- **WHEN** um Diretor da "Unidade A" acessa o Dashboard
 - **THEN** os 4 cards exibem os totais contando apenas os chamados da "Unidade A" de todos os setores
 
 #### Scenario: Cards para Técnico restrito a Setor
 - **WHEN** um Técnico da "Unidade A" pertencente ao setor "Tecnologia" acessa o Dashboard
 - **THEN** os 4 cards exibem os totais restritos aos chamados da "Unidade A" que pertencem ao setor "Tecnologia"
+
+#### Scenario: Cards para Gestor restrito a Setor
+- **WHEN** um Gestor de "Limpeza" da "Unidade A" acessa o Dashboard
+- **THEN** os 4 cards exibem os totais restritos aos chamados da "Unidade A" que pertencem ao setor "Limpeza"
 
 #### Scenario: Cards consolidados para Admin
 - **WHEN** o Administrador do Sistema acessa o Dashboard sem filtro de Unidade
@@ -41,14 +45,18 @@ O sistema SHALL refletir mudanças nos totais dos cards quando a página é reca
 - **THEN** os cards "Críticos" e "Abertos" refletem o incremento
 
 ### Requirement: Gráfico de tendência de 30 dias
-O sistema SHALL exibir, abaixo dos cards, um gráfico de linha com duas séries temporais: "Chamados Abertos" (contagem diária de novos chamados) e "Chamados Fechados" (contagem diária de chamados que transitaram para Fechado). O período coberto DEVE ser os últimos 30 dias corridos a partir da data atual. Os dados DEVEM ser restritos à Unidade do usuário (exceto Admin com visão global) e, no caso de Técnicos, restritos ao seu **Setor**.
+O sistema SHALL exibir, abaixo dos cards, um gráfico de linha com duas séries temporais: "Chamados Abertos" (contagem diária de novos chamados) e "Chamados Fechados" (contagem diária de chamados que transitaram para Fechado). O período coberto DEVE ser os últimos 30 dias corridos a partir da data atual. Os dados DEVEM ser restritos à Unidade do usuário (exceto Admin com visão global) e, no caso de Técnicos e Gestores, restritos ao seu **Setor**. Diretor não sofre essa restrição adicional.
 
-#### Scenario: Gráfico para Diretor ou Gestor de TI
+#### Scenario: Gráfico para Diretor
 - **WHEN** um Diretor da "Unidade A" acessa o Dashboard
 - **THEN** o gráfico exibe aberturas e fechamentos diários apenas da "Unidade A" nos últimos 30 dias de todos os setores
 
 #### Scenario: Gráfico para Técnico restrito à Unidade e Setor
 - **WHEN** um Técnico da "Unidade A" do setor "Manutenção" visualiza o gráfico de tendência
+- **THEN** os dados refletem apenas os chamados da "Unidade A" que pertencem ao setor "Manutenção"
+
+#### Scenario: Gráfico para Gestor restrito à Unidade e Setor
+- **WHEN** um Gestor da "Unidade A" do setor "Manutenção" visualiza o gráfico de tendência
 - **THEN** os dados refletem apenas os chamados da "Unidade A" que pertencem ao setor "Manutenção"
 
 #### Scenario: Gráfico consolidado para Admin

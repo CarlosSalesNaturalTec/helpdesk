@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
+import { unitFilter, sectorFilter, scopeWhere } from '../lib/rbac.js';
 import { validateTransition } from '../lib/workflow.js';
 import { NotificationService } from '../services/notification.js';
 import { uploadFile, deleteFile, extractGcsPath } from '../lib/storage.js';
@@ -188,13 +189,8 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       // Aplicar escopo por papel
       if (user.role === 'SOLICITANTE') {
         whereClause.solicitanteId = user.id;
-      } else if (['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role)) {
-        whereClause.unidadeId = user.unidadeId;
-        if (user.role === 'TECNICO' && user.sectorId) {
-          whereClause.sectorId = user.sectorId;
-        }
-      } else if (user.role === 'ADMIN') {
-        // Admin vê tudo
+      } else {
+        Object.assign(whereClause, scopeWhere(user));
       }
 
       // Aplicar filtro de status
@@ -325,10 +321,10 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       // Validar escopo de visualização
       const user = request.user!;
       if (user.role === 'SOLICITANTE' && ticket.solicitanteId !== user.id) {
-        return reply.status(403).send({ error: 'Acesso negado. Você não é o solicitante deste chamado.' });
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
-      if (['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId !== user.unidadeId) {
-        return reply.status(403).send({ error: 'Acesso negado. Este chamado pertence a outra Unidade.' });
+      if (user.role !== 'SOLICITANTE' && (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId))) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
       return reply.send({
@@ -359,10 +355,10 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       // Validar escopo de visualização
       const user = request.user!;
       if (user.role === 'SOLICITANTE' && ticket.solicitanteId !== user.id) {
-        return reply.status(403).send({ error: 'Acesso negado' });
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
-      if (['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId !== user.unidadeId) {
-        return reply.status(403).send({ error: 'Acesso negado' });
+      if (user.role !== 'SOLICITANTE' && (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId))) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
       const history = await prisma.ticketHistory.findMany({
@@ -392,6 +388,10 @@ export async function ticketRoutes(fastify: FastifyInstance) {
 
       const ticket = await prisma.ticket.findUnique({ where: { id } });
       if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
+      }
 
       // Apenas o solicitante pode substituir o anexo
       if (ticket.solicitanteId !== user.id) {
@@ -477,6 +477,10 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       const ticket = await prisma.ticket.findUnique({ where: { id } });
       if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
 
+      if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
+      }
+
       // Apenas o solicitante pode remover o anexo
       if (ticket.solicitanteId !== user.id) {
         return reply.status(403).send({ error: 'Apenas o solicitante pode alterar o anexo' });
@@ -511,13 +515,19 @@ export async function ticketRoutes(fastify: FastifyInstance) {
 
   fastify.patch<{ Params: { id: string } }>(
     '/api/tickets/:id/assign',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['TECNICO', 'GESTOR_TI', 'DIRETOR'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['TECNICO', 'GESTOR', 'DIRETOR'])] },
     async (request, reply) => {
       const id = parseInt(request.params.id);
       if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
 
       const ticket = await prisma.ticket.findUnique({ where: { id } });
       if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      const user = request.user!;
+      // Validar escopo de Unidade e Setor (Gestor/Técnico só assumem chamados da sua área)
+      if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
+      }
 
       // Bloqueio de chamados fechados (Tarefa 6.5)
       if (ticket.status === 'FECHADO') {
@@ -526,12 +536,6 @@ export async function ticketRoutes(fastify: FastifyInstance) {
 
       if (ticket.status !== 'ABERTO' && ticket.status !== 'REABERTO') {
         return reply.status(400).send({ error: 'Apenas chamados nos status Aberto ou Reaberto podem ser assumidos.' });
-      }
-
-      const user = request.user!;
-      // Validar se o técnico pertence à mesma unidade do chamado (Tarefa 7.2)
-      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
-        return reply.status(403).send({ error: 'Você só pode assumir chamados da sua própria Unidade.' });
       }
 
       const currentStatus = ticket.status;
@@ -585,7 +589,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
   // 7. Reatribuição de Chamado (Gestor/Diretor)
   fastify.patch<{ Params: { id: string } }>(
     '/api/tickets/:id/reassign',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR', 'DIRETOR', 'ADMIN'])] },
     async (request, reply) => {
       const id = parseInt(request.params.id);
       if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
@@ -608,19 +612,23 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       }
 
       const user = request.user!;
-      // Validar se o gestor/diretor pertence à mesma unidade do chamado (Tarefa 7.4)
-      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
-        return reply.status(403).send({ error: 'Você só pode reatribuir chamados da sua própria Unidade.' });
+      // Validar escopo de Unidade e Setor (Gestor só reatribui chamados da sua própria área)
+      if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
       // Validar se o técnico de destino existe e pertence à mesma Unidade
       const tecnicoDestino = await prisma.user.findUnique({ where: { id: tecnicoId } });
-      if (!tecnicoDestino || (tecnicoDestino.role !== 'TECNICO' && tecnicoDestino.role !== 'GESTOR_TI')) {
+      if (!tecnicoDestino || (tecnicoDestino.role !== 'TECNICO' && tecnicoDestino.role !== 'GESTOR')) {
         return reply.status(400).send({ error: 'O usuário destino deve possuir o papel de Técnico ou Gestor.' });
       }
 
       if (tecnicoDestino.unidadeId !== ticket.unidadeId) {
         return reply.status(400).send({ error: 'O Técnico destino deve pertencer à mesma Unidade do chamado.' });
+      }
+
+      if (tecnicoDestino.sectorId !== ticket.sectorId) {
+        return reply.status(400).send({ error: 'O destinatário não pertence ao Tipo de Ocorrência do chamado.' });
       }
 
       const currentStatus = ticket.status;
@@ -681,7 +689,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
   // 8. Transição Geral de Status (Máquina de Estados)
   fastify.patch<{ Params: { id: string } }>(
     '/api/tickets/:id/status',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['TECNICO', 'GESTOR_TI', 'DIRETOR', 'ADMIN'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['TECNICO', 'GESTOR', 'DIRETOR', 'ADMIN'])] },
     async (request, reply) => {
       const id = parseInt(request.params.id);
       if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
@@ -708,8 +716,8 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       }
 
       const user = request.user!;
-      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
-        return reply.status(403).send({ error: 'Você não tem permissão para alterar chamados de outra Unidade.' });
+      if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
       // Validar transição na máquina de estados (Tarefa 6.1)
@@ -823,7 +831,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
   // 10. Fechamento Administrativo (Gestor/Diretor)
   fastify.patch<{ Params: { id: string } }>(
     '/api/tickets/:id/admin-close',
-    { preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR_TI', 'DIRETOR', 'ADMIN'])] },
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR', 'DIRETOR', 'ADMIN'])] },
     async (request, reply) => {
       const id = parseInt(request.params.id);
       if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
@@ -831,13 +839,13 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       const ticket = await prisma.ticket.findUnique({ where: { id } });
       if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
 
-      if (ticket.status !== 'RESOLVIDO') {
-        return reply.status(400).send({ error: 'Apenas chamados no status Resolvido podem ser fechados.' });
+      const user = request.user!;
+      if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
-      const user = request.user!;
-      if (ticket.unidadeId !== user.unidadeId && user.role !== 'ADMIN') {
-        return reply.status(403).send({ error: 'Você não tem permissão para fechar chamados de outra Unidade.' });
+      if (ticket.status !== 'RESOLVIDO') {
+        return reply.status(400).send({ error: 'Apenas chamados no status Resolvido podem ser fechados.' });
       }
 
       const { motivo } = (request.body as { motivo?: string }) || {};
@@ -896,11 +904,13 @@ export async function ticketRoutes(fastify: FastifyInstance) {
 
       const user = request.user!;
       const isSolicitante = ticket.solicitanteId === user.id;
-      const isUnidadeStaff = ['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId === user.unidadeId;
+      const isUnidadeStaff = ['TECNICO', 'GESTOR', 'DIRETOR'].includes(user.role)
+        && unitFilter(user, ticket.unidadeId)
+        && sectorFilter(user, ticket.sectorId);
       const isAdmin = user.role === 'ADMIN';
 
       if (!isSolicitante && !isUnidadeStaff && !isAdmin) {
-        return reply.status(403).send({ error: 'Você não tem permissão para reabrir este chamado.' });
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
       const [updatedTicket] = await prisma.$transaction([
@@ -965,11 +975,13 @@ export async function ticketRoutes(fastify: FastifyInstance) {
 
       const user = request.user!;
       const isSolicitante = ticket.solicitanteId === user.id;
-      const isStaff = ['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user.role) && ticket.unidadeId === user.unidadeId;
+      const isStaff = ['TECNICO', 'GESTOR', 'DIRETOR'].includes(user.role)
+        && unitFilter(user, ticket.unidadeId)
+        && sectorFilter(user, ticket.sectorId);
       const isAdmin = user.role === 'ADMIN';
 
       if (!isSolicitante && !isStaff && !isAdmin) {
-        return reply.status(403).send({ error: 'Você não tem permissão para enviar mensagens neste chamado.' });
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
       const originalStatus = ticket.status;

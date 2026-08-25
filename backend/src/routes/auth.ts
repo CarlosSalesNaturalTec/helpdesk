@@ -111,7 +111,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
       const user = await prisma.user.findUnique({
         where: { id: request.user.id },
-        include: { unidade: true },
+        include: { unidade: true, sector: true },
       });
 
       if (!user) {
@@ -131,6 +131,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           unidadeId: user.unidadeId,
           sectorId: user.sectorId,
           unidadeNome: user.unidade.nome,
+          sectorNome: user.sector?.nome,
           passwordResetRequired: user.passwordResetRequired,
         },
       });

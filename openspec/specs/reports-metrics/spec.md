@@ -5,8 +5,8 @@ Indicadores gerenciais calculados e gráficos de distribuição para análise de
 
 ## Requirements
 
-### Requirement: Cards-resumo para Diretor e Gestor de TI
-O sistema SHALL exibir quatro cards-resumo numéricos na tela de Relatórios para Diretores e Gestores de TI, contendo dados estritamente da Unidade do usuário:
+### Requirement: Cards-resumo para Diretor e Gestor
+O sistema SHALL exibir quatro cards-resumo numéricos na tela de Relatórios para Diretores e Gestores, contendo dados estritamente da Unidade do usuário:
 
 - **Total de Tickets:** contagem de chamados da Unidade no período
 - **Taxa de Fechamento (%):** (chamados fechados no período / total de chamados no período) × 100
@@ -37,10 +37,10 @@ O sistema SHALL exibir os mesmos quatro cards-resumo para o Administrador do Sis
 - **THEN** os quatro cards são recalculados instantaneamente para refletir apenas a Unidade selecionada
 
 ### Requirement: Gráfico de distribuição local
-O sistema SHALL exibir um gráfico de distribuição (barras ou pizza) para Diretores e Gestores de TI com dimensões selecionáveis: Status, Prioridade, Categoria e Satisfação. O gráfico DEVE exibir a contagem de chamados da Unidade agrupada pela dimensão selecionada.
+O sistema SHALL exibir um gráfico de distribuição (barras ou pizza) para Diretores e Gestores com dimensões selecionáveis: Status, Prioridade, Categoria e Satisfação. O gráfico DEVE exibir a contagem de chamados da Unidade agrupada pela dimensão selecionada.
 
 #### Scenario: Distribuição por Categoria
-- **WHEN** um Gestor de TI seleciona a dimensão "Categoria" no filtro de distribuição
+- **WHEN** um Gestor seleciona a dimensão "Categoria" no filtro de distribuição
 - **THEN** o gráfico exibe barras com a contagem de chamados agrupados por Hardware, Software, Rede, E-mail, Impressora, Acesso/Senha, Sistema Interno, Outro
 
 #### Scenario: Distribuição por Status
@@ -60,3 +60,24 @@ O sistema SHALL permitir filtrar os dados dos relatórios por período: últimos
 #### Scenario: Período de 90 dias
 - **WHEN** o usuário seleciona "Últimos 90 dias" no filtro de período
 - **THEN** todos os cards-resumo e gráficos são recalculados considerando apenas os chamados dos últimos 90 dias
+
+### Requirement: Métricas de relatório escopadas por Tipo de Ocorrência
+O sistema SHALL restringir as métricas de relatório — cards e distribuição por dimensão — ao Tipo de Ocorrência do usuário quando este for um Gestor. Diretor SHALL receber métricas de todos os Tipos de Ocorrência da sua Unidade. Administrador SHALL receber métricas globais, com filtro opcional.
+
+Este escopo NÃO existia anteriormente: o endpoint filtrava apenas por Unidade, expondo a um gestor as métricas de áreas que não são a sua.
+
+#### Scenario: Métricas do Gestor cobrem apenas a sua área
+- **WHEN** um Gestor de "Manutenção" da "Unidade A" consulta `GET /api/reports/metrics`
+- **THEN** os cards (total, resolvidos, TMA, satisfação) consideram apenas chamados de "Manutenção" da "Unidade A"
+
+#### Scenario: Distribuição por dimensão respeita a área
+- **WHEN** um Gestor de "Manutenção" consulta a distribuição por qualquer `dimensao`
+- **THEN** apenas chamados do seu Tipo de Ocorrência compõem a distribuição
+
+#### Scenario: PDF herda o escopo das métricas
+- **WHEN** um Gestor de "Manutenção" gera o relatório em PDF
+- **THEN** os valores impressos correspondem ao mesmo conjunto restrito exibido na tela
+
+#### Scenario: Diretor não é afetado pelo novo escopo
+- **WHEN** um Diretor da "Unidade A" consulta as métricas
+- **THEN** o resultado abrange todos os Tipos de Ocorrência da "Unidade A", como antes desta mudança

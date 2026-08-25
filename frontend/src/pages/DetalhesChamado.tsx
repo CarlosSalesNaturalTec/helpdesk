@@ -65,10 +65,12 @@ export const DetalhesChamado: React.FC = () => {
       const res = await apiClient.get<any[]>('/api/usuarios');
       return res.data;
     },
-    enabled: showReassignModal && ['ADMIN', 'GESTOR_TI', 'DIRETOR'].includes(user?.role || ''),
+    enabled: showReassignModal && ['ADMIN', 'GESTOR', 'DIRETOR'].includes(user?.role || ''),
   });
 
-  const tecnicosDisponiveis = usuariosUnidade?.filter(u => u.role === 'TECNICO' || u.role === 'GESTOR_TI') || [];
+  const tecnicosDisponiveis = usuariosUnidade?.filter(u =>
+    (u.role === 'TECNICO' || u.role === 'GESTOR') && u.ativo && u.sectorId === ticket?.sectorId
+  ) || [];
 
   // Mutations
   const invalidateQueries = () => {
@@ -231,15 +233,15 @@ export const DetalhesChamado: React.FC = () => {
 
   // Regras de Visualização das Ações
   const isSolicitante = user?.role === 'SOLICITANTE';
-  const isStaff = ['TECNICO', 'GESTOR_TI', 'DIRETOR'].includes(user?.role || '');
+  const isStaff = ['TECNICO', 'GESTOR', 'DIRETOR'].includes(user?.role || '');
   const isAdmin = user?.role === 'ADMIN';
   const belongsToSameUnit = ticket.unidadeId === user?.unidadeId;
 
   const canAssign = isStaff && belongsToSameUnit && (ticket.status === 'ABERTO' || ticket.status === 'REABERTO');
-  const canReassign = (isAdmin || (['GESTOR_TI', 'DIRETOR'].includes(user?.role || '') && belongsToSameUnit)) && ticket.status !== 'FECHADO';
+  const canReassign = (isAdmin || (['GESTOR', 'DIRETOR'].includes(user?.role || '') && belongsToSameUnit)) && ticket.status !== 'FECHADO';
   const canChangeStatus = isStaff && belongsToSameUnit && ticket.tecnicoId === user?.id && ticket.status !== 'FECHADO';
   const canClose = isSolicitante && ticket.solicitanteId === user?.id && ticket.status === 'RESOLVIDO';
-  const canAdminClose = (isAdmin || (['GESTOR_TI', 'DIRETOR'].includes(user?.role || '') && belongsToSameUnit)) && ticket.status === 'RESOLVIDO';
+  const canAdminClose = (isAdmin || (['GESTOR', 'DIRETOR'].includes(user?.role || '') && belongsToSameUnit)) && ticket.status === 'RESOLVIDO';
   const canReopen = ticket.status === 'FECHADO' && (isSolicitante || (isStaff && belongsToSameUnit) || isAdmin);
 
   const renderHistoryContent = (item: any) => {

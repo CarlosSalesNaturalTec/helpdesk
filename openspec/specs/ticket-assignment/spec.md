@@ -1,6 +1,6 @@
 # Spec: Atribuição de Chamados (ticket-assignment)
 
-Mecanismo de auto-atribuição por Técnico e reatribuição por Gestor/Diretor, sempre respeitando o escopo da Unidade.
+Mecanismo de auto-atribuição por Técnico e reatribuição por Gestor/Diretor, sempre respeitando o escopo da Unidade e, para o Gestor, do Tipo de Ocorrência.
 
 ## Purpose
 TBD
@@ -18,23 +18,34 @@ O sistema SHALL permitir que qualquer Técnico assuma um chamado com status "Abe
 - **WHEN** um Técnico da "Unidade A" tenta assumir um chamado cujo solicitante pertence à "Unidade B"
 - **THEN** o sistema retorna HTTP 404 (como se o chamado não existisse para ele)
 
-### Requirement: Reatribuição por Gestor de TI ou Diretor
-O sistema SHALL permitir que Gestores de TI e Diretores reatribuam qualquer chamado de sua Unidade para um Técnico específico pertencente à mesma Unidade. A reatribuição DEVE atualizar o responsável, mudar o status para "Em Andamento" se estiver "Aberto" ou "Reaberto", e registrar a mudança no histórico.
+### Requirement: Auto-atribuição respeita o escopo de área
+O sistema SHALL permitir que um Técnico ou Gestor assuma um chamado aberto somente quando o chamado pertencer à sua Unidade E ao seu Tipo de Ocorrência.
 
-#### Scenario: Gestor reatribui chamado da sua Unidade
-- **WHEN** um Gestor de TI da "Unidade A" acessa um chamado da sua Unidade, aciona "Reatribuir" e seleciona um Técnico válido da "Unidade A"
-- **THEN** o responsável é atualizado, o status passa para "Em Andamento" (se estava Aberto/Reaberto), a mudança é registrada no histórico
+#### Scenario: Gestor tenta assumir chamado de outra área
+- **WHEN** um Gestor de "Limpeza" requisita `PATCH /api/tickets/:id/assign` em um chamado de "Tecnologia" da sua Unidade
+- **THEN** o sistema retorna HTTP 404 e o chamado permanece no status `ABERTO`
 
-#### Scenario: Gestor não pode reatribuir para Técnico de outra Unidade
-- **WHEN** um Gestor de TI da "Unidade A" tenta reatribuir um chamado para um Técnico da "Unidade B"
-- **THEN** o sistema retorna erro informando que o Técnico selecionado não pertence à mesma Unidade
+### Requirement: Reatribuição restrita à Unidade e à área
+O sistema SHALL permitir que Gestor, Diretor e Administrador reatribuam um chamado a outro Técnico. O Gestor SHALL reatribuir apenas chamados do seu próprio Tipo de Ocorrência, e apenas para Técnicos ou Gestores do mesmo Tipo de Ocorrência e da mesma Unidade. O Diretor SHALL reatribuir chamados de qualquer área da sua Unidade, para destinatários da mesma Unidade e do mesmo Tipo de Ocorrência do chamado. O Administrador não possui restrição de Unidade, mas o destinatário SHALL pertencer ao Tipo de Ocorrência do chamado.
 
-#### Scenario: Diretor reatribui chamado
-- **WHEN** um Diretor da "Unidade A" reatribui um chamado de sua Unidade para um Técnico da "Unidade A"
-- **THEN** a reatribuição é concluída com sucesso, seguindo as mesmas regras do Gestor de TI
+#### Scenario: Gestor reatribui dentro da própria área
+- **WHEN** um Gestor de "Manutenção" da "Unidade A" reatribui um chamado de "Manutenção" para um Técnico de "Manutenção" da "Unidade A"
+- **THEN** a reatribuição é realizada e um registro `REATRIBUICAO` é gravado em `TicketHistory`
+
+#### Scenario: Gestor tenta reatribuir chamado de outra área
+- **WHEN** um Gestor de "Manutenção" tenta reatribuir um chamado de "Tecnologia"
+- **THEN** o sistema retorna HTTP 404 e a reatribuição não ocorre
+
+#### Scenario: Reatribuição para técnico de outra área é rejeitada
+- **WHEN** um Diretor tenta reatribuir um chamado de "Tecnologia" para um Técnico de "Limpeza" da mesma Unidade
+- **THEN** o sistema retorna HTTP 400 com mensagem indicando que o destinatário não pertence ao Tipo de Ocorrência do chamado
+
+#### Scenario: Lista de destinatários oferecida na interface
+- **WHEN** um Gestor abre o modal de reatribuição de um chamado
+- **THEN** a lista de destinatários contém apenas Técnicos e Gestores ativos da mesma Unidade e do mesmo Tipo de Ocorrência do chamado
 
 ### Requirement: Visibilidade dos chamados por papel
-O sistema SHALL garantir que cada papel veja apenas os chamados permitidos: Técnico, Gestor de TI e Diretor veem todos os chamados de sua Unidade; Solicitante vê apenas seus próprios chamados; Administrador do Sistema vê todos os chamados de todas as Unidades.
+O sistema SHALL garantir que cada papel veja apenas os chamados permitidos: Técnico, Gestor e Diretor veem os chamados de sua Unidade (Técnico e Gestor restritos adicionalmente ao seu Tipo de Ocorrência); Solicitante vê apenas seus próprios chamados; Administrador do Sistema vê todos os chamados de todas as Unidades.
 
 #### Scenario: Técnico vê fila de chamados da sua Unidade
 - **WHEN** um Técnico da "Unidade A" acessa a tela de Gestão de Chamados

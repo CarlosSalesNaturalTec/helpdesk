@@ -1,11 +1,4 @@
-# Spec: RBAC (rbac)
-
-Controle de acesso baseado em papéis (Role-Based Access Control) com isolamento de dados entre Unidades. Define o que cada persona pode ver e fazer no sistema, com enforcement no servidor.
-
-## Purpose
-TBD
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Cinco papéis com permissões distintas
 O sistema SHALL implementar cinco papéis de usuário com as seguintes permissões:
@@ -35,17 +28,6 @@ O papel anteriormente denominado `GESTOR_TI` SHALL passar a se chamar `GESTOR`. 
 - **WHEN** o Administrador do Sistema consulta qualquer recurso
 - **THEN** o sistema retorna dados de todas as Unidades e Tipos de Ocorrência sem restrição
 
-### Requirement: Enforcement de permissões no servidor
-O sistema SHALL aplicar as regras de autorização no backend, e NÃO apenas na interface. Nenhum usuário DEVE conseguir acessar dados fora do seu escopo via manipulação de parâmetros de requisição.
-
-#### Scenario: Técnico tenta acessar chamado de outra Unidade via ID
-- **WHEN** um Técnico da "Unidade A" faz uma requisição direta para `/api/tickets/999` onde o ticket 999 pertence a um solicitante da "Unidade B"
-- **THEN** o sistema retorna HTTP 404 (recurso não encontrado), não distinguindo entre "não existe" e "você não tem permissão"
-
-#### Scenario: Solicitante tenta acessar chamado de outro usuário
-- **WHEN** um Solicitante faz uma requisição para um chamado que não é seu
-- **THEN** o sistema retorna HTTP 404 como se o recurso não existisse
-
 ### Requirement: Isolamento de dados entre Unidades e áreas
 O sistema SHALL garantir que Técnico, Gestor e Diretor alocados a uma Unidade não visualizem chamados, usuários ou quaisquer dados cujo contexto pertença a outra Unidade. O sistema SHALL adicionalmente garantir que Técnico e Gestor não visualizem chamados, métricas de dashboard ou métricas de relatório pertencentes a um Tipo de Ocorrência diferente do seu. Apenas o Administrador do Sistema possui visão irrestrita; o Diretor possui visão irrestrita dentro da sua Unidade.
 
@@ -60,6 +42,8 @@ O sistema SHALL garantir que Técnico, Gestor e Diretor alocados a uma Unidade n
 #### Scenario: Diretor tenta editar usuário de outra Unidade
 - **WHEN** um Diretor da "Unidade A" tenta editar um usuário da "Unidade B"
 - **THEN** o sistema retorna HTTP 404 e a edição não é realizada
+
+## ADDED Requirements
 
 ### Requirement: Escopo derivado de forma centralizada
 O sistema SHALL derivar a cláusula de escopo (Unidade e Tipo de Ocorrência) a partir do papel do usuário em um único ponto compartilhado, em vez de repetir a condicional em cada módulo de rota. Toda consulta que retorne chamados ou métricas agregadas SHALL aplicar essa cláusula.

@@ -20,6 +20,6 @@ Para marcar como **Resolvido**, descreva a solução aplicada (mínimo de 10 car
 
 ## Reatribuição
 
-Um Gestor de TI, Diretor ou Administrador pode reatribuir um chamado da sua Unidade para outro Técnico (ou Gestor) da mesma Unidade — você será notificado se um chamado for atribuído a você por reatribuição, ou se um chamado seu for movido para outro colega.
+Um Gestor, Diretor ou Administrador pode reatribuir um chamado para outro Técnico (ou Gestor) da mesma Unidade e do mesmo Tipo de Ocorrência — você será notificado se um chamado for atribuído a você por reatribuição, ou se um chamado seu for movido para outro colega.
 
 Veja o fluxo completo de estados em [Ciclo de vida do chamado](../funcionalidades/ciclo-de-vida.md).

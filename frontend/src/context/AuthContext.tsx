@@ -6,9 +6,11 @@ export interface User {
   id: number;
   nome: string;
   email: string;
-  role: 'SOLICITANTE' | 'TECNICO' | 'GESTOR_TI' | 'DIRETOR' | 'ADMIN';
+  role: 'SOLICITANTE' | 'TECNICO' | 'GESTOR' | 'DIRETOR' | 'ADMIN';
   unidadeId: number;
   unidadeNome?: string;
+  sectorId?: number;
+  sectorNome?: string;
   passwordResetRequired: boolean;
 }
 
