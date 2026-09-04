@@ -145,9 +145,10 @@ export const Layout: React.FC = () => {
               </>
             )}
 
-            {/* Último item do nav. O destino é `index.html` explícito: o
-                endpoint do bucket resolve apenas chaves exatas, e `/manual/`
-                retorna 404. Ver use_directory_urls em mkdocs.yml. */}
+            {/* Último item do nav. O destino é `index.html` explícito por
+                estabilidade das URLs já publicadas — `/manual/` também
+                funciona no Firebase Hosting. Ver use_directory_urls em
+                mkdocs.yml. */}
             <a
               href="/manual/index.html"
               target="_blank"

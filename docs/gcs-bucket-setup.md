@@ -33,14 +33,14 @@ O frontend precisará fazer requisições para exibir imagens, etc.
    ```json
    [
      {
-       "origin": ["https://helpdesk-frontend-SEU-PROJETO.storage.googleapis.com", "http://localhost:5173"],
+       "origin": ["https://SEU-PROJETO.web.app", "http://localhost:5173"],
        "method": ["GET", "HEAD", "OPTIONS"],
        "responseHeader": ["Content-Type"],
        "maxAgeSeconds": 3600
      }
    ]
    ```
-   *Substitua a URL pela URL real do seu frontend no GCS/Cloud Run*.
+   *Substitua a URL pela URL real do seu frontend no Firebase Hosting*.
 
 2. Aplique a política usando a CLI do Google Cloud:
    ```bash

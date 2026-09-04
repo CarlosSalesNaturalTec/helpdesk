@@ -10,22 +10,22 @@ Ordem deliberada: **`base: '/'` antes de qualquer coisa de hospedagem** (tarefa 
 
 ## 2. Frontend
 
-- [ ] 2.1 `frontend/vite.config.ts`: `base: './'` → `base: '/'`. Rebuildar e confirmar que o `index.html` gerado referencia `/assets/…` (barra inicial), não `./assets/…`. (~1h)
-- [ ] 2.2 Criar `firebase.json` na raiz: `public: "frontend/dist"`, reescritas na ordem `/manual/**` → `/manual/404.html` e depois `**` → `/index.html`, e headers de cache (`/assets/**` imutável por 1 ano; `**/*.html` `no-cache`). (~2h)
-- [ ] 2.3 Criar `.firebaserc` apontando para o projeto `helpdesk-499614`. (~30min)
+- [x] 2.1 `frontend/vite.config.ts`: `base: './'` → `base: '/'`. Rebuildar e confirmar que o `index.html` gerado referencia `/assets/…` (barra inicial), não `./assets/…`. (~1h)
+- [x] 2.2 Criar `firebase.json` na raiz: `public: "frontend/dist"`, reescritas na ordem `/manual/**` → `/manual/404.html` e depois `**` → `/index.html`, e headers de cache (`/assets/**` imutável por 1 ano; `**/*.html` `no-cache`). (~2h)
+- [x] 2.3 Criar `.firebaserc` apontando para o projeto `helpdesk-499614`. (~30min)
 
 ## 3. Expiração de sessão sem recarregar a página
 
-- [ ] 3.1 `frontend/src/api/client.ts`: no interceptor de 401, remover `localStorage.removeItem` + `window.location.href` e disparar `window.dispatchEvent(new Event('auth:unauthorized'))`. Preservar a exceção que ignora `/api/auth/login`, para que credencial inválida continue exibindo o erro na tela em vez de deslogar. (~1h)
-- [ ] 3.2 `frontend/src/context/AuthContext.tsx`: registrar listener de `auth:unauthorized` num `useEffect` que chama `logout()`, com remoção do listener no cleanup. O `ProtectedRoute` já redireciona para `/login` quando `user` é `null` — nenhuma navegação explícita é necessária. (~2h)
-- [ ] 3.3 Verificar manualmente: com a aplicação aberta, apagar o token do `localStorage`, disparar uma ação que chame a API, e confirmar que a tela vai para `/login` **sem recarregar a página** (o spinner do React não deve piscar como recarga completa). (~1h)
+- [x] 3.1 `frontend/src/api/client.ts`: no interceptor de 401, remover `localStorage.removeItem` + `window.location.href` e disparar `window.dispatchEvent(new Event('auth:unauthorized'))`. Preservar a exceção que ignora `/api/auth/login`, para que credencial inválida continue exibindo o erro na tela em vez de deslogar. (~1h)
+- [x] 3.2 `frontend/src/context/AuthContext.tsx`: registrar listener de `auth:unauthorized` num `useEffect` que chama `logout()`, com remoção do listener no cleanup. O `ProtectedRoute` já redireciona para `/login` quando `user` é `null` — nenhuma navegação explícita é necessária. (~2h)
+- [x] 3.3 Verificar manualmente: com a aplicação aberta, apagar o token do `localStorage`, disparar uma ação que chame a API, e confirmar que a tela vai para `/login` **sem recarregar a página** (o spinner do React não deve piscar como recarga completa). (~1h)
 
 ## 4. Pipeline
 
-- [ ] 4.1 `cloudbuild.yaml`, estágio `deploy-frontend`: substituir o `gsutil rsync` + os três `gsutil setmeta` por `npm install -g firebase-tools` e `firebase deploy --only hosting --project ${PROJECT_ID} --non-interactive`, em imagem `node:20`. O cache passa a ser responsabilidade do `firebase.json`. (~2h)
-- [ ] 4.2 Atualizar as substituições: `_FRONTEND_URL: https://helpdesk-499614.web.app`. Trocar o `ALLOWED_ORIGIN` do `gcloud run deploy`, que hoje é montado a partir de `_FRONTEND_BUCKET`, para usar `${_FRONTEND_URL}`. (~1h)
-- [ ] 4.3 Remover a substituição `_FRONTEND_BUCKET`, agora sem uso. Manter `_VITE_API_URL` e `_GCS_BUCKET_NAME` (bucket de anexos) intactos. (~30min)
-- [ ] 4.4 Confirmar que `build-docs` segue rodando entre `build-frontend` e `deploy-frontend`, e que o `SITE_URL` passado ao MkDocs agora resolve para `https://helpdesk-499614.web.app/manual/`. (~1h)
+- [x] 4.1 `cloudbuild.yaml`, estágio `deploy-frontend`: substituir o `gsutil rsync` + os três `gsutil setmeta` por `npm install -g firebase-tools` e `firebase deploy --only hosting --project ${PROJECT_ID} --non-interactive`, em imagem `node:20`. O cache passa a ser responsabilidade do `firebase.json`. (~2h)
+- [x] 4.2 Atualizar as substituições: `_FRONTEND_URL: https://helpdesk-499614.web.app`. Trocar o `ALLOWED_ORIGIN` do `gcloud run deploy`, que hoje é montado a partir de `_FRONTEND_BUCKET`, para usar `${_FRONTEND_URL}`. (~1h)
+- [x] 4.3 Remover a substituição `_FRONTEND_BUCKET`, agora sem uso. Manter `_VITE_API_URL` e `_GCS_BUCKET_NAME` (bucket de anexos) intactos. (~30min)
+- [x] 4.4 Confirmar que `build-docs` segue rodando entre `build-frontend` e `deploy-frontend`, e que o `SITE_URL` passado ao MkDocs agora resolve para `https://helpdesk-499614.web.app/manual/`. (~1h)
 
 ## 5. Verificação em produção
 
@@ -43,12 +43,12 @@ Não há suíte automatizada; a verificação é manual, contra o ambiente publi
 
 ## 6. Documentação
 
-- [ ] 6.1 `docs/Deploy_GCP.md`: reescrever o Passo 8 ("Build e Deploy do Frontend no Cloud Storage" → "…no Firebase Hosting"), remover a criação do bucket de frontend e o `--web-main-page-suffix`/`--web-error-page` (que nunca tiveram efeito no endpoint usado), atualizar Passo 9 (trigger), Passo 10 (verificação) e a tabela de custos. (~3h)
-- [ ] 6.2 `docs/Deploy_GCP.md`: reescrever as duas notas de "Atenção" sobre `NoSuchKey` em URLs terminadas em `/` e sobre deep links do SPA — deixam de ser limitações aceitas e passam a ser comportamento resolvido. Ajustar também a nota sobre exclusão de `/manual/` em load balancer. (~1h)
-- [ ] 6.3 `docs/manual/operacao/deploy.md` e `docs/manual/operacao/arquitetura.md`: o frontend deixa de ser servido por Cloud Storage. Atualizar a descrição da arquitetura e do fluxo de publicação. (~2h)
-- [ ] 6.4 `CLAUDE.md`: tabela de serviços GCP (linha "Frontend"), descrição dos estágios do pipeline e a nota sobre `FRONTEND_URL` precisar de load balancer para deep links — que deixa de ser verdade. (~1h)
-- [ ] 6.5 `.env.example`: atualizar os exemplos de `FRONTEND_URL` e `ALLOWED_ORIGIN` para a nova origem. (~30min)
-- [ ] 6.6 `frontend/src/components/Layout.tsx:149`: o comentário explica que o link do manual aponta para `/manual/index.html` porque "o endpoint do bucket resolve apenas chaves exatas". Deixa de ser verdade; atualizar o comentário. O `href` pode permanecer como está — continua válido. (~30min)
+- [x] 6.1 `docs/Deploy_GCP.md`: reescrever o Passo 8 ("Build e Deploy do Frontend no Cloud Storage" → "…no Firebase Hosting"), remover a criação do bucket de frontend e o `--web-main-page-suffix`/`--web-error-page` (que nunca tiveram efeito no endpoint usado), atualizar Passo 9 (trigger), Passo 10 (verificação) e a tabela de custos. (~3h)
+- [x] 6.2 `docs/Deploy_GCP.md`: reescrever as duas notas de "Atenção" sobre `NoSuchKey` em URLs terminadas em `/` e sobre deep links do SPA — deixam de ser limitações aceitas e passam a ser comportamento resolvido. Ajustar também a nota sobre exclusão de `/manual/` em load balancer. (~1h)
+- [x] 6.3 `docs/manual/operacao/deploy.md` e `docs/manual/operacao/arquitetura.md`: o frontend deixa de ser servido por Cloud Storage. Atualizar a descrição da arquitetura e do fluxo de publicação. (~2h)
+- [x] 6.4 `CLAUDE.md`: tabela de serviços GCP (linha "Frontend"), descrição dos estágios do pipeline e a nota sobre `FRONTEND_URL` precisar de load balancer para deep links — que deixa de ser verdade. (~1h)
+- [x] 6.5 `.env.example`: atualizar os exemplos de `FRONTEND_URL` e `ALLOWED_ORIGIN` para a nova origem. (~30min)
+- [x] 6.6 `frontend/src/components/Layout.tsx:149`: o comentário explica que o link do manual aponta para `/manual/index.html` porque "o endpoint do bucket resolve apenas chaves exatas". Deixa de ser verdade; atualizar o comentário. O `href` pode permanecer como está — continua válido. (~30min)
 
 ## 7. Descomissionamento
 

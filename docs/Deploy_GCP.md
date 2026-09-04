@@ -1,6 +1,6 @@
 # Deploy no Google Cloud Platform — HelpDesk
 
-Guia passo-a-passo para realizar o deploy completo da aplicação HelpDesk no Google Cloud Platform (GCP). Ao final deste guia, você terá: backend serverless no Cloud Run, banco PostgreSQL gerenciado no Cloud SQL, frontend estático no Cloud Storage, secrets no Secret Manager e pipeline CI/CD com Cloud Build.
+Guia passo-a-passo para realizar o deploy completo da aplicação HelpDesk no Google Cloud Platform (GCP). Ao final deste guia, você terá: backend serverless no Cloud Run, banco PostgreSQL gerenciado no Cloud SQL, frontend estático no Firebase Hosting, secrets no Secret Manager e pipeline CI/CD com Cloud Build.
 
 ---
 
@@ -11,9 +11,9 @@ Guia passo-a-passo para realizar o deploy completo da aplicação HelpDesk no Go
 │                          GCP Project                                │
 │                                                                     │
 │  ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐    │
-│  │ Cloud Storage │────▶│   Cloud Run       │────▶│  Cloud SQL   │    │
-│  │  (Frontend)   │     │  (Backend API)    │     │ (PostgreSQL) │    │
-│  │               │     │  Port 3001        │     │  Port 5432   │    │
+│  │  Firebase     │────▶│   Cloud Run       │────▶│  Cloud SQL   │    │
+│  │  Hosting      │     │  (Backend API)    │     │ (PostgreSQL) │    │
+│  │  (Frontend)   │     │  Port 3001        │     │  Port 5432   │    │
 │  └──────────────┘     └───────┬────────────┘     └──────────────┘    │
 │                               │                                      │
 │                        ┌──────┴──────┐                               │
@@ -27,7 +27,8 @@ Guia passo-a-passo para realizar o deploy completo da aplicação HelpDesk no Go
 │                                                                     │
 │  Fluxo:                                                             │
 │  git push → Cloud Build trigger → Build Docker → Push AR →         │
-│  Deploy Cloud Run → Build Frontend → Upload Cloud Storage          │
+│  Deploy Cloud Run → Build Frontend/Manual → Publish Firebase       │
+│  Hosting                                                            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -42,6 +43,11 @@ Antes de começar, certifique-se de ter:
   gcloud auth login
   gcloud config set project <PROJECT_ID>
   ```
+- **Firebase CLI** instalado (usado no Passo 8, para o deploy do frontend):
+  ```powershell
+  npm install -g firebase-tools
+  firebase login
+  ```
 - **Docker** instalado localmente
 - **Um projeto GCP** com **billing habilitado** (o guia assume que o projeto será criado ou já existe)
 - **Permissões de Owner ou Editor** no projeto GCP (necessário para habilitar APIs, criar recursos e configurar IAM)
@@ -55,7 +61,8 @@ Antes de começar, certifique-se de ter:
 | ------------------- | -------------------------------------- | --------------------- |
 | **Cloud SQL**       | PostgreSQL 15, db-g1-small (1 vCPU, 1.7 GB RAM), 10 GB SSD | ~$25.00 |
 | **Cloud Run**       | min-instances=0, 512 MiB, 1 vCPU       | ~$0.00 (free tier cobre tráfego baixo) |
-| **Cloud Storage**   | Standard, < 1 GB armazenado            | ~$0.50                |
+| **Firebase Hosting** | plano Spark (gratuito), 10 GB armazenados / 360 MB de transferência por dia | ~$0.00 |
+| **Cloud Storage**   | Standard, < 1 GB armazenado (bucket de anexos) | ~$0.50                |
 | **Artifact Registry** | < 1 GB de imagens Docker             | ~$0.50                |
 | **Secret Manager**  | 4 secrets                              | ~$0.25                |
 | **Cloud Build**     | e2-medium, ~5 builds/mês               | ~$0.00 (free tier: 120 build-min/dia) |
@@ -232,8 +239,8 @@ gcloud run deploy helpdesk-backend `
   --port=3001 `
   --set-env-vars=NODE_ENV=production,PORT=3001,HOST=0.0.0.0 `
   --set-env-vars=EMAIL_FROM=helpdesk@naturaltec.com.br `
-  --set-env-vars=FRONTEND_URL=https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID> `
-  --set-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com `
+  --set-env-vars=FRONTEND_URL=https://<PROJECT_ID>.web.app `
+  --set-env-vars=ALLOWED_ORIGIN=https://<PROJECT_ID>.web.app `
   --set-env-vars=GCS_BUCKET_NAME=helpdesk-attachments-<PROJECT_ID> `
   --set-secrets=DATABASE_URL=helpdesk-database-url:latest `
   --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest `
@@ -245,7 +252,7 @@ gcloud run deploy helpdesk-backend `
 
 > **`EMAIL_FROM`** precisa ser um remetente (ou domínio) verificado no SendGrid, caso contrário as mensagens são rejeitadas na entrega.
 
-> **`FRONTEND_URL`** é usada para montar os links dos e-mails (`${FRONTEND_URL}/chamados/{id}`). O valor acima só será definitivo no Passo 8, quando o bucket do frontend existir — volte aqui e atualize com `gcloud run services update` (veja 11.3). Note que o endpoint direto do Cloud Storage **não reescreve rotas de SPA**: esses links profundos só resolvem quando o frontend estiver atrás de um domínio customizado / load balancer com fallback para `index.html`. Até lá, o usuário precisa navegar pelo sistema até o chamado.
+> **`FRONTEND_URL`** é usada para montar os links dos e-mails (`${FRONTEND_URL}/chamados/{id}`). O site padrão do Firebase (`<PROJECT_ID>.web.app`) já existe assim que o Firebase é habilitado no projeto (Passo 8.1), então o valor acima já é definitivo — não é necessário voltar aqui depois. O Firebase Hosting reescreve qualquer rota do SPA para `index.html` (`firebase.json`), então esses links profundos resolvem diretamente, sem domínio customizado nem load balancer.
 
 > **`GCS_BUCKET_NAME`** é obrigatória para o upload de anexos de chamados; sem ela, as requisições de anexo falham com HTTP 500. A criação e as permissões desse bucket (incluindo `roles/storage.objectAdmin` para a service account do Cloud Run) estão em [`gcs-bucket-setup.md`](./gcs-bucket-setup.md).
 
@@ -320,88 +327,112 @@ gcloud run jobs execute helpdesk-migration --region=us-central1
 
 ---
 
-## 11. Passo 8: Build e Deploy do Frontend no Cloud Storage
+## 11. Passo 8: Build e Deploy do Frontend no Firebase Hosting
 
-### 11.1 Criar bucket
+### 11.1 Habilitar o Firebase no projeto GCP existente
 
-```powershell
-gcloud storage buckets create gs://helpdesk-frontend-<PROJECT_ID> `
-  --location=us-central1 `
-  --no-public-access-prevention
-```
-
-> Para SPAs sem dados sensíveis no frontend, este guia usa acesso público controlado. Se preferir bucket privado com load balancer ou URLs assinadas, crie sem `--no-public-access-prevention` e pule o passo abaixo.
-
-Para tornar o bucket público (SPA):
+O Firebase Hosting roda sobre o mesmo projeto GCP — não é um projeto separado:
 
 ```powershell
-gcloud storage buckets add-iam-policy-binding gs://helpdesk-frontend-<PROJECT_ID> `
-  --member=allUsers `
-  --role=roles/storage.objectViewer
+firebase projects:addfirebase <PROJECT_ID>
 ```
 
-Configure a página de índice e erro para SPA:
+Confirme que o site padrão foi criado (a URL segue o padrão `<PROJECT_ID>.web.app`):
 
 ```powershell
-gcloud storage buckets update gs://helpdesk-frontend-<PROJECT_ID> `
-  --web-main-page-suffix=index.html `
-  --web-error-page=index.html
+firebase hosting:sites:list --project <PROJECT_ID>
 ```
 
-### 11.2 Build e upload
+### 11.2 Ativar a API e conceder permissão à service account do Cloud Build
 
-Obtenha a URL do Cloud Run (do Passo 6):
+```powershell
+gcloud services enable firebasehosting.googleapis.com --project <PROJECT_ID>
+
+$PROJECT_NUMBER = (gcloud projects describe <PROJECT_ID> --format='value(projectNumber)')
+gcloud projects add-iam-policy-binding <PROJECT_ID> `
+  --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" `
+  --role="roles/firebasehosting.admin"
+```
+
+> Se esta permissão for esquecida, o estágio `deploy-frontend` do Cloud Build falha com 403 — o backend já terá subido normalmente (Passo 6 roda antes), e o frontend fica na versão publicada anteriormente. Falha visível, sem estado inconsistente.
+
+### 11.3 `firebase.json` e `.firebaserc`
+
+O repositório já versiona os dois arquivos na raiz — não é necessário criar nada manualmente. `firebase.json` declara onde estão os arquivos publicáveis, a ordem das reescritas (SPA e manual) e os headers de cache:
+
+```json
+{
+  "hosting": {
+    "public": "frontend/dist",
+    "ignore": ["firebase.json", "**/.*"],
+    "rewrites": [
+      { "source": "/manual/**", "destination": "/manual/404.html" },
+      { "source": "**", "destination": "/index.html" }
+    ],
+    "headers": [
+      {
+        "source": "/assets/**",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ]
+  }
+}
+```
+
+A reescrita de `/manual/**` para o 404 do próprio manual vem **antes** do catch-all do SPA — assim uma URL inexistente sob `/manual/` cai na página 404 do MkDocs, e não na tela da aplicação. Arquivos estáticos existentes (`/assets/*.js`, `/manual/perfis/tecnico.html`) são sempre servidos diretamente, antes de qualquer reescrita.
+
+`.firebaserc` só precisa apontar para o projeto:
+
+```json
+{
+  "projects": {
+    "default": "<PROJECT_ID>"
+  }
+}
+```
+
+### 11.4 Build e deploy manual (validação única)
+
+Antes de tocar no pipeline, valide credenciais e reescritas com um deploy manual a partir de um build local:
 
 ```powershell
 $CLOUD_RUN_URL = (gcloud run services describe helpdesk-backend `
   --region=us-central1 `
   --format='value(status.url)')
-```
 
-Faça o build do frontend com a URL da API:
-
-```powershell
+npm ci
+npm run build --workspace=shared
 $env:VITE_API_URL = $CLOUD_RUN_URL; npm run build --workspace=frontend
+
+firebase deploy --only hosting --project <PROJECT_ID>
 ```
 
-Faça o upload para o bucket:
-
-```powershell
-gsutil -m rsync -r -d frontend/dist/ gs://helpdesk-frontend-<PROJECT_ID>/
-
-# Configure cache headers
-gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' `
-  gs://helpdesk-frontend-<PROJECT_ID>/**/*.js
-gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' `
-  gs://helpdesk-frontend-<PROJECT_ID>/**/*.css
-gsutil -m setmeta -h 'Cache-Control:no-cache' `
-  gs://helpdesk-frontend-<PROJECT_ID>/index.html
-```
-
-> **Manual do sistema:** o pipeline do Cloud Build também publica o manual de uso (MkDocs) dentro deste mesmo bucket, em `frontend/dist/manual/`, acessível em `<url-do-frontend>/manual/index.html`. Veja `docs/manual/operacao/deploy.md` para detalhes da etapa `build-docs`.
+> **Base absoluta dos assets:** `frontend/vite.config.ts` usa `base: '/'` (não `'./'`). Com base relativa, uma rota aninhada servida pela reescrita de SPA — `/chamados/123` — resolveria os assets contra `/chamados/assets/…` em vez de `/assets/…`, resultando em tela em branco. `/login` funcionaria e mascararia o problema; o deep link de e-mail, que motivou esta migração, é quem quebraria.
 >
-> **Atenção — URLs terminadas em `/` não funcionam neste endpoint.** `<bucket>.storage.googleapis.com` é a XML API: ela devolve objetos pela chave exata e **não aplica `MainPageSuffix`**. `/manual/` retorna `404 NoSuchKey` mesmo com o objeto `manual/index.html` presente, porque `manual/` não é uma chave. Por isso o `mkdocs.yml` usa `use_directory_urls: false` e o link da navbar aponta para `/manual/index.html`. O mesmo motivo explica por que os deep links do SPA (`/chamados/{id}`, usados nos e-mails de notificação) retornam 404 no endpoint direto do bucket.
->
-> **Atenção com load balancer:** se este frontend for colocado atrás de um load balancer com regra de reescrita de SPA (fallback de qualquer rota para `index.html` da aplicação), essa regra **deve excluir o prefixo `/manual/`** — senão a aplicação captura as rotas do manual antes delas chegarem aos arquivos estáticos gerados pelo MkDocs. O load balancer também resolve os dois 404 descritos acima.
+> **Manual do sistema:** o pipeline do Cloud Build também publica o manual de uso (MkDocs), gerado dentro de `frontend/dist/manual/` e publicado na mesma operação `firebase deploy`, acessível em `<url-do-frontend>/manual/index.html` — e também em `<url-do-frontend>/manual/`, que o Firebase Hosting resolve como índice de diretório. Veja `docs/manual/operacao/deploy.md` para detalhes da etapa `build-docs`.
 
 Acesse o frontend em:
 
 ```
-https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>/index.html
+https://<PROJECT_ID>.web.app/login
 ```
 
-### 11.3 Atualizar CORS e a URL do frontend no Cloud Run
+### 11.5 Confirmar CORS e a URL do frontend no Cloud Run
 
-Após o deploy do frontend, atualize o `ALLOWED_ORIGIN` e o `FRONTEND_URL` no Cloud Run:
+`ALLOWED_ORIGIN` e `FRONTEND_URL` já foram definidas com o valor final no Passo 6 (`https://<PROJECT_ID>.web.app`), porque o site padrão do Firebase existe desde o Passo 8.1 — não há necessidade de atualizar o Cloud Run de novo aqui. Se os valores tiverem sido definidos de outra forma, corrija com:
 
 ```powershell
 gcloud run services update helpdesk-backend `
   --region=us-central1 `
-  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com `
-  --update-env-vars=FRONTEND_URL=https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>
+  --update-env-vars=ALLOWED_ORIGIN=https://<PROJECT_ID>.web.app `
+  --update-env-vars=FRONTEND_URL=https://<PROJECT_ID>.web.app
 ```
 
-> `ALLOWED_ORIGIN` é a **origem** (esquema + host, sem caminho e sem barra no final) usada na validação de CORS; `FRONTEND_URL` é a **URL base** usada para montar os links dos e-mails, e por isso inclui o caminho do bucket. Quando houver domínio customizado, ambas passam a apontar para ele.
+> `ALLOWED_ORIGIN` é a **origem** (esquema + host, sem caminho e sem barra no final) usada na validação de CORS; `FRONTEND_URL` é a **URL base** usada para montar os links dos e-mails. No Firebase Hosting as duas coincidem, porque não há caminho de bucket a considerar. Quando houver domínio customizado, ambas passam a apontar para ele.
 
 ---
 
@@ -429,16 +460,13 @@ gcloud projects add-iam-policy-binding <PROJECT_ID> `
   --member="$CLOUD_BUILD_SA" `
   --role="roles/secretmanager.secretAccessor"
 
-# Permissão para upload no Cloud Storage
-gcloud projects add-iam-policy-binding <PROJECT_ID> `
-  --member="$CLOUD_BUILD_SA" `
-  --role="roles/storage.admin"
-
 # Permissão para Cloud SQL
 gcloud projects add-iam-policy-binding <PROJECT_ID> `
   --member="$CLOUD_BUILD_SA" `
   --role="roles/cloudsql.client"
 ```
+
+> A permissão para publicar no Firebase Hosting (`roles/firebasehosting.admin`) já foi concedida a esta mesma service account no Passo 8.2 — não repita aqui.
 
 ### 12.2 Criar o trigger
 
@@ -452,7 +480,7 @@ gcloud builds triggers create github `
   --repo-owner="<GITHUB_USER_OR_ORG>" `
   --branch-pattern="^main$" `
   --build-config="cloudbuild.yaml" `
-  --substitutions="_REGION=us-central1,_ARTIFACT_REGISTRY_REPO=helpdesk-repo,_CLOUD_RUN_SERVICE=helpdesk-backend,_CLOUD_SQL_INSTANCE=helpdesk-db,_FRONTEND_BUCKET=helpdesk-frontend-<PROJECT_ID>,_VITE_API_URL=<CLOUD_RUN_URL>,_GCS_BUCKET_NAME=helpdesk-attachments-<PROJECT_ID>,_EMAIL_FROM=helpdesk@naturaltec.com.br,_FRONTEND_URL=https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>"
+  --substitutions="_REGION=us-central1,_ARTIFACT_REGISTRY_REPO=helpdesk-repo,_CLOUD_RUN_SERVICE=helpdesk-backend,_CLOUD_SQL_INSTANCE=helpdesk-db,_VITE_API_URL=<CLOUD_RUN_URL>,_GCS_BUCKET_NAME=helpdesk-attachments-<PROJECT_ID>,_EMAIL_FROM=helpdesk@naturaltec.com.br,_FRONTEND_URL=https://<PROJECT_ID>.web.app"
 ```
 
 > **Nota:** Substitua `<CLOUD_RUN_URL>` pela URL real do serviço Cloud Run (ex: `https://helpdesk-backend-xxxxx-uc.a.run.app`).
@@ -497,9 +525,12 @@ Invoke-RestMethod -Uri https://<CLOUD_RUN_URL>/api/auth/login `
 
 ### 13.2 Frontend
 
-- Acesse `https://storage.googleapis.com/helpdesk-frontend-<PROJECT_ID>/index.html`
+- Acesse `https://<PROJECT_ID>.web.app/login` diretamente (URL digitada, não navegada) — deve responder 200 e renderizar a tela de Login
 - Faça login com `admin@helpdesk.com` / `admin123`
 - Verifique: dashboard carrega, lista de tickets aparece, pode abrir um novo chamado
+- **Deep link aninhado:** cole `https://<PROJECT_ID>.web.app/chamados/{id}` de um chamado real direto no navegador e confirme que a tela carrega — é o caso que quebraria com `base: './'` em `vite.config.ts`
+- F5 em uma tela autenticada (ex.: `/dashboard`) e confirme que recarrega sem erro do servidor
+- Acesse `https://<PROJECT_ID>.web.app/manual/` (barra final) e confirme 200 — e uma URL inexistente sob `/manual/`, que deve cair na página 404 do próprio manual, não na tela da aplicação
 
 ### 13.3 Banco de dados
 
@@ -512,8 +543,8 @@ gcloud sql connect helpdesk-db --user=helpdesk-user
 ### 13.4 Pipeline
 
 - Faça um commit de teste em `main`
-- Verifique que o Cloud Build executa todos os 4 stages
-- Confirme que a nova versão está no ar
+- Verifique que o Cloud Build executa todos os 5 stages
+- Confirme que a nova versão está no ar, tanto no Cloud Run quanto no Firebase Hosting
 
 ---
 
@@ -580,11 +611,11 @@ npx prisma migrate reset --force
 
 ### 14.4 CORS Bloqueando Frontend
 
-**Sintoma:** Frontend carrega mas chamadas de API retornam erro de CORS no console do navegador.
+**Sintoma:** o formulário de login exibe "Falha ao autenticar. Verifique sua conexão." — o sintoma genérico de uma chamada de API bloqueada por CORS no navegador.
 
 **Causas prováveis:**
 - `ALLOWED_ORIGIN` não está configurada ou tem o valor errado
-- URL do Cloud Storage não corresponde ao valor em `ALLOWED_ORIGIN`
+- A URL do Firebase Hosting (`https://<PROJECT_ID>.web.app`) não corresponde ao valor em `ALLOWED_ORIGIN`
 
 **Solução:**
 ```powershell
@@ -595,7 +626,7 @@ gcloud run services describe helpdesk-backend --region=us-central1 `
 # Atualize com a origem correta (sem a barra no final)
 gcloud run services update helpdesk-backend `
   --region=us-central1 `
-  --update-env-vars=ALLOWED_ORIGIN=https://storage.googleapis.com
+  --update-env-vars=ALLOWED_ORIGIN=https://<PROJECT_ID>.web.app
 ```
 
 ### 14.5 Cloud Build Sem Permissão
@@ -648,11 +679,11 @@ docker history us-central1-docker.pkg.dev/<PROJECT_ID>/helpdesk-repo/helpdesk-ba
 | `PORT`             | Cloud Run env   | Porta do servidor (sempre `3001`)              |
 | `HOST`             | Cloud Run env   | Endereço de bind (sempre `0.0.0.0`)            |
 | `EMAIL_FROM`       | Cloud Run env   | Remetente dos e-mails; precisa ser verificado no SendGrid. Padrão do código: `helpdesk@naturaltec.com.br` |
-| `FRONTEND_URL`     | Cloud Run env   | URL base do frontend, usada nos links dos e-mails (`${FRONTEND_URL}/chamados/{id}`). Padrão do código: `http://localhost:5173` |
-| `ALLOWED_ORIGIN`   | Cloud Run env   | Origem permitida para CORS (origem do frontend, sem caminho). Padrão do código: `*` |
+| `FRONTEND_URL`     | Cloud Run env   | URL base do frontend (Firebase Hosting), usada nos links dos e-mails (`${FRONTEND_URL}/chamados/{id}`). Padrão do código: `http://localhost:5173` |
+| `ALLOWED_ORIGIN`   | Cloud Run env   | Origem permitida para CORS — mesmo valor de `FRONTEND_URL`. Padrão do código: `*` |
 | `GCS_BUCKET_NAME`  | Cloud Run env   | Bucket dos anexos de chamados; obrigatória para upload/remoção de anexos |
 
-> Todas as variáveis de ambiente acima são definidas pelo pipeline em `cloudbuild.yaml`, via as substituições `_EMAIL_FROM`, `_FRONTEND_URL`, `_FRONTEND_BUCKET` e `_GCS_BUCKET_NAME` — ajuste-as lá (ou no trigger) para que o próximo build não sobrescreva alterações feitas manualmente com `gcloud run services update`.
+> Todas as variáveis de ambiente acima são definidas pelo pipeline em `cloudbuild.yaml`, via as substituições `_EMAIL_FROM`, `_FRONTEND_URL` e `_GCS_BUCKET_NAME` — ajuste-as lá (ou no trigger) para que o próximo build não sobrescreva alterações feitas manualmente com `gcloud run services update`.
 
 > Os nomes precisam corresponder exatamente aos lidos pelo backend. Uma variável com nome errado não gera erro de deploy: o serviço sobe normalmente e usa o valor padrão do código, o que torna esse tipo de falha silenciosa.
 

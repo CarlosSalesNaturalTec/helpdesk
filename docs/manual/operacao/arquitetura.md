@@ -19,4 +19,4 @@ O modelo de segurança central do sistema: cada Unidade só enxerga os próprios
 
 ## Hospedagem
 
-Produção roda inteiramente no Google Cloud Platform: backend em Cloud Run, banco em Cloud SQL, frontend estático (incluindo este manual) em Cloud Storage. Veja [Deploy](deploy.md) para os detalhes de infraestrutura e pipeline.
+Produção roda inteiramente no Google Cloud Platform: backend em Cloud Run, banco em Cloud SQL, frontend estático (incluindo este manual) no Firebase Hosting. Veja [Deploy](deploy.md) para os detalhes de infraestrutura e pipeline.

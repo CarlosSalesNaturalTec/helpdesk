@@ -34,7 +34,7 @@ prisma/           # Database schema, migrations & seed (root level, NOT under ba
 openspec/         # Spec-driven development: config, specs/, changes/archive/
 docs/             # PRD, deploy guides, GCS bucket setup, historical docs
 Dockerfile        # Multi-stage build for the backend image (Cloud Run)
-cloudbuild.yaml   # Cloud Build CI/CD pipeline (build → Cloud Run → frontend → GCS)
+cloudbuild.yaml   # Cloud Build CI/CD pipeline (build → Cloud Run → frontend/manual → Firebase Hosting)
 docker-compose.yml# Local PostgreSQL 15 only
 .env.example      # Documented environment variables
 ```
@@ -194,14 +194,14 @@ Production runs entirely on GCP. `docs/Deploy_GCP.md` is the step-by-step guide;
 | --- | --- |
 | Backend API | **Cloud Run** (`helpdesk-backend`, region `us-central1`, port 3001, 512 MiB / 1 vCPU, min-instances 0, max 3, unauthenticated) |
 | Database | **Cloud SQL** PostgreSQL 15 (`helpdesk-db`), attached via `--add-cloudsql-instances` |
-| Frontend | **Cloud Storage** static-website bucket (`_FRONTEND_BUCKET`) |
+| Frontend | **Firebase Hosting** (`helpdesk-499614.web.app`) |
 | Attachments | **Cloud Storage** bucket (`_GCS_BUCKET_NAME`), public objects |
 | Container images | **Artifact Registry** (`helpdesk-repo`) |
 | Secrets | **Secret Manager** — `helpdesk-database-url`, `helpdesk-jwt-secret`, `helpdesk-sendgrid-api-key` |
 | CI/CD | **Cloud Build** trigger on push to `main` |
 | Email | SendGrid (external SaaS) |
 
-**Pipeline stages** (`cloudbuild.yaml`, sequential): build the Docker image → push to Artifact Registry → `gcloud run deploy` → `npm ci` + build `shared` + build `frontend` with `VITE_API_URL` → `gsutil rsync` `frontend/dist/` to the frontend bucket with cache headers (`max-age=3600` for JS/CSS, `no-cache` for `index.html`).
+**Pipeline stages** (`cloudbuild.yaml`, sequential): build the Docker image → push to Artifact Registry → `gcloud run deploy` → `npm ci` + build `shared` + build `frontend` with `VITE_API_URL` → build the user manual with MkDocs into `frontend/dist/manual/` → `firebase deploy --only hosting` publishes `frontend/dist/` (app and manual together) to Firebase Hosting, authenticated via the Cloud Build service account's Application Default Credentials. Rewrites (SPA fallback to `index.html`, `/manual/**` to the manual's own 404) and cache headers (`max-age=31536000, immutable` for hashed assets, `no-cache` for HTML) are declared in `firebase.json`, not set per-object after upload.
 
 **Container** (`Dockerfile`): multi-stage Node 20 Alpine. The build stage installs the full workspace, runs `prisma generate`, then builds `shared` and `backend`. The runtime stage copies `dist/` outputs plus root **and** nested `node_modules` (the nested copies preserve workspace symlink resolution — the `mkdir -p` before the copy exists so the `COPY` cannot fail). `openssl` is installed because Prisma needs it on Alpine. Startup command: `npx prisma migrate deploy && node backend/dist/index.js` — **migrations run automatically on every deploy**.
 
@@ -213,7 +213,7 @@ See `.env.example` for the full documented list. Required: `DATABASE_URL`, `JWT_
 
 The email variables are wired through the `_EMAIL_FROM` and `_FRONTEND_URL` substitutions in `cloudbuild.yaml`, and both names must stay in sync with `backend/src/services/email.ts` — it reads exactly `EMAIL_FROM` and `FRONTEND_URL`, silently falling back to `helpdesk@naturaltec.com.br` and `http://localhost:5173` when they are unset.
 
-⚠️ `EMAIL_FROM` must be a sender/domain verified in SendGrid or delivery is rejected. `FRONTEND_URL` should point at a custom domain or load balancer in production: the email links are deep links (`/chamados/{id}`), and the direct Cloud Storage bucket endpoint serves objects without SPA rewriting, so those paths 404 until the frontend sits behind a load balancer with an `index.html` fallback.
+⚠️ `EMAIL_FROM` must be a sender/domain verified in SendGrid or delivery is rejected. `FRONTEND_URL` should point at the Firebase Hosting URL in production: the email links are deep links (`/chamados/{id}`), and Firebase Hosting's SPA rewrite (`firebase.json`) resolves them directly — no load balancer needed.
 
 ## OpenSpec (Spec-Driven Development)
 
@@ -231,7 +231,7 @@ Rules from `openspec/config.yaml`: proposals under 500 words, always include a "
 
 The user manual lives in `docs/manual/` (Markdown, built with **MkDocs** + Material theme via `mkdocs.yml` at the repo root) and is organized by persona (`perfis/`) and by feature (`funcionalidades/`, `operacao/`). **Every feature or behavior change updates `docs/manual/` in the same PR as the code change** — treat it as part of the change, not a follow-up. This is also a standing checklist item for OpenSpec changes (see `openspec/config.yaml` conventions and each change's `tasks.md`).
 
-Publishing is **exclusively** through the `main` push trigger: the `build-docs` stage in `cloudbuild.yaml` runs `mkdocs build` straight into `frontend/dist/manual/` (same tree the Vite build produces), and the existing `gsutil rsync` in `deploy-frontend` uploads it alongside the app. **Never publish the manual manually from a branch** — there is no separate deploy path, and doing so would require excluding it from the next `rsync -d`, which would then delete it again on the next real deploy.
+Publishing is **exclusively** through the `main` push trigger: the `build-docs` stage in `cloudbuild.yaml` runs `mkdocs build` straight into `frontend/dist/manual/` (same tree the Vite build produces), and the `firebase deploy --only hosting` in `deploy-frontend` publishes it alongside the app. **Never publish the manual manually from a branch** — there is no separate deploy path, and doing so would require excluding it from the next deploy, which would then discard that content on the next real deploy (`firebase deploy` fully replaces the published content each time).
 
 Local commands:
 ```bash
