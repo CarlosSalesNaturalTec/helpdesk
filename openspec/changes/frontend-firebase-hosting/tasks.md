@@ -4,9 +4,9 @@ Ordem deliberada: **`base: '/'` antes de qualquer coisa de hospedagem** (tarefa 
 
 ## 1. Infraestrutura (uma vez, manual)
 
-- [ ] 1.1 Habilitar Firebase no projeto GCP existente (`firebase projects:addfirebase helpdesk-499614`) e confirmar que o site padrão `helpdesk-499614.web.app` foi criado. (~1h)
-- [ ] 1.2 Ativar a API `firebasehosting.googleapis.com` e conceder `roles/firebasehosting.admin` à service account do Cloud Build. (~1h)
-- [ ] 1.3 Fazer um `firebase deploy --only hosting` manual, a partir de um `frontend/dist/` buildado localmente, só para validar credenciais e reescritas antes de tocar no pipeline. (~1h)
+- [x] 1.1 Habilitar Firebase no projeto GCP existente (`firebase projects:addfirebase helpdesk-499614`) e confirmar que o site padrão `helpdesk-499614.web.app` foi criado. (~1h)
+- [x] 1.2 Ativar a API `firebasehosting.googleapis.com` e conceder `roles/firebasehosting.admin` à service account do Cloud Build. (~1h)
+- [x] 1.3 Fazer um `firebase deploy --only hosting` manual, a partir de um `frontend/dist/` buildado localmente, só para validar credenciais e reescritas antes de tocar no pipeline. Feito via Cloud Shell; o primeiro deploy publicou só o app (o build do manual havia sido pulado), corrigido num segundo build+deploy que incluiu `mkdocs build --strict`. Uma tentativa de deploy também sofreu falha transitória de rede (`retries exhausted`) no meio do upload — sem publicar nada quebrado — resolvida ao repetir o comando. (~1h)
 
 ## 2. Frontend
 
@@ -34,11 +34,11 @@ Não há suíte automatizada; a verificação é manual, contra o ambiente publi
 - [ ] 5.1 Rotas do SPA carregadas **diretamente por URL** (digitadas na barra, não navegadas): `/login`, `/dashboard`, `/chamados`, `/relatorios`, `/usuarios`. Todas devem responder 200 e renderizar.
 - [ ] 5.2 **Deep link aninhado** — `https://helpdesk-499614.web.app/chamados/{id}` de um chamado real, colado direto no navegador. Este é o caso que a `base: './'` quebraria; confirmar no DevTools que os assets vieram de `/assets/…` e não de `/chamados/assets/…`.
 - [ ] 5.3 F5 em cada tela autenticada, e navegar com os botões voltar/avançar do navegador.
-- [ ] 5.4 Manual: `/manual/index.html`, `/manual/` (hoje 404, deve passar a funcionar), uma página interna (`/manual/perfis/tecnico.html`), a busca do MkDocs, e uma URL inexistente sob `/manual/` (deve cair no 404 do manual, não no SPA).
+- [x] 5.4 Manual: `/manual/index.html` (200), `/manual/` (200 — antes era 404), `/manual/perfis/tecnico.html` (200, arquivo real), e `/manual/pagina-que-nao-existe` (o **conteúdo** é o 404 do manual, confirmado pelo `<h1>404 - Not found</h1>`, sem vazamento da SPA — mas o **status HTTP vem 200, não 404**, porque toda `rewrite` do Firebase Hosting responde 200 independente do destino. Ver nota em `design.md`. Busca do MkDocs não testada nesta rodada — verificar visualmente.
 - [ ] 5.5 Login completo ponta a ponta a partir da nova origem, confirmando que o CORS aceita `https://helpdesk-499614.web.app` — o erro esperado em caso de falha é "Falha ao autenticar. Verifique sua conexão.", que é o sintoma genérico de CORS bloqueado.
 - [ ] 5.6 **Conferir que todas as variáveis do Cloud Run sobreviveram ao deploy** (`gcloud run services describe helpdesk-backend --region us-central1 --format='value(spec.template.spec.containers[0].env)'`): `NODE_ENV`, `HOST`, `GCS_BUCKET_NAME`, `EMAIL_FROM`, `FRONTEND_URL`, `APP_NAME`, `CLIENT_NAME`, `ALLOWED_ORIGIN`. Ver a seção "Risco adjacente" do `design.md`.
 - [ ] 5.7 Disparar uma notificação por e-mail real e clicar no link do chamado — é o deep link que nunca funcionou; deve abrir a tela do chamado.
-- [ ] 5.8 Confirmar no DevTools que `/assets/*.js` e `*.css` voltam com `Cache-Control: max-age=31536000, immutable` e que os HTML voltam com `no-cache`.
+- [x] 5.8 Confirmado via `curl -I`: asset versionado retorna `Cache-Control: public, max-age=31536000, immutable`; `index.html` retorna `Cache-Control: no-cache`.
 - [ ] 5.9 Expiração de sessão de ponta a ponta: deixar a aplicação aberta além dos 15 min do JWT, agir na tela e confirmar redirecionamento limpo para `/login`, sem `NoSuchKey` e sem recarga de página.
 
 ## 6. Documentação

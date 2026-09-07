@@ -68,6 +68,8 @@ Contraste com o Load Balancer, onde esquecer de excluir `/manual/**` faz o SPA c
 
 Efeito colateral positivo: `/manual/` (URL terminada em `/`) passa a funcionar, o que hoje é 404 documentado como aceito.
 
+**Limitação verificada em produção:** toda `rewrite` do Firebase Hosting responde com status HTTP **200**, independentemente do conteúdo do destino — inclusive quando o destino é uma página de erro. `/manual/pagina-que-nao-existe` serve o conteúdo correto (`404.html` do MkDocs, confirmado pelo `<h1>404 - Not found</h1>` no corpo — não a casca do React), mas com status 200 em vez de 404. É comportamento documentado da plataforma, não um defeito desta configuração: uma `rewrite` estática não pode alterar o código de status sem uma função (Cloud Functions), fora do escopo desta change. O conteúdo certo, sem a SPA vazando para dentro do manual, é o que importa aqui — o status HTTP incorreto é aceito como limitação conhecida.
+
 ## Redirecionamento na expiração de sessão
 
 Um interceptor do Axios vive fora da árvore React e não pode usar `useNavigate`. Duas saídas:
