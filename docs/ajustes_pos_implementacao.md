@@ -1,6 +1,6 @@
 # Links úteis
 helpdesk-499614
-https://helpdesk-frontend-helpdesk-499614.storage.googleapis.com/index.html
+https://helpdesk-499614.web.app (Firebase Hosting; a antiga URL do bucket, .../login, ficou permanentemente quebrada e foi descontinuada)
 https://helpdesk-backend-qjpsqiytba-uc.a.run.app
 https://github.com/CarlosSalesNaturalTec/helpdesk.git
 
