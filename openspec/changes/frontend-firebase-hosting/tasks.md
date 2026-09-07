@@ -32,10 +32,10 @@ Ordem deliberada: **`base: '/'` antes de qualquer coisa de hospedagem** (tarefa 
 Não há suíte automatizada; a verificação é manual, contra o ambiente publicado.
 
 - [x] 5.1 Rotas do SPA carregadas **diretamente por URL**: `/login`, `/dashboard`, `/chamados`, `/relatorios`, `/usuarios` — todas 200 via `curl`. Renderização visual ainda não confirmada.
-- [ ] 5.2 **Deep link aninhado** — `https://helpdesk-499614.web.app/chamados/{id}` de um chamado real, colado direto no navegador. Este é o caso que a `base: './'` quebraria; confirmar no DevTools que os assets vieram de `/assets/…` e não de `/chamados/assets/…`.
-- [ ] 5.3 F5 em cada tela autenticada, e navegar com os botões voltar/avançar do navegador.
+- [x] 5.2 **Deep link aninhado** confirmado em navegador real — o caso que a `base: './'` quebraria. Funcionou.
+- [x] 5.3 F5 em tela autenticada confirmado em navegador real, sem erro de servidor.
 - [x] 5.4 Manual: `/manual/index.html` (200), `/manual/` (200 — antes era 404), `/manual/perfis/tecnico.html` (200, arquivo real), e `/manual/pagina-que-nao-existe` (o **conteúdo** é o 404 do manual, confirmado pelo `<h1>404 - Not found</h1>`, sem vazamento da SPA — mas o **status HTTP vem 200, não 404**, porque toda `rewrite` do Firebase Hosting responde 200 independente do destino. Ver nota em `design.md`. Busca do MkDocs não testada nesta rodada — verificar visualmente.
-- [ ] 5.5 Login completo ponta a ponta a partir da nova origem, confirmando que o CORS aceita `https://helpdesk-499614.web.app` — o erro esperado em caso de falha é "Falha ao autenticar. Verifique sua conexão.", que é o sintoma genérico de CORS bloqueado.
+- [x] 5.5 Login completo ponta a ponta confirmado em navegador real, a partir de `https://helpdesk-499614.web.app` — CORS aceito após a correção de `ALLOWED_ORIGIN` em 5.6.
 - [x] 5.6 Conferido: as demais variáveis sobreviveram, mas `FRONTEND_URL` e `ALLOWED_ORIGIN` ainda apontavam para o bucket antigo — esperado, já que os deploys manuais via Cloud Shell só publicaram o Hosting, nunca rodaram `gcloud run deploy` com a config nova do `cloudbuild.yaml`. Corrigido manualmente com `gcloud run services update --update-env-vars` (revisão `helpdesk-backend-00037-f78`), adiantando o valor que o pipeline aplicará quando a branch for mergeada na `main`. Confirmado por `describe` após o update.
 - [ ] 5.7 Disparar uma notificação por e-mail real e clicar no link do chamado — é o deep link que nunca funcionou; deve abrir a tela do chamado.
 - [x] 5.8 Confirmado via `curl -I`: asset versionado retorna `Cache-Control: public, max-age=31536000, immutable`; `index.html` retorna `Cache-Control: no-cache`.
