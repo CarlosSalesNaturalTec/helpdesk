@@ -7,7 +7,6 @@ substitutions:
   _ARTIFACT_REGISTRY_REPO: helpdesk-repo
   _CLOUD_RUN_SERVICE: helpdesk-backend
   _CLOUD_SQL_INSTANCE: helpdesk-db
-  _FRONTEND_BUCKET: helpdesk-frontend-helpdesk-499614
   _VITE_API_URL: https://helpdesk-backend-503116182148.us-central1.run.app
   _GCS_BUCKET_NAME: helpdesk-attachments-helpdesk-499614
   # Remetente dos e-mails de notificação. Deve ser um sender/domínio verificado
@@ -21,12 +20,10 @@ substitutions:
   # tolerar vírgulas em nomes de cliente.
   _APP_NAME: SOLUTUS
   _CLIENT_NAME: Instituto Setes
-  # URL base do frontend, usada para montar os links dos e-mails
-  # (${FRONTEND_URL}/chamados/{id}). Aponte para o domínio customizado /
-  # load balancer quando houver: o endpoint direto do bucket não reescreve
-  # rotas do SPA, então links profundos só resolvem atrás de um LB com
-  # fallback para index.html.
-  _FRONTEND_URL: https://helpdesk-frontend-helpdesk-499614.storage.googleapis.com
+  # URL base do frontend publicado no Firebase Hosting, usada para montar os
+  # links dos e-mails (${FRONTEND_URL}/chamados/{id}) e como ALLOWED_ORIGIN do
+  # CORS no Cloud Run — as duas vêm desta mesma substituição para não divergir.
+  _FRONTEND_URL: https://helpdesk-499614.web.app
 
 steps:
   # -----------------------------------------------------------------------
@@ -81,7 +78,7 @@ steps:
           --set-env-vars="NODE_ENV=production,HOST=0.0.0.0,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME}" \
           --set-env-vars="EMAIL_FROM=${_EMAIL_FROM},FRONTEND_URL=${_FRONTEND_URL}" \
           --set-env-vars="^@^APP_NAME=${_APP_NAME}@CLIENT_NAME=${_CLIENT_NAME}" \
-          --set-env-vars="ALLOWED_ORIGIN=https://${_FRONTEND_BUCKET}.storage.googleapis.com" \
+          --set-env-vars="ALLOWED_ORIGIN=${_FRONTEND_URL}" \
           --set-secrets=DATABASE_URL=helpdesk-database-url:latest \
           --set-secrets=JWT_SECRET=helpdesk-jwt-secret:latest \
           --set-secrets=SENDGRID_API_KEY=helpdesk-sendgrid-api-key:latest \
@@ -107,9 +104,9 @@ steps:
   # -----------------------------------------------------------------------
   # Runs after build-frontend (which cleans frontend/dist/ before the Vite
   # build) and before deploy-frontend, so the manual survives inside the
-  # same tree that gets uploaded. site_dir in mkdocs.yml points directly at
-  # frontend/dist/manual/, so the manual is published by the same rsync
-  # below — no separate bucket or upload step needed.
+  # same tree that gets published. site_dir in mkdocs.yml points directly at
+  # frontend/dist/manual/, so the manual is published by the same
+  # `firebase deploy` below — no separate site or upload step needed.
   - id: 'build-docs'
     name: 'python:3.12-slim'
     entrypoint: 'bash'
@@ -121,25 +118,23 @@ steps:
     waitFor: ['build-frontend']
 
   # -----------------------------------------------------------------------
-  # Stage 5: Upload frontend to Cloud Storage
+  # Stage 5: Publish frontend (app + manual) to Firebase Hosting
   # -----------------------------------------------------------------------
+  # firebase-tools authenticates via Application Default Credentials when no
+  # token is supplied — in Cloud Build that resolves to the build's own
+  # service account through the metadata server, so no FIREBASE_TOKEN needs
+  # to live in Secret Manager. The service account needs
+  # roles/firebasehosting.admin (see docs/Deploy_GCP.md, Passo 8). Rewrites
+  # and Cache-Control headers are declared in firebase.json, so no
+  # per-object metadata step is needed here.
   - id: 'deploy-frontend'
-    name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    name: 'node:20'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        gsutil -m rsync -r -d frontend/dist/ gs://${_FRONTEND_BUCKET}/
-        gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.js
-        gsutil -m setmeta -h 'Cache-Control:public, max-age=3600' gs://${_FRONTEND_BUCKET}/**/*.css
-        gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/index.html
-        # `manual/**.html` (e não `manual/**/*.html`): no gsutil o `**` casa
-        # qualquer profundidade, mas `**/*.html` exige a barra seguinte e por
-        # isso deixaria `manual/index.html` de fora — justamente a home do
-        # manual. Com use_directory_urls: false as páginas são .html soltos
-        # (`manual/perfis/solicitante.html`), então o glob precisa alcançar
-        # tanto a raiz quanto os subdiretórios.
-        gsutil -m setmeta -h 'Cache-Control:no-cache' gs://${_FRONTEND_BUCKET}/manual/**.html
+        npm install -g firebase-tools
+        firebase deploy --only hosting --project ${PROJECT_ID} --non-interactive
     waitFor: ['build-docs']
 
 # ---------------------------------------------------------------------------

@@ -27,10 +27,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Se não for a rota de login, desloga o usuário
+      // Se não for a rota de login, desloga o usuário sem recarregar a página
       if (!error.config.url.includes('/api/auth/login')) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        window.dispatchEvent(new Event('auth:unauthorized'));
       }
     }
     return Promise.reject(error);
