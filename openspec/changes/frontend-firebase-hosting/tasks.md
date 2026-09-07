@@ -53,5 +53,5 @@ Não há suíte automatizada; a verificação é manual, contra o ambiente publi
 
 ## 7. Descomissionamento
 
-- [ ] 7.1 **Depois** de 5.1–5.9 aprovadas, esvaziar e remover o bucket `helpdesk-frontend-helpdesk-499614`. Enquanto ele existir, o rollback é reverter o `cloudbuild.yaml`. Não tocar em `helpdesk-attachments-helpdesk-499614`. (~1h)
+- [x] 7.1 Bucket `helpdesk-frontend-helpdesk-499614` esvaziado e removido (72 objetos), depois do pipeline automático confirmado em produção. `helpdesk-attachments-helpdesk-499614` não foi tocado.
 - [ ] 7.2 Comunicar a nova URL e substituir o favorito quebrado (`…storage.googleapis.com/login`) por `https://helpdesk-499614.web.app`. (~30min)
