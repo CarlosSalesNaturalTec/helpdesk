@@ -16,7 +16,7 @@ Em **Tipos de Problema**, cadastre as subcategorias vinculadas a um Tipo de Ocor
 
 ## Usuários
 
-Em **Usuários**, o Administrador cadastra, edita e desativa usuários de qualquer Unidade e define o perfil (Solicitante, Técnico, Gestor, Diretor, Administrador). Para Técnicos e Gestores, é obrigatório selecionar o Tipo de Ocorrência ao qual pertencem — para o Gestor, essa escolha define sua área de atuação (ex.: "Gestor de Manutenção").
+Em **Usuários**, o Administrador cadastra, edita, desativa, reativa e exclui usuários de qualquer Unidade e define o perfil (Solicitante, Técnico, Gestor, Diretor, Administrador). Para Técnicos e Gestores, é obrigatório selecionar a **Área de atuação** — o Tipo de Ocorrência que o usuário atende. Para o Gestor, essa escolha define o que ele gerencia (ex.: "Gestor de Manutenção").
 
 ### Diretores e Administradores são geridos só pelo Administrador
 
@@ -32,10 +32,12 @@ Ao editar o próprio cadastro, os campos de papel, Unidade e Tipo de Ocorrência
 
 Todo cadastro exige **nome completo**, **CPF**, **telefone** e **e-mail**, além do perfil e da Unidade. CPF e e-mail são únicos: o sistema recusa o cadastro se já existir outro usuário com o mesmo valor.
 
-| Campo | Formato esperado | Exemplo |
+| Campo | Como digitar | Como o campo fica |
 | --- | --- | --- |
-| CPF | com pontuação, no formato `000.000.000-00` | `123.456.789-01` |
-| Telefone | somente números, com DDD — aceita fixo e celular | `1133334444` ou `11999998888` |
+| CPF | apenas números | `529.982.247-25` |
+| Telefone | apenas números, com DDD — aceita fixo e celular | `(11) 3333-4444` ou `(11) 99999-8888` |
+
+**Digite apenas números nos dois campos: a pontuação é aplicada sozinha enquanto você digita.** Colar um valor já formatado também funciona — `(71) 99965-5578` e `71999655578` dão no mesmo. Na listagem, o telefone aparece formatado.
 
 O CPF é conferido apenas quanto ao **formato**; o sistema não valida os dígitos verificadores. A responsabilidade de digitar o número correto é de quem cadastra.
 
@@ -44,6 +46,26 @@ O CPF é conferido apenas quanto ao **formato**; o sistema não valida os dígit
 Usuários criados antes da introdução de CPF e telefone continuam ativos e acessando o sistema normalmente, com esses campos vazios — aparecem como "—" na listagem. Não há bloqueio de acesso nem prazo para regularizar.
 
 O preenchimento acontece de forma gradual: **ao editar um desses usuários, ainda que seja apenas para trocar a Unidade, o sistema exige preencher CPF e telefone antes de salvar.** Para completar a base de uma vez, basta editar cada usuário pendente pela listagem.
+
+### Desativar, reativar e excluir
+
+Um usuário **ativo** pode ser **desativado**: ele perde o acesso imediatamente, mas continua cadastrado e todo o seu histórico de chamados é preservado. É a forma correta de tratar um desligamento.
+
+Para um usuário **inativo**, a listagem oferece duas ações no lugar de "Desativar":
+
+- **Reativar** — devolve o acesso. O usuário entra com a **mesma senha** que já tinha, e um eventual bloqueio por cinco tentativas de login malsucedidas é removido. Se a senha se perdeu, reative primeiro e depois edite o usuário para definir uma nova senha temporária. Use esta ação para desfazer um desligamento feito por engano.
+- **Excluir** — remove o cadastro **em definitivo**; a ação não tem volta.
+
+"Editar" só fica disponível para usuários ativos: para corrigir os dados de um inativo, reative-o antes.
+
+!!! warning "A exclusão só vale para cadastros sem histórico"
+    O sistema só exclui um usuário que **nunca participou de um chamado**: nunca abriu nem foi designado para um, nunca comentou e não tem notificações. Havendo qualquer vínculo, a exclusão é recusada com a mensagem "Este usuário possui histórico no sistema e não pode ser excluído. Mantenha-o inativo."
+
+    A restrição existe para preservar a rastreabilidade: apagar quem abriu ou atendeu um chamado deixaria o histórico sem autor. Na prática, **Excluir serve para cadastros criados por engano** (e-mail digitado errado, usuário duplicado); para quem já trabalhou no sistema, o correto é manter inativo.
+
+    O usuário precisa estar inativo para ser excluído — a desativação prévia é o passo que evita uma exclusão acidental.
+
+O Gestor e o Diretor também reativam e excluem, mas apenas dentro do que já gerenciam: mesma Unidade e, para o Gestor, mesma área. Fora disso o sistema responde como se o usuário não existisse.
 
 ## Chamados e relatórios globais
 

@@ -268,4 +268,111 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
       return reply.send(userWithoutPassword);
     },
   );
+
+  // PATCH /api/usuarios/:id/activate
+  // Espelha o deactivate: mesmos papéis, mesmo escopo, mesmo 404 fora da matriz.
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/usuarios/:id/activate',
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR'])] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) {
+        return reply.status(400).send({ error: 'ID inválido' });
+      }
+
+      const user = request.user!;
+
+      const targetUser = await prisma.user.findUnique({ where: { id } });
+      if (!targetUser) {
+        return reply.status(404).send({ error: 'Usuário não encontrado' });
+      }
+
+      // Alvo fora da matriz de papéis gerenciáveis, da Unidade ou da área → 404
+      if (!canManageUser(user, targetUser)) {
+        return reply.status(404).send({ error: 'Usuário não encontrado' });
+      }
+
+      if (targetUser.ativo) {
+        return reply.status(409).send({ error: 'Este usuário já está ativo' });
+      }
+
+      // A senha não é resetada (design D2): se o operador quiser, edita o
+      // usuário depois e define uma nova senha temporária. O bloqueio por
+      // tentativas malsucedidas, sim, é zerado — senão o usuário volta
+      // reativado mas ainda travado.
+      const usuarioReativado = await prisma.user.update({
+        where: { id },
+        data: { ativo: true, failedLoginAttempts: 0, lockedUntil: null },
+      });
+
+      const { senhaHash, ...userWithoutPassword } = usuarioReativado;
+      return reply.send(userWithoutPassword);
+    },
+  );
+
+  // DELETE /api/usuarios/:id
+  // Exclusão definitiva, restrita a usuário inativo e sem nenhum vínculo
+  // (design D3). Autoexclusão é impossível por construção: o próprio usuário
+  // logado está ativo.
+  fastify.delete<{ Params: { id: string } }>(
+    '/api/usuarios/:id',
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['ADMIN', 'DIRETOR', 'GESTOR'])] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) {
+        return reply.status(400).send({ error: 'ID inválido' });
+      }
+
+      const user = request.user!;
+
+      const targetUser = await prisma.user.findUnique({ where: { id } });
+      if (!targetUser) {
+        return reply.status(404).send({ error: 'Usuário não encontrado' });
+      }
+
+      if (!canManageUser(user, targetUser)) {
+        return reply.status(404).send({ error: 'Usuário não encontrado' });
+      }
+
+      // Exigir a desativação prévia evita a exclusão acidental de alguém em
+      // atividade.
+      if (targetUser.ativo) {
+        return reply.status(409).send({ error: 'Desative o usuário antes de excluí-lo' });
+      }
+
+      // Todas as relações de User são sem onDelete, então qualquer vínculo
+      // impede o delete. A contagem é feita antes para que o motivo chegue ao
+      // operador como mensagem, e não como erro de banco.
+      const [comoSolicitante, comoTecnico, historico, notificacoes] = await Promise.all([
+        prisma.ticket.count({ where: { solicitanteId: id } }),
+        prisma.ticket.count({ where: { tecnicoId: id } }),
+        prisma.ticketHistory.count({ where: { authorId: id } }),
+        prisma.notification.count({ where: { userId: id } }),
+      ]);
+
+      if (comoSolicitante + comoTecnico + historico + notificacoes > 0) {
+        return reply.status(409).send({
+          error: 'Este usuário possui histórico no sistema e não pode ser excluído. Mantenha-o inativo.',
+        });
+      }
+
+      try {
+        await prisma.user.delete({ where: { id } });
+      } catch (err: any) {
+        // Rede de segurança para um vínculo criado entre a contagem e o delete:
+        // vira a mesma 409, nunca um erro cru do Prisma.
+        if (err?.code === 'P2003') {
+          return reply.status(409).send({
+            error: 'Este usuário possui histórico no sistema e não pode ser excluído. Mantenha-o inativo.',
+          });
+        }
+        if (err?.code === 'P2025') {
+          return reply.status(404).send({ error: 'Usuário não encontrado' });
+        }
+        throw err;
+      }
+
+      return reply.status(204).send();
+    },
+  );
 }

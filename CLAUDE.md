@@ -160,7 +160,7 @@ Each resource domain has its own route module under `backend/src/routes/`, all r
 | --- | --- | --- |
 | `auth.ts` | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/change-password` | public / authenticated |
 | `tickets.ts` | `POST|GET /api/tickets`, `GET /api/tickets/niveis-urgencia`, `GET /api/tickets/:id`, `GET /api/tickets/:id/history`, `GET /api/tickets/:id/reassign-candidates`, `PATCH|DELETE /api/tickets/:id/anexo`, `PATCH /api/tickets/:id/{assign,reassign,status,close,admin-close,reopen}`, `POST /api/tickets/:id/messages` | per-endpoint (see workflow above) |
-| `usuarios.ts` | `GET|POST /api/usuarios`, `PUT /api/usuarios/:id`, `PATCH /api/usuarios/:id/deactivate` | Admin, Diretor, Gestor |
+| `usuarios.ts` | `GET|POST /api/usuarios`, `PUT|DELETE /api/usuarios/:id`, `PATCH /api/usuarios/:id/{deactivate,activate}` | Admin, Diretor, Gestor |
 | `unidades.ts` | `GET|POST /api/unidades`, `PUT|DELETE /api/unidades/:id` | Admin (writes) |
 | `sectors.ts` | `GET|POST /api/sectors`, `PUT|DELETE /api/sectors/:id` | Admin (writes) |
 | `problem-types.ts` | `GET|POST /api/problem-types`, `PUT|DELETE /api/problem-types/:id` | Admin (writes) |
