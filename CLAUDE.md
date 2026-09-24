@@ -159,7 +159,7 @@ Each resource domain has its own route module under `backend/src/routes/`, all r
 | Module | Endpoints | Role gate |
 | --- | --- | --- |
 | `auth.ts` | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/change-password` | public / authenticated |
-| `tickets.ts` | `POST|GET /api/tickets`, `GET /api/tickets/niveis-urgencia`, `GET /api/tickets/:id`, `GET /api/tickets/:id/history`, `PATCH|DELETE /api/tickets/:id/anexo`, `PATCH /api/tickets/:id/{assign,reassign,status,close,admin-close,reopen}`, `POST /api/tickets/:id/messages` | per-endpoint (see workflow above) |
+| `tickets.ts` | `POST|GET /api/tickets`, `GET /api/tickets/niveis-urgencia`, `GET /api/tickets/:id`, `GET /api/tickets/:id/history`, `GET /api/tickets/:id/reassign-candidates`, `PATCH|DELETE /api/tickets/:id/anexo`, `PATCH /api/tickets/:id/{assign,reassign,status,close,admin-close,reopen}`, `POST /api/tickets/:id/messages` | per-endpoint (see workflow above) |
 | `usuarios.ts` | `GET|POST /api/usuarios`, `PUT /api/usuarios/:id`, `PATCH /api/usuarios/:id/deactivate` | Admin, Diretor, Gestor |
 | `unidades.ts` | `GET|POST /api/unidades`, `PUT|DELETE /api/unidades/:id` | Admin (writes) |
 | `sectors.ts` | `GET|POST /api/sectors`, `PUT|DELETE /api/sectors/:id` | Admin (writes) |

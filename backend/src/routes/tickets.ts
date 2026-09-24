@@ -288,6 +288,42 @@ export async function ticketRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // 3b. Destinatários elegíveis para reatribuição
+  // Endpoint dedicado ao chamado: reaproveita o escopo do PATCH /:id/reassign e
+  // devolve só id, nome e papel — o modal deixa de baixar CPF, telefone e e-mail
+  // de toda a Unidade para montar um dropdown (design D5). Não conflita com
+  // GET /api/tickets/:id porque o número de segmentos é diferente.
+  fastify.get<{ Params: { id: string } }>(
+    '/api/tickets/:id/reassign-candidates',
+    { preHandler: [authRequired, requirePasswordChange, requireRole(['GESTOR', 'DIRETOR', 'ADMIN'])] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      const user = request.user!;
+      // Mesmo escopo da reatribuição: Gestor só enxerga chamados da própria área
+      if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
+      }
+
+      const candidatos = await prisma.user.findMany({
+        where: {
+          ativo: true,
+          unidadeId: ticket.unidadeId,
+          sectorId: ticket.sectorId,
+          role: { in: ['TECNICO', 'GESTOR'] },
+        },
+        select: { id: true, nome: true, role: true },
+        orderBy: { nome: 'asc' },
+      });
+
+      return reply.send(candidatos);
+    }
+  );
+
   // 4. Obter Detalhes do Chamado
   fastify.get<{ Params: { id: string } }>(
     '/api/tickets/:id',

@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
-import { unitFilter } from '../lib/rbac.js';
+import { canManageUser, manageableUsersWhere } from '../lib/rbac.js';
 import { userSchema } from '@helpdesk/shared';
 
 export async function usuarioRoutes(fastify: FastifyInstance) {
@@ -13,20 +13,14 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       const user = request.user!;
 
-      let users;
-      if (user.role === 'ADMIN') {
-        users = await prisma.user.findMany({
-          include: { unidade: true, sector: true },
-          orderBy: { nome: 'asc' },
-        });
-      } else {
-        // Diretor e Gestor listam apenas de sua unidade
-        users = await prisma.user.findMany({
-          where: { unidadeId: user.unidadeId },
-          include: { unidade: true, sector: true },
-          orderBy: { nome: 'asc' },
-        });
-      }
+      // A listagem devolve os usuários gerenciáveis segundo a matriz de papéis,
+      // mais o próprio usuário logado — que aparece marcado "Você" na interface
+      // e pode editar os próprios dados pessoais (design D4).
+      const users = await prisma.user.findMany({
+        where: { OR: [manageableUsersWhere(user), { id: user.id }] },
+        include: { unidade: true, sector: true },
+        orderBy: { nome: 'asc' },
+      });
 
       // Omitir hash de senha no retorno por segurança
       const result = users.map((u) => {
@@ -53,6 +47,14 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
 
       // Se Diretor/Gestor, força a unidade do usuário logado
       const targetUnidadeId = user.role === 'ADMIN' ? reqUnidadeId : user.unidadeId;
+
+      // Na criação não existe alvo atual, então todo payload fora da matriz de
+      // papéis gerenciáveis é recusado com 403 (design D2).
+      if (!canManageUser(user, { role, unidadeId: targetUnidadeId, sectorId })) {
+        return reply
+          .status(403)
+          .send({ error: 'Você não tem permissão para cadastrar um usuário com este papel, Unidade ou Tipo de Ocorrência' });
+      }
 
       // Validar e-mail único
       const existingEmail = await prisma.user.findUnique({
@@ -127,8 +129,22 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Usuário não encontrado' });
       }
 
-      // Verificar isolamento: Diretor/Gestor só editam usuários da sua própria unidade
-      if (!unitFilter(user, targetUser.unidadeId)) {
+      const isSelfEdit = targetUser.id === user.id;
+
+      if (isSelfEdit) {
+        // Auto-edição: dados pessoais sim, escopo não. A checagem de matriz é
+        // dispensada (o Gestor não gerencia Gestores, mas edita a si mesmo) e em
+        // troca papel, Unidade e área precisam ficar como estão — inclusive para
+        // o Admin, para que o último Admin não se rebaixe por engano (design D3).
+        const mudouArea = (sectorId ?? null) !== (targetUser.sectorId ?? null);
+        if (role !== targetUser.role || reqUnidadeId !== targetUser.unidadeId || mudouArea) {
+          return reply
+            .status(403)
+            .send({ error: 'Você não pode alterar o seu próprio papel, Unidade ou Tipo de Ocorrência' });
+        }
+      } else if (!canManageUser(user, targetUser)) {
+        // Alvo atual fora do escopo, por papel, Unidade ou área → 404, para não
+        // revelar que o usuário existe (design D2).
         return reply.status(404).send({ error: 'Usuário não encontrado' });
       }
 
@@ -142,6 +158,15 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
           return reply.status(403).send({ error: 'Você só pode vincular usuários à sua própria unidade' });
         }
         finalUnidadeId = user.unidadeId;
+      }
+
+      // O estado final da edição também precisa caber na matriz: assim uma
+      // promoção (Solicitante → Gestor) ou uma troca de área do Técnico é pega
+      // pela mesma regra, sem caso especial (design D1, D2).
+      if (!isSelfEdit && !canManageUser(user, { role, unidadeId: finalUnidadeId, sectorId })) {
+        return reply
+          .status(403)
+          .send({ error: 'Você não tem permissão para atribuir este papel, Unidade ou Tipo de Ocorrência' });
       }
 
       // Validar e-mail único (exceto o próprio)
@@ -208,14 +233,15 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Usuário não encontrado' });
       }
 
-      // Verificar isolamento de unidade
-      if (!unitFilter(user, targetUser.unidadeId)) {
-        return reply.status(404).send({ error: 'Usuário não encontrado' });
-      }
-
-      // Impedir de se desativar a si próprio
+      // Impedir de se desativar a si próprio — checado antes da matriz para que
+      // a mensagem seja a mesma para todos os papéis
       if (user.id === targetUser.id) {
         return reply.status(400).send({ error: 'Você não pode desativar seu próprio usuário' });
+      }
+
+      // Alvo fora da matriz de papéis gerenciáveis, da Unidade ou da área → 404
+      if (!canManageUser(user, targetUser)) {
+        return reply.status(404).send({ error: 'Usuário não encontrado' });
       }
 
       // Verificar se o usuário é técnico e se tem chamados ativos

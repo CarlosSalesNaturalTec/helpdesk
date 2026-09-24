@@ -18,6 +18,16 @@ Em **Tipos de Problema**, cadastre as subcategorias vinculadas a um Tipo de Ocor
 
 Em **Usuários**, o Administrador cadastra, edita e desativa usuários de qualquer Unidade e define o perfil (Solicitante, Técnico, Gestor, Diretor, Administrador). Para Técnicos e Gestores, é obrigatório selecionar o Tipo de Ocorrência ao qual pertencem — para o Gestor, essa escolha define sua área de atuação (ex.: "Gestor de Manutenção").
 
+### Diretores e Administradores são geridos só pelo Administrador
+
+O Administrador é o **único** perfil que cadastra, edita e desativa **Diretores e outros Administradores**. Nem o Diretor nem o Gestor alcançam esses perfis: eles não aparecem na listagem de Usuários desses perfis, o seletor de papel não oferece as opções, e o servidor recusa a operação mesmo em uma tentativa de contornar a interface. Na prática, um Diretor não cadastra outro Diretor — quando uma Unidade precisa de um novo Diretor, o pedido passa pelo Administrador do Sistema.
+
+Os demais perfis gerenciam apenas parte da própria Unidade: o Diretor alcança Solicitantes, Técnicos e Gestores da sua Unidade; o Gestor alcança Solicitantes da sua Unidade e Técnicos da sua Unidade **e da sua área**. A tabela completa está em [Gestor e Diretor](gestor-diretor.md).
+
+### Ninguém altera o próprio perfil
+
+Ao editar o próprio cadastro, os campos de papel, Unidade e Tipo de Ocorrência ficam desabilitados — **inclusive para o Administrador**. É uma proteção contra o rebaixamento acidental do último Administrador do sistema. Para alterar o perfil de um Administrador, use a conta de outro Administrador.
+
 ### Campos obrigatórios do cadastro
 
 Todo cadastro exige **nome completo**, **CPF**, **telefone** e **e-mail**, além do perfil e da Unidade. CPF e e-mail são únicos: o sistema recusa o cadastro se já existir outro usuário com o mesmo valor.

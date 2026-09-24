@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { apiClient } from '../../api/client.js';
-import { userSchema } from '@helpdesk/shared';
+import { userSchema, MANAGEABLE_ROLES } from '@helpdesk/shared';
 
 interface Unidade {
   id: number;
@@ -28,6 +28,14 @@ interface UserListItem {
   sectorId?: number;
   sector?: Sector | null;
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  SOLICITANTE: 'Solicitante',
+  TECNICO: 'Técnico',
+  GESTOR: 'Gestor',
+  DIRETOR: 'Diretor',
+  ADMIN: 'Administrador',
+};
 
 export const Usuarios: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -61,6 +69,21 @@ export const Usuarios: React.FC = () => {
   const [userToDeactivate, setUserToDeactivate] = useState<UserListItem | null>(null);
   const [deactivateError, setDeactivateError] = useState<string | null>(null);
   const [activeTicketsWarning, setActiveTicketsWarning] = useState<string | null>(null);
+
+  const isUserAdmin = currentUser?.role === 'ADMIN';
+
+  // Papéis que o usuário logado pode atribuir, a partir da mesma matriz usada
+  // pelo backend — o seletor nunca oferece uma opção que a API recusaria.
+  const rolesDisponiveis = (currentUser ? MANAGEABLE_ROLES[currentUser.role] : []) || [];
+
+  // Na auto-edição, papel, Unidade e Tipo de Ocorrência ficam travados: o
+  // backend recusa alterá-los com 403 (change usuarios-permissoes-por-papel).
+  const isSelfEdit = modalMode === 'edit' && selectedUser?.id === currentUser?.id;
+
+  // Gestor cadastrando Técnico: a área é sempre a dele, então vem preenchida e
+  // travada.
+  const sectorTravadoNoGestor =
+    currentUser?.role === 'GESTOR' && role === 'TECNICO' && !isSelfEdit;
 
   const fetchUsuarios = async () => {
     setLoading(true);
@@ -108,6 +131,14 @@ export const Usuarios: React.FC = () => {
     fetchSectors();
   }, [currentUser]);
 
+  // Mantém a área do Gestor preenchida enquanto o campo estiver travado, para
+  // que o payload saia correto mesmo que o papel mude dentro do modal.
+  useEffect(() => {
+    if (sectorTravadoNoGestor && currentUser?.sectorId) {
+      setSectorId(currentUser.sectorId);
+    }
+  }, [sectorTravadoNoGestor, currentUser?.sectorId]);
+
   const handleOpenCreateModal = () => {
     setModalMode('create');
     setSelectedUser(null);
@@ -115,7 +146,7 @@ export const Usuarios: React.FC = () => {
     setCpf('');
     setTelefone('');
     setEmail('');
-    setRole('SOLICITANTE');
+    setRole(rolesDisponiveis[0] ?? 'SOLICITANTE');
     // Se for admin, usa a primeira unidade, senão a dele
     setUnidadeId(currentUser?.role === 'ADMIN' ? (unidades[0]?.id || 0) : (currentUser?.unidadeId || 0));
     setSectorId('');
@@ -259,8 +290,6 @@ export const Usuarios: React.FC = () => {
       default: return 'badge-solicitante';
     }
   };
-
-  const isUserAdmin = currentUser?.role === 'ADMIN';
 
   return (
     <div className="main-content">
@@ -440,13 +469,11 @@ export const Usuarios: React.FC = () => {
                     className="input-field"
                     value={role}
                     onChange={(e) => setRole(e.target.value as any)}
-                    disabled={submitting}
+                    disabled={submitting || isSelfEdit}
                   >
-                    <option value="SOLICITANTE">Solicitante</option>
-                    <option value="TECNICO">Técnico</option>
-                    <option value="GESTOR">Gestor</option>
-                    <option value="DIRETOR">Diretor</option>
-                    {isUserAdmin && <option value="ADMIN">Administrador</option>}
+                    {rolesDisponiveis.map((r) => (
+                      <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                    ))}
                   </select>
                   {fieldErrors.role && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.role}</span>}
                 </div>
@@ -457,7 +484,7 @@ export const Usuarios: React.FC = () => {
                     className="input-field"
                     value={unidadeId}
                     onChange={(e) => setUnidadeId(Number(e.target.value))}
-                    disabled={submitting || !isUserAdmin} // Bloqueado para Diretor/Gestor
+                    disabled={submitting || !isUserAdmin || isSelfEdit} // Bloqueado para Diretor/Gestor e na auto-edição
                   >
                     {unidades.map((u) => (
                       <option key={u.id} value={u.id}>{u.nome}</option>
@@ -473,7 +500,7 @@ export const Usuarios: React.FC = () => {
                       className="input-field"
                       value={sectorId}
                       onChange={(e) => setSectorId(e.target.value ? Number(e.target.value) : '')}
-                      disabled={submitting}
+                      disabled={submitting || isSelfEdit || sectorTravadoNoGestor}
                     >
                       <option value="">Selecione um tipo de ocorrência...</option>
                       {sectors.map((s) => (

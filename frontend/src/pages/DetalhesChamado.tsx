@@ -6,6 +6,7 @@ import {
   getTicketHistory,
   assignTicket,
   reassignTicket,
+  getReassignCandidates,
   updateTicketStatus,
   closeTicket,
   adminCloseTicket,
@@ -58,19 +59,14 @@ export const DetalhesChamado: React.FC = () => {
     enabled: id > 0,
   });
 
-  // Query de Técnicos da mesma unidade para o modal de reatribuição
-  const { data: usuariosUnidade } = useQuery({
-    queryKey: ['usuariosUnidade'],
-    queryFn: async () => {
-      const res = await apiClient.get<any[]>('/api/usuarios');
-      return res.data;
-    },
-    enabled: showReassignModal && ['ADMIN', 'GESTOR', 'DIRETOR'].includes(user?.role || ''),
+  // Destinatários do modal de reatribuição: endpoint dedicado ao chamado, que já
+  // devolve apenas Técnicos e Gestores ativos da Unidade e do Tipo de Ocorrência
+  // do chamado — sem filtrar a listagem de gestão de usuários no cliente.
+  const { data: tecnicosDisponiveis = [] } = useQuery({
+    queryKey: ['reassignCandidates', id],
+    queryFn: () => getReassignCandidates(id),
+    enabled: showReassignModal && id > 0 && ['ADMIN', 'GESTOR', 'DIRETOR'].includes(user?.role || ''),
   });
-
-  const tecnicosDisponiveis = usuariosUnidade?.filter(u =>
-    (u.role === 'TECNICO' || u.role === 'GESTOR') && u.ativo && u.sectorId === ticket?.sectorId
-  ) || [];
 
   // Mutations
   const invalidateQueries = () => {

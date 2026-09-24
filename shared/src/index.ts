@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { loginSchema, changePasswordSchema } from './schemas/auth.js';
 import { userSchema, RoleEnum } from './schemas/user.js';
+import { MANAGEABLE_ROLES, canManageRole } from './permissions.js';
 import { unidadeSchema } from './schemas/unidade.js';
 import { sectorSchema } from './schemas/sector.js';
 import { problemTypeSchema } from './schemas/problem-type.js';
@@ -32,6 +33,8 @@ export {
   TicketStatusEnum,
   NivelUrgenciaEnum,
   STATUS_NAO_FECHADOS,
+  MANAGEABLE_ROLES,
+  canManageRole,
 };
 
 // Inferring TypeScript types
