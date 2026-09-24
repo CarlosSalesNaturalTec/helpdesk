@@ -90,10 +90,14 @@ async function main() {
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-01', telefone: '1130000001' },
     create: {
       nome: 'Administrador Global',
       email: 'admin@helpdesk.com',
+      cpf: '100.000.000-01',
+      telefone: '1130000001',
       senhaHash,
       role: Role.ADMIN,
       unidadeId: unidadePadrao.id,
@@ -108,10 +112,14 @@ async function main() {
 
   const solicitanteCentral = await prisma.user.upsert({
     where: { email: 'solicitante@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-02', telefone: '1130000002' },
     create: {
       nome: 'Carlos Solicitante',
       email: 'solicitante@helpdesk.com',
+      cpf: '100.000.000-02',
+      telefone: '1130000002',
       senhaHash: hashComum,
       role: Role.SOLICITANTE,
       unidadeId: unidadePadrao.id,
@@ -123,10 +131,14 @@ async function main() {
 
   const tecnicoCentral = await prisma.user.upsert({
     where: { email: 'tecnico@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-03', telefone: '1130000003' },
     create: {
       nome: 'Thiago Técnico',
       email: 'tecnico@helpdesk.com',
+      cpf: '100.000.000-03',
+      telefone: '1130000003',
       senhaHash: hashComum,
       role: Role.TECNICO,
       unidadeId: unidadePadrao.id,
@@ -139,10 +151,14 @@ async function main() {
 
   const gestorCentral = await prisma.user.upsert({
     where: { email: 'gestor@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-04', telefone: '1130000004' },
     create: {
       nome: 'Gisela Gestora',
       email: 'gestor@helpdesk.com',
+      cpf: '100.000.000-04',
+      telefone: '1130000004',
       senhaHash: hashComum,
       role: Role.GESTOR,
       unidadeId: unidadePadrao.id,
@@ -156,10 +172,14 @@ async function main() {
   // NOVO: Segundo Gestor, de "Manutenção", para exercitar o isolamento por área
   const gestorManutencao = await prisma.user.upsert({
     where: { email: 'gestor2@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-05', telefone: '1130000005' },
     create: {
       nome: 'Marcelo Gestor de Manutenção',
       email: 'gestor2@helpdesk.com',
+      cpf: '100.000.000-05',
+      telefone: '1130000005',
       senhaHash: hashComum,
       role: Role.GESTOR,
       unidadeId: unidadePadrao.id,
@@ -173,10 +193,14 @@ async function main() {
   // NOVO: Técnico de "Manutenção"
   const tecnicoManutencao = await prisma.user.upsert({
     where: { email: 'tecnico3@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-06', telefone: '1130000006' },
     create: {
       nome: 'Tereza Técnica de Manutenção',
       email: 'tecnico3@helpdesk.com',
+      cpf: '100.000.000-06',
+      telefone: '1130000006',
       senhaHash: hashComum,
       role: Role.TECNICO,
       unidadeId: unidadePadrao.id,
@@ -189,10 +213,14 @@ async function main() {
 
   const solicitanteSecundario = await prisma.user.upsert({
     where: { email: 'solicitante2@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-07', telefone: '1130000007' },
     create: {
       nome: 'Silvia Secundária',
       email: 'solicitante2@helpdesk.com',
+      cpf: '100.000.000-07',
+      telefone: '1130000007',
       senhaHash: hashComum,
       role: Role.SOLICITANTE,
       unidadeId: unidadeSecundaria.id,
@@ -204,10 +232,14 @@ async function main() {
 
   const tecnicoSecundario = await prisma.user.upsert({
     where: { email: 'tecnico2@helpdesk.com' },
-    update: {},
+    // Backfill: bases de desenvolvimento anteriores a estes campos
+    // continuariam com CPF nulo se o update seguisse vazio.
+    update: { cpf: '100.000.000-08', telefone: '1130000008' },
     create: {
       nome: 'Túlio Técnico Secundário',
       email: 'tecnico2@helpdesk.com',
+      cpf: '100.000.000-08',
+      telefone: '1130000008',
       senhaHash: hashComum,
       role: Role.TECNICO,
       unidadeId: unidadeSecundaria.id,
