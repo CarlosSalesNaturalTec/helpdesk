@@ -4,6 +4,7 @@ import { toPng } from 'html-to-image';
 import { useAuth } from '../context/AuthContext.js';
 import { getReportMetrics, generateReportPdf } from '../api/reports.js';
 import { UnitSelector } from '../components/UnitSelector.js';
+import { SectorSelector } from '../components/SectorSelector.js';
 import { StatusCard } from '../components/StatusCard.js';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { BRANDING_SLUG } from '../config.js';
@@ -11,25 +12,31 @@ import { BRANDING_SLUG } from '../config.js';
 export const Relatorios: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
+  // Gestor já é fixado na sua área pelo servidor: o seletor seria inerte e não é exibido
+  const canFilterSector = isAdmin || user?.role === 'DIRETOR';
 
   const [periodo, setPeriodo] = useState('30');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [dimensao, setDimensao] = useState('status');
   const [unidadeId, setUnidadeId] = useState<number | null>(null);
+  const [sectorId, setSectorId] = useState<number | null>(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
 
+  const filters = {
+    periodo,
+    dataInicio: periodo === 'custom' ? dataInicio : undefined,
+    dataFim: periodo === 'custom' ? dataFim : undefined,
+    dimensao,
+    unidadeId: isAdmin ? unidadeId : undefined,
+    sectorId: canFilterSector ? sectorId : undefined,
+  };
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['reportMetrics', periodo, dataInicio, dataFim, dimensao, isAdmin ? unidadeId : null],
-    queryFn: () => getReportMetrics({
-      periodo,
-      dataInicio: periodo === 'custom' ? dataInicio : undefined,
-      dataFim: periodo === 'custom' ? dataFim : undefined,
-      dimensao,
-      unidadeId: isAdmin ? unidadeId : undefined,
-    }),
+    queryKey: ['reportMetrics', periodo, dataInicio, dataFim, dimensao, isAdmin ? unidadeId : null, canFilterSector ? sectorId : null],
+    queryFn: () => getReportMetrics(filters),
     enabled: periodo !== 'custom' || (!!dataInicio && !!dataFim),
   });
 
@@ -43,18 +50,7 @@ export const Relatorios: React.FC = () => {
         chartImage = await toPng(chartRef.current, { backgroundColor: '#ffffff', pixelRatio: 2 });
       }
 
-      let periodoLabel = `Últimos ${periodo} dias`;
-      if (periodo === 'custom') {
-        periodoLabel = `De ${new Date(dataInicio).toLocaleDateString()} até ${new Date(dataFim).toLocaleDateString()}`;
-      }
-
-      const blob = await generateReportPdf({
-        cards: data.cards,
-        chartImage,
-        dimensao,
-        periodoLabel,
-        unidadeLabel: isAdmin && unidadeId ? 'Filtrada' : undefined, // idealmente o nome real
-      });
+      const blob = await generateReportPdf({ ...filters, chartImage });
 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -130,6 +126,13 @@ export const Relatorios: React.FC = () => {
           <div style={{ flexGrow: 1, minWidth: '200px' }}>
             <label className="form-label">Unidade</label>
             <UnitSelector selectedUnitId={unidadeId} onChange={setUnidadeId} />
+          </div>
+        )}
+
+        {canFilterSector && (
+          <div style={{ flexGrow: 1, minWidth: '200px' }}>
+            <label className="form-label">Tipo de Ocorrência</label>
+            <SectorSelector selectedSectorId={sectorId} onChange={setSectorId} />
           </div>
         )}
       </div>

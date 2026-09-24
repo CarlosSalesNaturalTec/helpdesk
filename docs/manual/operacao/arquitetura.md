@@ -11,7 +11,7 @@ Visão de alto nível para quem mantém o sistema. Para os detalhes de código, 
 - **Autenticação:** JWT (expiração de 15 minutos) + bcryptjs.
 - **Anexos:** Google Cloud Storage.
 - **E-mail:** SendGrid.
-- **PDF:** PDFKit (relatórios), gerado no backend a partir de dados enviados pelo frontend.
+- **PDF:** PDFKit (relatórios), gerado no backend: métricas e lista de chamados são apuradas no servidor; só a imagem do gráfico vem do frontend.
 
 ## Isolamento de dados
 
