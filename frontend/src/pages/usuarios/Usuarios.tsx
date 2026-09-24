@@ -16,6 +16,8 @@ interface Sector {
 interface UserListItem {
   id: number;
   nome: string;
+  cpf?: string | null;
+  telefone?: string | null;
   email: string;
   role: 'SOLICITANTE' | 'TECNICO' | 'GESTOR' | 'DIRETOR' | 'ADMIN';
   unidadeId: number;
@@ -42,6 +44,8 @@ export const Usuarios: React.FC = () => {
   
   // Form Fields
   const [nome, setNome] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'SOLICITANTE' | 'TECNICO' | 'GESTOR' | 'DIRETOR' | 'ADMIN'>('SOLICITANTE');
   const [unidadeId, setUnidadeId] = useState<number>(0);
@@ -108,6 +112,8 @@ export const Usuarios: React.FC = () => {
     setModalMode('create');
     setSelectedUser(null);
     setNome('');
+    setCpf('');
+    setTelefone('');
     setEmail('');
     setRole('SOLICITANTE');
     // Se for admin, usa a primeira unidade, senão a dele
@@ -123,6 +129,8 @@ export const Usuarios: React.FC = () => {
     setModalMode('edit');
     setSelectedUser(userItem);
     setNome(userItem.nome);
+    setCpf(userItem.cpf || '');
+    setTelefone(userItem.telefone || '');
     setEmail(userItem.email);
     setRole(userItem.role);
     setUnidadeId(userItem.unidadeId);
@@ -141,6 +149,8 @@ export const Usuarios: React.FC = () => {
 
     const payload: any = {
       nome,
+      cpf,
+      telefone,
       email,
       role,
       unidadeId: Number(unidadeId),
@@ -166,6 +176,8 @@ export const Usuarios: React.FC = () => {
       const formatted = parseResult.error.format();
       const errors: Record<string, string> = {};
       if (formatted.nome) errors.nome = formatted.nome._errors[0];
+      if (formatted.cpf) errors.cpf = formatted.cpf._errors[0];
+      if (formatted.telefone) errors.telefone = formatted.telefone._errors[0];
       if (formatted.email) errors.email = formatted.email._errors[0];
       if (formatted.role) errors.role = formatted.role._errors[0];
       if (formatted.unidadeId) errors.unidadeId = formatted.unidadeId._errors[0];
@@ -279,6 +291,8 @@ export const Usuarios: React.FC = () => {
             <thead>
               <tr>
                 <th>Nome</th>
+                <th>CPF</th>
+                <th>Telefone</th>
                 <th>E-mail</th>
                 <th>Papel</th>
                 <th>Unidade</th>
@@ -289,7 +303,7 @@ export const Usuarios: React.FC = () => {
             <tbody>
               {usuarios.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                     Nenhum usuário cadastrado.
                   </td>
                 </tr>
@@ -302,6 +316,10 @@ export const Usuarios: React.FC = () => {
                         <span style={{ fontSize: '11px', color: 'var(--primary)' }}>Você</span>
                       )}
                     </td>
+                    {/* Registros anteriores à introdução destes campos ficam vazios
+                        até a próxima edição — marcador neutro em vez de célula em branco */}
+                    <td>{userItem.cpf || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
+                    <td>{userItem.telefone || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
                     <td>{userItem.email}</td>
                     <td>
                       <span className={`user-badge ${getBadgeClass(userItem.role)}`}>
@@ -374,6 +392,32 @@ export const Usuarios: React.FC = () => {
                   autoFocus
                 />
                 {fieldErrors.nome && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.nome}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">CPF</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="Ex: 000.000.000-00"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                  disabled={submitting}
+                />
+                {fieldErrors.cpf && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.cpf}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Telefone</label>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="Ex: 11999998888 (com DDD, apenas números)"
+                  value={telefone}
+                  onChange={(e) => setTelefone(e.target.value)}
+                  disabled={submitting}
+                />
+                {fieldErrors.telefone && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.telefone}</span>}
               </div>
 
               <div className="form-group">

@@ -18,6 +18,23 @@ Em **Tipos de Problema**, cadastre as subcategorias vinculadas a um Tipo de Ocor
 
 Em **Usuários**, o Administrador cadastra, edita e desativa usuários de qualquer Unidade e define o perfil (Solicitante, Técnico, Gestor, Diretor, Administrador). Para Técnicos e Gestores, é obrigatório selecionar o Tipo de Ocorrência ao qual pertencem — para o Gestor, essa escolha define sua área de atuação (ex.: "Gestor de Manutenção").
 
+### Campos obrigatórios do cadastro
+
+Todo cadastro exige **nome completo**, **CPF**, **telefone** e **e-mail**, além do perfil e da Unidade. CPF e e-mail são únicos: o sistema recusa o cadastro se já existir outro usuário com o mesmo valor.
+
+| Campo | Formato esperado | Exemplo |
+| --- | --- | --- |
+| CPF | com pontuação, no formato `000.000.000-00` | `123.456.789-01` |
+| Telefone | somente números, com DDD — aceita fixo e celular | `1133334444` ou `11999998888` |
+
+O CPF é conferido apenas quanto ao **formato**; o sistema não valida os dígitos verificadores. A responsabilidade de digitar o número correto é de quem cadastra.
+
+### Usuários cadastrados antes destes campos
+
+Usuários criados antes da introdução de CPF e telefone continuam ativos e acessando o sistema normalmente, com esses campos vazios — aparecem como "—" na listagem. Não há bloqueio de acesso nem prazo para regularizar.
+
+O preenchimento acontece de forma gradual: **ao editar um desses usuários, ainda que seja apenas para trocar a Unidade, o sistema exige preencher CPF e telefone antes de salvar.** Para completar a base de uma vez, basta editar cada usuário pendente pela listagem.
+
 ## Chamados e relatórios globais
 
 O Administrador pode filtrar o Dashboard e os Relatórios por Unidade e por Tipo de Ocorrência, algo que os demais perfis não têm acesso — os relatórios de outros perfis são sempre restritos à própria Unidade.

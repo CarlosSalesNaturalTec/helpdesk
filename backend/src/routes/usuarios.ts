@@ -49,7 +49,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: parseResult.error.format() });
       }
 
-      const { nome, email, role, unidadeId: reqUnidadeId, sectorId, senha } = parseResult.data;
+      const { nome, cpf, telefone, email, role, unidadeId: reqUnidadeId, sectorId, senha } = parseResult.data;
 
       // Se Diretor/Gestor, força a unidade do usuário logado
       const targetUnidadeId = user.role === 'ADMIN' ? reqUnidadeId : user.unidadeId;
@@ -60,6 +60,15 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
       });
       if (existingEmail) {
         return reply.status(400).send({ error: 'Já existe um usuário com este e-mail' });
+      }
+
+      // Validar CPF único — espelha a checagem de e-mail acima para que a
+      // duplicidade vire mensagem amigável em vez de erro P2002 cru do Prisma
+      const existingCpf = await prisma.user.findUnique({
+        where: { cpf },
+      });
+      if (existingCpf) {
+        return reply.status(400).send({ error: 'Já existe um usuário com este CPF' });
       }
 
       // Senha é obrigatória no cadastro
@@ -74,6 +83,8 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
       const novoUsuario = await prisma.user.create({
         data: {
           nome,
+          cpf,
+          telefone,
           email,
           role,
           unidadeId: targetUnidadeId,
@@ -105,7 +116,7 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: parseResult.error.format() });
       }
 
-      const { nome, email, role, unidadeId: reqUnidadeId, sectorId, senha } = parseResult.data;
+      const { nome, cpf, telefone, email, role, unidadeId: reqUnidadeId, sectorId, senha } = parseResult.data;
 
       // Buscar usuário alvo
       const targetUser = await prisma.user.findUnique({
@@ -141,8 +152,18 @@ export async function usuarioRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Já existe um usuário com este e-mail' });
       }
 
+      // Validar CPF único (exceto o próprio)
+      const existingCpf = await prisma.user.findUnique({
+        where: { cpf },
+      });
+      if (existingCpf && existingCpf.id !== id) {
+        return reply.status(400).send({ error: 'Já existe um usuário com este CPF' });
+      }
+
       const updateData: any = {
         nome,
+        cpf,
+        telefone,
         email,
         role,
         unidadeId: finalUnidadeId,
