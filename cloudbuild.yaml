@@ -15,11 +15,13 @@ substitutions:
   # Nome da aplicação e do cliente, usados para compor o branding exibido no
   # frontend (título, navbar, login), nos e-mails de notificação e no relatório
   # em PDF. Ver backend/src/lib/branding.ts e frontend/src/config.ts.
-  # ATENÇÃO: estes valores contêm espaços — sempre entre aspas onde forem
+  # ATENÇÃO: estes valores podem conter espaços — sempre entre aspas onde forem
   # expandidos, e no --set-env-vars use o delimitador alternativo (^@^) para
   # tolerar vírgulas em nomes de cliente.
-  _APP_NAME: SOLUTUS
-  _CLIENT_NAME: Instituto Setes
+  # _CLIENT_NAME vazio é intencional e suportado: o sistema passa a exibir
+  # apenas _APP_NAME, sem travessão. Não confundir com "não configurado".
+  _APP_NAME: ISETS
+  _CLIENT_NAME: ""
   # URL base do frontend publicado no Firebase Hosting, usada para montar os
   # links dos e-mails (${FRONTEND_URL}/chamados/{id}) e como ALLOWED_ORIGIN do
   # CORS no Cloud Run — as duas vêm desta mesma substituição para não divergir.

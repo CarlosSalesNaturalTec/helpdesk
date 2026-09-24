@@ -65,7 +65,8 @@ export const Layout: React.FC = () => {
           <div className="brand-logo-capsule">
             <BrandLogo variant="horizontal" height={40} />
           </div>
-          {APP_NAME} <span>{CLIENT_NAME}</span>
+          {APP_NAME}
+          {CLIENT_NAME && <>{' '}<span>{CLIENT_NAME}</span></>}
         </div>
 
         <div className={`nav-collapsible ${menuOpen ? 'nav-open' : ''}`}>
