@@ -37,7 +37,7 @@ O preenchimento acontece de forma gradual: **ao editar um desses usuários, aind
 
 ## Chamados e relatórios globais
 
-O Administrador pode filtrar o Dashboard e os Relatórios por Unidade e por Tipo de Ocorrência, algo que os demais perfis não têm acesso — os relatórios de outros perfis são sempre restritos à própria Unidade.
+O Administrador pode filtrar o Dashboard, os Relatórios e a listagem de Chamados por Unidade e por Tipo de Ocorrência (ao clicar em um cartão do Dashboard, os recortes aplicados seguem para a listagem), algo que os demais perfis não têm acesso — os relatórios de outros perfis são sempre restritos à própria Unidade.
 
 ## Isolamento de dados
 

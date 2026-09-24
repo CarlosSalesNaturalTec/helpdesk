@@ -1,18 +1,70 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { TicketStatusEnum, NivelUrgenciaEnum } from '@helpdesk/shared';
+import type { TicketStatusType, NivelUrgenciaType } from '@helpdesk/shared';
 import { getTickets } from '../api/tickets.js';
 import { useAuth } from '../context/AuthContext.js';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
 import { TicketCard } from '../components/TicketCard.js';
+import { UnitSelector } from '../components/UnitSelector.js';
+
+const STATUS_LABELS: Record<TicketStatusType, string> = {
+  ABERTO: 'Aberto',
+  EM_ANDAMENTO: 'Em Andamento',
+  AGUARDANDO: 'Aguardando',
+  RESOLVIDO: 'Resolvido',
+  FECHADO: 'Fechado',
+  REABERTO: 'Reaberto',
+};
+
+const URGENCIA_LABELS: Record<NivelUrgenciaType, string> = {
+  BAIXA: 'Baixa',
+  MEDIA: 'Média',
+  ALTA: 'Alta',
+  CRITICA: 'Crítica',
+};
+
+const parsePositiveInt = (value: string | null) => {
+  const n = value ? parseInt(value, 10) : NaN;
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+};
 
 export const Chamados: React.FC = () => {
   const { user } = useAuth();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [sectorFilter, setSectorFilter] = useState('');
-  const [page, setPage] = useState(1);
+  // A URL é a fonte de verdade dos filtros: link direto (cards do Dashboard), recarga e botão voltar.
+  const [searchParams, setSearchParams] = useSearchParams();
   const limit = 20;
+
+  const search = searchParams.get('search') ?? '';
+  const statusFilter = (searchParams.get('status') ?? '')
+    .split(',')
+    .filter((s): s is TicketStatusType => (TicketStatusEnum.options as string[]).includes(s));
+  const urgenciaParam = searchParams.get('urgencia');
+  const urgenciaFilter = (NivelUrgenciaEnum.options as string[]).includes(urgenciaParam ?? '')
+    ? (urgenciaParam as NivelUrgenciaType)
+    : undefined;
+  const sectorFilter = parsePositiveInt(searchParams.get('sectorId'));
+  const unidadeFilter = parsePositiveInt(searchParams.get('unidadeId'));
+  const page = parsePositiveInt(searchParams.get('page')) ?? 1;
+
+  const isAdmin = user?.role === 'ADMIN';
+
+  // Toda mudança de filtro volta para a página 1. A busca textual substitui a entrada do
+  // histórico (uma por tecla seria inútil para o botão voltar); os demais filtros empilham.
+  const updateFilters = (changes: Record<string, string | undefined>, options?: { replace?: boolean }) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(changes)) {
+        if (value) next.set(key, value);
+        else next.delete(key);
+      }
+      if (!('page' in changes)) next.delete('page');
+      return next;
+    }, options);
+  };
+
+  const setPage = (p: number) => updateFilters({ page: p > 1 ? String(p) : undefined });
 
   const { data: sectors } = useQuery({
     queryKey: ['sectors'],
@@ -22,13 +74,16 @@ export const Chamados: React.FC = () => {
     },
   });
 
-  // Query para buscar chamados
+  // Query para buscar chamados — a queryKey carrega todos os filtros, para não servir cache de outro recorte
+  const unidadeId = isAdmin ? unidadeFilter : undefined;
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['tickets', { search, status: statusFilter, sectorId: sectorFilter, page, limit }],
+    queryKey: ['tickets', { search, status: statusFilter, urgencia: urgenciaFilter, sectorId: sectorFilter, unidadeId, page, limit }],
     queryFn: () => getTickets({
       search: search || undefined,
-      status: (statusFilter || undefined) as any,
-      sectorId: sectorFilter ? Number(sectorFilter) : undefined,
+      status: statusFilter.length ? statusFilter : undefined,
+      urgencia: urgenciaFilter,
+      sectorId: sectorFilter,
+      unidadeId,
       page,
       limit,
     }),
@@ -80,18 +135,28 @@ export const Chamados: React.FC = () => {
   const totalPages = data ? Math.ceil(data.total / limit) : 1;
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-    setPage(1); // Resetar para a primeira página
+    updateFilters({ search: e.target.value || undefined }, { replace: true });
   };
 
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStatusFilter(e.target.value);
-    setPage(1); // Resetar para a primeira página
+  const toggleStatus = (status: TicketStatusType) => {
+    const selected = statusFilter.includes(status)
+      ? statusFilter.filter((s) => s !== status)
+      : [...statusFilter, status];
+    // Mantém a ordem do enum, para que a mesma seleção produza sempre o mesmo endereço
+    const ordered = TicketStatusEnum.options.filter((s) => selected.includes(s));
+    updateFilters({ status: ordered.length ? ordered.join(',') : undefined });
+  };
+
+  const handleUrgenciaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    updateFilters({ urgencia: e.target.value || undefined });
   };
 
   const handleSectorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSectorFilter(e.target.value);
-    setPage(1); // Resetar para a primeira página
+    updateFilters({ sectorId: e.target.value || undefined });
+  };
+
+  const handleUnidadeChange = (id: number | null) => {
+    updateFilters({ unidadeId: id ? String(id) : undefined });
   };
 
   const isSolicitante = user?.role === 'SOLICITANTE';
@@ -130,8 +195,9 @@ export const Chamados: React.FC = () => {
         <div className="filter-field">
           <select
             className="input-field"
-            value={sectorFilter}
+            value={sectorFilter ?? ''}
             onChange={handleSectorChange}
+            aria-label="Tipo de Ocorrência"
           >
             <option value="">Todos os tipos de ocorrência</option>
             {sectors?.map((sector) => (
@@ -144,17 +210,39 @@ export const Chamados: React.FC = () => {
         <div className="filter-field">
           <select
             className="input-field"
-            value={statusFilter}
-            onChange={handleStatusChange}
+            value={urgenciaFilter ?? ''}
+            onChange={handleUrgenciaChange}
+            aria-label="Urgência"
           >
-            <option value="">Todos os status</option>
-            <option value="ABERTO">Aberto</option>
-            <option value="EM_ANDAMENTO">Em Andamento</option>
-            <option value="AGUARDANDO">Aguardando</option>
-            <option value="RESOLVIDO">Resolvido</option>
-            <option value="FECHADO">Fechado</option>
-            <option value="REABERTO">Reaberto</option>
+            <option value="">Todas as urgências</option>
+            {NivelUrgenciaEnum.options.map((u) => (
+              <option key={u} value={u}>
+                {URGENCIA_LABELS[u]}
+              </option>
+            ))}
           </select>
+        </div>
+        {isAdmin && (
+          <UnitSelector selectedUnitId={unidadeFilter ?? null} onChange={handleUnidadeChange} />
+        )}
+        <div className="status-filter" role="group" aria-label="Filtrar por status">
+          <span className="status-filter-label">Status:</span>
+          {TicketStatusEnum.options.map((status) => (
+            <button
+              key={status}
+              type="button"
+              className="status-chip"
+              aria-pressed={statusFilter.includes(status)}
+              onClick={() => toggleStatus(status)}
+            >
+              {STATUS_LABELS[status]}
+            </button>
+          ))}
+          {statusFilter.length > 0 && (
+            <button type="button" className="status-chip" onClick={() => updateFilters({ status: undefined })}>
+              Limpar
+            </button>
+          )}
         </div>
       </div>
 
@@ -288,7 +376,7 @@ export const Chamados: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '32px' }}>
               <button
                 className="btn btn-secondary"
-                onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                onClick={() => setPage(Math.max(page - 1, 1))}
                 disabled={page === 1}
                 style={{ padding: '8px 16px' }}
               >
@@ -299,7 +387,7 @@ export const Chamados: React.FC = () => {
               </span>
               <button
                 className="btn btn-secondary"
-                onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                onClick={() => setPage(Math.min(page + 1, totalPages))}
                 disabled={page === totalPages}
                 style={{ padding: '8px 16px' }}
               >

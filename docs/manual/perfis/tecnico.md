@@ -4,7 +4,7 @@ O Técnico atende os chamados de suporte. O que um Técnico enxerga é **duplame
 
 ## Fila de chamados
 
-Em **Chamados**, a lista mostra os chamados dentro do seu escopo, com filtros por status, Tipo de Ocorrência e Tipo de Problema. O **Dashboard** resume os chamados abertos, em andamento, resolvidos e os críticos ainda não fechados, além de uma tendência de 30 dias.
+Em **Chamados**, a lista mostra os chamados dentro do seu escopo, com filtros por status (um ou mais), urgência e Tipo de Ocorrência — veja [Listagem e filtros de chamados](../funcionalidades/listagem-chamados.md). O **Dashboard** resume os chamados abertos, em andamento, resolvidos e os críticos ainda não fechados, além de uma tendência de 30 dias; clicar em um cartão abre a listagem com esses chamados.
 
 ## Assumir um chamado
 

@@ -6,6 +6,22 @@ import { StatusCard } from '../components/StatusCard.js';
 import { TrendChart } from '../components/TrendChart.js';
 import { UnitSelector } from '../components/UnitSelector.js';
 import { SectorSelector } from '../components/SectorSelector.js';
+import { STATUS_NAO_FECHADOS } from '@helpdesk/shared';
+import type { TicketStatusType } from '@helpdesk/shared';
+
+// Destino de cada card: o mesmo predicado que o card contou em dashboard.ts,
+// mais os recortes de Unidade e Tipo de Ocorrência aplicados pelo Admin.
+function chamadosLink(
+  predicate: { status: readonly TicketStatusType[]; urgencia?: string },
+  unidadeId: number | null,
+  sectorId: number | null,
+) {
+  const params = new URLSearchParams({ status: predicate.status.join(',') });
+  if (predicate.urgencia) params.set('urgencia', predicate.urgencia);
+  if (unidadeId) params.set('unidadeId', String(unidadeId));
+  if (sectorId) params.set('sectorId', String(sectorId));
+  return `/chamados?${params.toString()}`;
+}
 
 // 2.1 Hook useDashboard(unidadeId?) com React Query chamando GET /api/dashboard
 export function useDashboard(unidadeId?: number | null, sectorId?: number | null) {
@@ -26,6 +42,11 @@ export const Dashboard: React.FC = () => {
   const { data, isLoading, isError, error } = useDashboard(isAdmin ? selectedUnitId : null, isAdmin ? selectedSectorId : null);
 
   if (!user) return null;
+
+  const unidadeRecorte = isAdmin ? selectedUnitId : null;
+  const sectorRecorte = isAdmin ? selectedSectorId : null;
+  const linkTo = (predicate: Parameters<typeof chamadosLink>[0]) =>
+    chamadosLink(predicate, unidadeRecorte, sectorRecorte);
 
   return (
     <div className="main-content">
@@ -83,21 +104,25 @@ export const Dashboard: React.FC = () => {
               label="Abertos"
               value={data.cards.abertos}
               type="abertos"
+              to={linkTo({ status: ['ABERTO', 'REABERTO'] })}
             />
             <StatusCard
               label="Em Andamento"
               value={data.cards.emAndamento}
               type="emAndamento"
+              to={linkTo({ status: ['EM_ANDAMENTO', 'AGUARDANDO'] })}
             />
             <StatusCard
               label="Resolvidos"
               value={data.cards.resolvidos}
               type="resolvidos"
+              to={linkTo({ status: ['RESOLVIDO'] })}
             />
             <StatusCard
               label="Críticos"
               value={data.cards.criticos}
               type="criticos"
+              to={linkTo({ status: STATUS_NAO_FECHADOS, urgencia: 'CRITICA' })}
             />
           </div>
 

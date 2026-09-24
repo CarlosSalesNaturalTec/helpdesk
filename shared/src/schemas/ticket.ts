@@ -9,7 +9,12 @@ export const TicketStatusEnum = z.enum([
   'REABERTO',
 ]);
 
-
+/**
+ * Todos os status exceto FECHADO, derivados do enum — usado pelo card "Críticos" do Dashboard,
+ * que conta `status <> 'FECHADO'`. Nunca escrever essa lista à mão: um status novo no workflow
+ * precisa entrar aqui automaticamente.
+ */
+export const STATUS_NAO_FECHADOS = TicketStatusEnum.options.filter((s) => s !== 'FECHADO');
 
 export const NivelUrgenciaEnum = z.enum([
   'BAIXA',
@@ -67,9 +72,22 @@ export const satisfactionSchema = z.object({
     .max(5, 'A nota deve ser entre 1 e 5'),
 });
 
+/**
+ * Aceita um ou mais status na query string, como lista separada por vírgula
+ * (`?status=ABERTO,REABERTO`) ou parâmetro repetido. Valor único segue válido;
+ * vazio equivale a ausente; qualquer item fora do enum reprova a validação (400).
+ */
+const statusListSchema = z.preprocess((value) => {
+  const raw = Array.isArray(value) ? value : value === undefined ? [] : [value];
+  const items = raw.flatMap((v) => String(v).split(',')).map((v) => v.trim()).filter(Boolean);
+  return items.length > 0 ? items : undefined;
+}, z.array(TicketStatusEnum).optional());
+
 export const ticketQuerySchema = z.object({
   search: z.string().optional(),
-  status: TicketStatusEnum.optional(),
+  status: statusListSchema,
+  urgencia: NivelUrgenciaEnum.optional(),
+  unidadeId: z.coerce.number().int().positive().optional(),
   sectorId: z.coerce.number().int().positive().optional(),
   problemTypeId: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().positive().default(1),

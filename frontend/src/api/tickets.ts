@@ -1,7 +1,8 @@
 import { apiClient } from './client.js';
 import type {
-  TicketQueryInput,
   TicketStatusInput,
+  TicketStatusType,
+  NivelUrgenciaType,
   AssignTicketInput,
   SatisfactionInput,
 } from '@helpdesk/shared';
@@ -86,8 +87,23 @@ export const createTicket = async (data: CreateTicketInput) => {
   return response.data;
 };
 
-export const getTickets = async (params?: TicketQueryInput) => {
-  const response = await apiClient.get<TicketListResponse>('/api/tickets', { params });
+export interface TicketListParams {
+  search?: string;
+  status?: TicketStatusType[];
+  urgencia?: NivelUrgenciaType;
+  unidadeId?: number;
+  sectorId?: number;
+  problemTypeId?: number;
+  page?: number;
+  limit?: number;
+}
+
+export const getTickets = async (params?: TicketListParams) => {
+  // status viaja como lista separada por vírgula — o formato aceito por ticketQuerySchema
+  const { status, ...rest } = params ?? {};
+  const response = await apiClient.get<TicketListResponse>('/api/tickets', {
+    params: { ...rest, status: status?.length ? status.join(',') : undefined },
+  });
   return response.data;
 };
 

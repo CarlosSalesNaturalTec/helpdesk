@@ -50,6 +50,7 @@ nav:
       - Ciclo de vida do chamado: funcionalidades/ciclo-de-vida.md
       - Anexos: funcionalidades/anexos.md
       - Notificações: funcionalidades/notificacoes.md
+      - Listagem e filtros de chamados: funcionalidades/listagem-chamados.md
       - Relatórios e dashboard: funcionalidades/relatorios-dashboard.md
   - Operação:
       - Arquitetura: operacao/arquitetura.md
