@@ -148,8 +148,8 @@ In-app notifications are read through `/api/notifications`, `/api/notifications/
 
 ### Reports & Dashboard
 
-- `GET /api/reports/metrics` — metric cards + distribution by `dimensao`, filtered by `periodo` (days) or a custom `dataInicio`/`dataFim` range, scoped by unit and, for Gestor, by Sector too (Admin may pass `unidadeId`/`sectorId`). Gestor/Diretor/Admin only.
-- `POST /api/reports/pdf` — the frontend renders the Recharts chart to a PNG data URL with `html-to-image` and posts it together with the computed cards; the backend composes the PDF with PDFKit and streams it back as an attachment. **Chart rendering happens client-side** — the backend does not recompute metrics for the PDF.
+- `GET /api/reports/metrics` — metric cards + distribution by `dimensao`, filtered by `periodo` (days) or a custom `dataInicio`/`dataFim` range, scoped by unit and, for Gestor, by Sector too (Admin may pass `unidadeId`/`sectorId`; Diretor may pass `sectorId`). Gestor/Diretor/Admin only.
+- `POST /api/reports/pdf` — the frontend renders the Recharts chart to a PNG data URL with `html-to-image` and posts it together with the **filters** (not the numbers). The backend recomputes the cards and queries the ticket list (capped at 1000 most recent, grouped Unidade → Tipo de Ocorrência) from the same scope, composes the PDF with PDFKit and streams it back as an attachment. **Chart rendering is the only client-side part.** Period and role-scope derivation is shared with `/metrics` via `resolveReportScope()` in `reports.ts` — keep it single-sourced. Diretor may narrow by `sectorId` (always within their own Unidade); Gestor is pinned to their Sector.
 - `GET /api/dashboard` — status cards and a 30-day trend series, both computed with `prisma.$queryRaw` (a `generate_series` day spine left-joined against tickets). Técnico/Gestor/Diretor/Admin only.
 
 ### Backend Route Organization

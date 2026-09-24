@@ -5,6 +5,7 @@ export interface ReportMetricsFilters {
   dataInicio?: string;
   dataFim?: string;
   unidadeId?: number | null;
+  sectorId?: number | null;
   dimensao: string;
 }
 
@@ -28,17 +29,15 @@ export const getReportMetrics = async (filters: ReportMetricsFilters): Promise<R
   if (filters.dataInicio) params.append('dataInicio', filters.dataInicio);
   if (filters.dataFim) params.append('dataFim', filters.dataFim);
   if (filters.unidadeId) params.append('unidadeId', String(filters.unidadeId));
+  if (filters.sectorId) params.append('sectorId', String(filters.sectorId));
 
   const response = await api.get(`/api/reports/metrics?${params.toString()}`);
   return response.data;
 };
 
-export interface GeneratePdfParams {
-  cards: ReportMetricsData['cards'];
+// O servidor apura cards e lista a partir dos filtros; só o gráfico (renderização de DOM) vai pronto
+export interface GeneratePdfParams extends ReportMetricsFilters {
   chartImage?: string;
-  dimensao: string;
-  periodoLabel: string;
-  unidadeLabel?: string;
 }
 
 export const generateReportPdf = async (params: GeneratePdfParams): Promise<Blob> => {
