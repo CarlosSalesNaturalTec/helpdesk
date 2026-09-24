@@ -181,29 +181,37 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: queryParse.error.format() });
       }
 
-      const { search, status, page, limit, sectorId, problemTypeId } = queryParse.data;
+      const { search, status, urgencia, unidadeId, page, limit, sectorId, problemTypeId } = queryParse.data;
       const user = request.user!;
 
       let whereClause: any = {};
 
-      // Aplicar escopo por papel
-      if (user.role === 'SOLICITANTE') {
-        whereClause.solicitanteId = user.id;
-      } else {
-        Object.assign(whereClause, scopeWhere(user));
-      }
-
-      // Aplicar filtro de status
+      // Filtro de status: um ou mais valores (união)
       if (status) {
-        whereClause.status = status;
+        whereClause.status = status.length === 1 ? status[0] : { in: status };
+      }
+      if (urgencia) {
+        whereClause.urgencia = urgencia;
       }
 
-      // Filtros adicionais
+      // Filtros adicionais. unidadeId do query só é honrado para Admin (espelha dashboard.ts);
+      // para os demais papéis é descartado em silêncio.
+      if (unidadeId && user.role === 'ADMIN') {
+        whereClause.unidadeId = unidadeId;
+      }
       if (sectorId) {
         whereClause.sectorId = sectorId;
       }
       if (problemTypeId) {
         whereClause.problemTypeId = problemTypeId;
+      }
+
+      // Escopo por papel aplicado POR ÚLTIMO: nenhum parâmetro do query pode sobrescrever
+      // a Unidade/Tipo de Ocorrência derivados de scopeWhere(user).
+      if (user.role === 'SOLICITANTE') {
+        whereClause.solicitanteId = user.id;
+      } else {
+        Object.assign(whereClause, scopeWhere(user));
       }
 
       // Aplicar busca textual (titulo, solicitante.nome, unidade.nome)

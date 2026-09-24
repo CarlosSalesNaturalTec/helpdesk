@@ -43,6 +43,8 @@ O mesmo vale para `sectorId`, que já existe no schema: hoje ele é aplicado sem
         └─ demais ──→ descarta; vale scopeWhere(user)
 ```
 
+**Decisão de implementação.** `unidadeId` é lido apenas para Admin, como previsto. Para `sectorId` a regra "só Admin" foi descartada: o filtro de Tipo de Ocorrência já é exibido a todos os papéis na tela de Chamados, e Diretor e Solicitante o usam para estreitar a própria listagem — restringi-lo quebraria um recurso existente. A invariante de isolamento é garantida de outra forma: `scopeWhere(user)` (e `solicitanteId` para o Solicitante) passa a ser aplicado **por último** em `tickets.ts`, então nenhum parâmetro do query consegue sobrescrever o escopo do papel. Para Técnico e Gestor, um `sectorId` de outra área é descartado em silêncio; para Diretor e Solicitante ele só estreita dentro do que o papel já enxerga.
+
 ## 3. Filtros na URL como fonte de verdade
 
 `Chamados.tsx` guarda filtros em `useState`, sem sincronia com a URL. Sem mudar isso, o link do card não funciona.

@@ -11,6 +11,21 @@ O **Dashboard** mostra, para a Unidade do usuário (ou, para Técnico e Gestor, 
 
 O Administrador pode filtrar por Unidade e por Tipo de Ocorrência; o Diretor vê sempre o escopo da própria Unidade em todas as áreas; o Gestor e o Técnico veem apenas a própria Unidade e o próprio Tipo de Ocorrência.
 
+### Dos cartões para os chamados
+
+Clique em um cartão (ou selecione-o com a tecla Tab e pressione Enter) para abrir a tela [Chamados](listagem-chamados.md) já filtrada pelo mesmo critério da contagem:
+
+| Cartão | Abre a listagem filtrada por |
+| --- | --- |
+| Abertos | status Aberto e Reaberto |
+| Em Andamento | status Em Andamento e Aguardando |
+| Resolvidos | status Resolvido |
+| Críticos | urgência Crítica e todos os status exceto Fechado |
+
+Se o Administrador tiver selecionado uma Unidade ou um Tipo de Ocorrência no Dashboard, esses recortes vão junto para a listagem. O número de chamados encontrados na listagem é o mesmo exibido no cartão.
+
+Os cartões da tela de Relatórios são apenas informativos e não levam a outra tela.
+
 ## Relatórios
 
 Em **Relatórios** (Gestor, Diretor, Administrador), escolha um período — predefinido em dias, ou um intervalo de datas customizado — para ver:

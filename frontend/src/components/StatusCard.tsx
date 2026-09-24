@@ -1,12 +1,15 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface StatusCardProps {
   label: string;
   value: number | string;
   type: 'abertos' | 'emAndamento' | 'resolvidos' | 'criticos';
+  /** Destino opcional. Com ele, o card vira um link navegável por teclado; sem ele, é estático. */
+  to?: string;
 }
 
-export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) => {
+export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type, to }) => {
   const getConfig = () => {
     switch (type) {
       case 'abertos':
@@ -65,7 +68,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) =>
 
   const config = getConfig();
 
-  return (
+  const card = (
     <div
       className="glass-panel"
       style={{
@@ -78,7 +81,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) =>
         border: `1px solid ${config.borderColor}`,
         boxShadow: `0 4px 20px ${config.glowColor}`,
         transition: 'transform 0.2s, box-shadow 0.2s',
-        cursor: 'default',
+        cursor: to ? 'pointer' : 'default',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-2px)';
@@ -113,5 +116,13 @@ export const StatusCard: React.FC<StatusCardProps> = ({ label, value, type }) =>
         {config.icon}
       </div>
     </div>
+  );
+
+  if (!to) return card;
+
+  return (
+    <Link to={to} className="status-card-link" aria-label={`${label}: ${value}. Ver chamados`}>
+      {card}
+    </Link>
   );
 };

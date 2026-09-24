@@ -12,6 +12,7 @@ import {
   ticketQuerySchema,
   TicketStatusEnum,
   NivelUrgenciaEnum,
+  STATUS_NAO_FECHADOS,
 } from './schemas/ticket.js';
 
 // Re-exporting schemas
@@ -30,6 +31,7 @@ export {
   ticketQuerySchema,
   TicketStatusEnum,
   NivelUrgenciaEnum,
+  STATUS_NAO_FECHADOS,
 };
 
 // Inferring TypeScript types

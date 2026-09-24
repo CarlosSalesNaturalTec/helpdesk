@@ -547,6 +547,54 @@ h1, h2, h3, h4, h5, h6 {
   width: 200px;
 }
 
+/* Seleção múltipla de status (Chamados) */
+.status-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.status-filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.status-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.status-chip[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: var(--primary-glow);
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.status-chip:focus-visible,
+.status-card-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.status-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 16px;
+}
+
 /* Grids que colapsam para 1 coluna em telas menores */
 .grid-2-1 {
   display: grid;
