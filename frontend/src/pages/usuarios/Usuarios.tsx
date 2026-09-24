@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { apiClient } from '../../api/client.js';
 import { userSchema, MANAGEABLE_ROLES } from '@helpdesk/shared';
+import { maskCpf, maskTelefone, onlyDigits } from '../../utils/masks.js';
 
 interface Unidade {
   id: number;
@@ -69,6 +70,15 @@ export const Usuarios: React.FC = () => {
   const [userToDeactivate, setUserToDeactivate] = useState<UserListItem | null>(null);
   const [deactivateError, setDeactivateError] = useState<string | null>(null);
   const [activeTicketsWarning, setActiveTicketsWarning] = useState<string | null>(null);
+
+  // Reactivate / Delete State
+  const [isActivateOpen, setIsActivateOpen] = useState(false);
+  const [userToActivate, setUserToActivate] = useState<UserListItem | null>(null);
+  const [activateError, setActivateError] = useState<string | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserListItem | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
 
   const isUserAdmin = currentUser?.role === 'ADMIN';
 
@@ -160,8 +170,8 @@ export const Usuarios: React.FC = () => {
     setModalMode('edit');
     setSelectedUser(userItem);
     setNome(userItem.nome);
-    setCpf(userItem.cpf || '');
-    setTelefone(userItem.telefone || '');
+    setCpf(maskCpf(userItem.cpf || ''));
+    setTelefone(maskTelefone(userItem.telefone || ''));
     setEmail(userItem.email);
     setRole(userItem.role);
     setUnidadeId(userItem.unidadeId);
@@ -181,7 +191,9 @@ export const Usuarios: React.FC = () => {
     const payload: any = {
       nome,
       cpf,
-      telefone,
+      // O schema compartilhado exige o telefone apenas com dígitos; a máscara
+      // existe só na tela (design D1).
+      telefone: onlyDigits(telefone),
       email,
       role,
       unidadeId: Number(unidadeId),
@@ -189,7 +201,7 @@ export const Usuarios: React.FC = () => {
 
     if (role === 'TECNICO' || role === 'GESTOR') {
       if (!sectorId) {
-        setFieldErrors({ sectorId: 'Tipo de Ocorrência é obrigatório para Técnicos e Gestores' });
+        setFieldErrors({ sectorId: 'Área de atuação é obrigatória para Técnicos e Gestores' });
         setSubmitting(false);
         return;
       }
@@ -271,6 +283,54 @@ export const Usuarios: React.FC = () => {
     }
   };
 
+  const handleOpenActivateDialog = (userItem: UserListItem) => {
+    setUserToActivate(userItem);
+    setActivateError(null);
+    setIsActivateOpen(true);
+  };
+
+  const handleActivateUser = async () => {
+    if (!userToActivate) return;
+    setActivateError(null);
+    setActionSubmitting(true);
+
+    try {
+      await apiClient.patch(`/api/usuarios/${userToActivate.id}/activate`);
+      setIsActivateOpen(false);
+      fetchUsuarios();
+    } catch (err: any) {
+      console.error('Erro ao reativar usuário:', err);
+      setActivateError(err.response?.data?.error || 'Falha ao reativar o usuário.');
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
+
+  const handleOpenDeleteDialog = (userItem: UserListItem) => {
+    setUserToDelete(userItem);
+    setDeleteError(null);
+    setIsDeleteOpen(true);
+  };
+
+  // A tela não tenta prever se o usuário tem vínculos: o servidor decide e
+  // explica, e o 409 é exibido dentro do próprio modal (design D4).
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setDeleteError(null);
+    setActionSubmitting(true);
+
+    try {
+      await apiClient.delete(`/api/usuarios/${userToDelete.id}`);
+      setIsDeleteOpen(false);
+      fetchUsuarios();
+    } catch (err: any) {
+      console.error('Erro ao excluir usuário:', err);
+      setDeleteError(err.response?.data?.error || 'Falha ao excluir o usuário.');
+    } finally {
+      setActionSubmitting(false);
+    }
+  };
+
   const getRoleLabel = (r: string, sectorNome?: string | null) => {
     switch (r) {
       case 'ADMIN': return 'Admin';
@@ -348,7 +408,7 @@ export const Usuarios: React.FC = () => {
                     {/* Registros anteriores à introdução destes campos ficam vazios
                         até a próxima edição — marcador neutro em vez de célula em branco */}
                     <td>{userItem.cpf || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
-                    <td>{userItem.telefone || <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
+                    <td>{userItem.telefone ? maskTelefone(userItem.telefone) : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
                     <td>{userItem.email}</td>
                     <td>
                       <span className={`user-badge ${getBadgeClass(userItem.role)}`}>
@@ -383,6 +443,27 @@ export const Usuarios: React.FC = () => {
                           >
                             Desativar
                           </button>
+                        )}
+                        {/* Usuário inativo: reativar (volta o acesso) ou excluir
+                            em definitivo. "Editar" segue desabilitado — reativa-se
+                            primeiro (design D4). */}
+                        {!userItem.ativo && (
+                          <>
+                            <button
+                              onClick={() => handleOpenActivateDialog(userItem)}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 12px', fontSize: '13px' }}
+                            >
+                              Reativar
+                            </button>
+                            <button
+                              onClick={() => handleOpenDeleteDialog(userItem)}
+                              className="btn btn-danger"
+                              style={{ padding: '6px 12px', fontSize: '13px', background: 'transparent', border: '1px solid var(--hue-red-border)', color: 'var(--danger)' }}
+                            >
+                              Excluir
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -428,9 +509,10 @@ export const Usuarios: React.FC = () => {
                 <input
                   type="text"
                   className="input-field"
-                  placeholder="Ex: 000.000.000-00"
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
                   value={cpf}
-                  onChange={(e) => setCpf(e.target.value)}
+                  onChange={(e) => setCpf(maskCpf(e.target.value))}
                   disabled={submitting}
                 />
                 {fieldErrors.cpf && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.cpf}</span>}
@@ -441,9 +523,10 @@ export const Usuarios: React.FC = () => {
                 <input
                   type="text"
                   className="input-field"
-                  placeholder="Ex: 11999998888 (com DDD, apenas números)"
+                  placeholder="(00) 00000-0000"
+                  inputMode="numeric"
                   value={telefone}
-                  onChange={(e) => setTelefone(e.target.value)}
+                  onChange={(e) => setTelefone(maskTelefone(e.target.value))}
                   disabled={submitting}
                 />
                 {fieldErrors.telefone && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.telefone}</span>}
@@ -495,18 +578,23 @@ export const Usuarios: React.FC = () => {
 
                 {(role === 'TECNICO' || role === 'GESTOR') && (
                   <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label">Tipo de Ocorrência</label>
+                    <label className="form-label">Área de atuação</label>
                     <select
                       className="input-field"
                       value={sectorId}
                       onChange={(e) => setSectorId(e.target.value ? Number(e.target.value) : '')}
                       disabled={submitting || isSelfEdit || sectorTravadoNoGestor}
                     >
-                      <option value="">Selecione um tipo de ocorrência...</option>
+                      <option value="">Selecione a área...</option>
                       {sectors.map((s) => (
                         <option key={s.id} value={s.id}>{s.nome}</option>
                       ))}
                     </select>
+                    {/* O termo "Tipo de Ocorrência" descreve um chamado, não uma
+                        pessoa — a dica liga os dois (design D5). */}
+                    <span style={{ display: 'block', marginTop: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                      Tipo de Ocorrência atendido por este usuário. Para Gestores, define quais chamados, indicadores e técnicos ele gerencia.
+                    </span>
                     {fieldErrors.sectorId && <span style={{ color: 'var(--danger)', fontSize: '12px' }}>{fieldErrors.sectorId}</span>}
                   </div>
                 )}
@@ -592,6 +680,86 @@ export const Usuarios: React.FC = () => {
                 className="btn btn-danger"
               >
                 Confirmar Desativação
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reactivate Confirmation Modal */}
+      {isActivateOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+            <h3 style={{ fontSize: '20px', marginBottom: '16px' }}>
+              Confirmar Reativação
+            </h3>
+
+            <p style={{ color: 'var(--text-main)', marginBottom: '24px', fontSize: '15px' }}>
+              Reativar o usuário <strong>{userToActivate?.nome}</strong>? Ele volta a acessar o sistema com a senha que já possuía, e qualquer bloqueio por tentativas de login malsucedidas é removido.
+            </p>
+
+            {activateError && (
+              <div className="alert alert-danger" style={{ marginBottom: '24px' }}>
+                {activateError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setIsActivateOpen(false)}
+                className="btn btn-secondary"
+                disabled={actionSubmitting}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleActivateUser}
+                className="btn btn-primary"
+                disabled={actionSubmitting}
+              >
+                {actionSubmitting ? 'Reativando...' : 'Confirmar Reativação'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+            <h3 style={{ fontSize: '20px', marginBottom: '16px', color: 'var(--danger)' }}>
+              Confirmar Exclusão
+            </h3>
+
+            <p style={{ color: 'var(--text-main)', marginBottom: '24px', fontSize: '15px' }}>
+              Excluir definitivamente o usuário <strong>{userToDelete?.nome}</strong>? <strong>Esta ação é irreversível.</strong> Só é possível excluir usuários que nunca participaram de um chamado — havendo histórico, mantenha o usuário inativo.
+            </p>
+
+            {deleteError && (
+              <div className="alert alert-danger" style={{ marginBottom: '24px' }}>
+                {deleteError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setIsDeleteOpen(false)}
+                className="btn btn-secondary"
+                disabled={actionSubmitting}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                className="btn btn-danger"
+                disabled={actionSubmitting}
+              >
+                {actionSubmitting ? 'Excluindo...' : 'Excluir Definitivamente'}
               </button>
             </div>
           </div>

@@ -17,20 +17,15 @@ export const userSchema = z.object({
   email: z.string().email('E-mail inválido'),
   role: RoleEnum,
   unidadeId: z.number().int().positive('Unidade inválida'),
-  sectorId: z.number().int().positive('Setor inválido').optional().nullable(),
+  sectorId: z.number().int().positive('Área de atuação inválida').optional().nullable(),
   senha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres').optional(),
 }).superRefine((data, ctx) => {
-  if (data.role === 'TECNICO' && !data.sectorId) {
+  // Mensagem única para os dois papéis: no cadastro de usuário o campo se chama
+  // "Área de atuação" (design D5 da change usuarios-mascaras-reativar-excluir).
+  if ((data.role === 'TECNICO' || data.role === 'GESTOR') && !data.sectorId) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Setor é obrigatório para técnicos',
-      path: ['sectorId'],
-    });
-  }
-  if (data.role === 'GESTOR' && !data.sectorId) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Tipo de Ocorrência é obrigatório para gestores',
+      message: 'Área de atuação é obrigatória para Técnicos e Gestores',
       path: ['sectorId'],
     });
   }
