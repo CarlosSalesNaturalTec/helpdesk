@@ -24,6 +24,8 @@ async function runTests() {
     await prisma.ticket.deleteMany({});
     await prisma.user.deleteMany({});
     await prisma.unidade.deleteMany({});
+    await prisma.problemType.deleteMany({});
+    await prisma.sector.deleteMany({});
 
     // 2. Criar Unidades de Teste
     console.log('-> Testando Criação de Unidades...');
@@ -207,6 +209,8 @@ async function runTests() {
       headers: dirAHeaders,
       payload: {
         nome: 'Usuario Unidade B Editado',
+        cpf: '111.111.111-11',
+        telefone: '11999990001',
         email: 'userb@teste.com',
         role: 'SOLICITANTE',
         unidadeId: unitB.id,
@@ -222,7 +226,162 @@ async function runTests() {
     });
     console.log(`   [Assert] Diretor A recebe HTTP 404 ao desativar usuário da Unidade B: ${deactivateUserB.statusCode === 404 ? 'Passou ✓' : 'FALHOU ✗'}`);
 
-    // 6. Testar exclusão de unidade com vínculo
+    // 6. Testar Matriz de Papéis Gerenciáveis (change usuarios-permissoes-por-papel)
+    console.log('-> Testando Matriz de Papéis Gerenciáveis...');
+
+    const secTecnologia = await prisma.sector.create({ data: { nome: 'Tecnologia' } });
+    const secManutencao = await prisma.sector.create({ data: { nome: 'Manutenção' } });
+
+    // Gestor de Tecnologia na Unidade A
+    const gestorTec = await prisma.user.create({
+      data: {
+        nome: 'Gestor Tecnologia',
+        email: 'gestor.tec@teste.com',
+        senhaHash,
+        role: 'GESTOR',
+        unidadeId: unitA.id,
+        sectorId: secTecnologia.id,
+        passwordResetRequired: false,
+      },
+    });
+
+    // Técnico de Manutenção na mesma Unidade — fora da área do Gestor acima
+    const tecnicoManutencao = await prisma.user.create({
+      data: {
+        nome: 'Tecnico Manutencao',
+        email: 'tecnico.manut@teste.com',
+        senhaHash,
+        role: 'TECNICO',
+        unidadeId: unitA.id,
+        sectorId: secManutencao.id,
+        passwordResetRequired: false,
+      },
+    });
+
+    const loginGestorTec = await fastify.inject({
+      method: 'POST',
+      url: '/api/auth/login',
+      payload: { email: 'gestor.tec@teste.com', senha: 'admin123' },
+    });
+    const gestorHeaders = { authorization: `Bearer ${JSON.parse(loginGestorTec.body).token}` };
+
+    // Gestor tenta criar um ADMIN -> 403 (o select esconde a opção, a API recusa)
+    const gestorCriaAdmin = await fastify.inject({
+      method: 'POST',
+      url: '/api/usuarios',
+      headers: gestorHeaders,
+      payload: {
+        nome: 'Admin Indevido',
+        cpf: '222.222.222-22',
+        telefone: '11999990002',
+        email: 'admin.indevido@teste.com',
+        role: 'ADMIN',
+        unidadeId: unitA.id,
+        senha: 'senha123',
+      },
+    });
+    console.log(`   [Assert] Gestor recebe HTTP 403 ao criar ADMIN: ${gestorCriaAdmin.statusCode === 403 ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // Gestor tenta se promover a DIRETOR editando o próprio cadastro -> 403
+    const gestorSePromove = await fastify.inject({
+      method: 'PUT',
+      url: `/api/usuarios/${gestorTec.id}`,
+      headers: gestorHeaders,
+      payload: {
+        nome: 'Gestor Tecnologia',
+        cpf: '333.333.333-33',
+        telefone: '11999990003',
+        email: 'gestor.tec@teste.com',
+        role: 'DIRETOR',
+        unidadeId: unitA.id,
+        sectorId: secTecnologia.id,
+      },
+    });
+    console.log(`   [Assert] Gestor recebe HTTP 403 ao alterar o próprio papel: ${gestorSePromove.statusCode === 403 ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // Gestor de Tecnologia tenta editar Técnico de Manutenção -> 404 (fora da área)
+    const gestorEditaOutraArea = await fastify.inject({
+      method: 'PUT',
+      url: `/api/usuarios/${tecnicoManutencao.id}`,
+      headers: gestorHeaders,
+      payload: {
+        nome: 'Tecnico Manutencao Editado',
+        cpf: '444.444.444-44',
+        telefone: '11999990004',
+        email: 'tecnico.manut@teste.com',
+        role: 'TECNICO',
+        unidadeId: unitA.id,
+        sectorId: secManutencao.id,
+      },
+    });
+    console.log(`   [Assert] Gestor recebe HTTP 404 ao editar Técnico de outra área: ${gestorEditaOutraArea.statusCode === 404 ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // Gestor tenta desativar Técnico de outra área -> 404
+    const gestorDesativaOutraArea = await fastify.inject({
+      method: 'PATCH',
+      url: `/api/usuarios/${tecnicoManutencao.id}/deactivate`,
+      headers: gestorHeaders,
+    });
+    console.log(`   [Assert] Gestor recebe HTTP 404 ao desativar Técnico de outra área: ${gestorDesativaOutraArea.statusCode === 404 ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // Gestor tenta editar o Diretor da própria Unidade -> 404 (fora da matriz)
+    const gestorEditaDiretor = await fastify.inject({
+      method: 'PUT',
+      url: `/api/usuarios/${diretorA.id}`,
+      headers: gestorHeaders,
+      payload: {
+        nome: 'Diretor Unidade A Editado',
+        cpf: '555.555.555-55',
+        telefone: '11999990005',
+        email: 'diretora@teste.com',
+        role: 'DIRETOR',
+        unidadeId: unitA.id,
+      },
+    });
+    console.log(`   [Assert] Gestor recebe HTTP 404 ao editar o Diretor da Unidade: ${gestorEditaDiretor.statusCode === 404 ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // Diretor tenta criar outro DIRETOR -> 403 (atribuição exclusiva do Admin)
+    const diretorCriaDiretor = await fastify.inject({
+      method: 'POST',
+      url: '/api/usuarios',
+      headers: dirAHeaders,
+      payload: {
+        nome: 'Outro Diretor',
+        cpf: '666.666.666-66',
+        telefone: '11999990006',
+        email: 'outro.diretor@teste.com',
+        role: 'DIRETOR',
+        unidadeId: unitA.id,
+        senha: 'senha123',
+      },
+    });
+    console.log(`   [Assert] Diretor recebe HTTP 403 ao criar outro DIRETOR: ${diretorCriaDiretor.statusCode === 403 ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // Listagem do Gestor: só Solicitantes da Unidade, Técnicos da área e ele mesmo
+    const listUsersGestor = await fastify.inject({
+      method: 'GET',
+      url: '/api/usuarios',
+      headers: gestorHeaders,
+    });
+    const gestorList = JSON.parse(listUsersGestor.body);
+    const veTecnicoOutraArea = gestorList.some((u: any) => u.id === tecnicoManutencao.id);
+    const veDiretor = gestorList.some((u: any) => u.id === diretorA.id);
+    const veASiMesmo = gestorList.some((u: any) => u.id === gestorTec.id);
+    console.log(`   [Assert] Listagem do Gestor não traz Técnico de outra área: ${!veTecnicoOutraArea ? 'Passou ✓' : 'FALHOU ✗'}`);
+    console.log(`   [Assert] Listagem do Gestor não traz o Diretor da Unidade: ${!veDiretor ? 'Passou ✓' : 'FALHOU ✗'}`);
+    console.log(`   [Assert] Listagem do Gestor inclui o próprio Gestor: ${veASiMesmo ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // Listagem do Diretor: não traz Admins nem outros Diretores
+    const listUsersDirA2 = await fastify.inject({
+      method: 'GET',
+      url: '/api/usuarios',
+      headers: dirAHeaders,
+    });
+    const diretorList = JSON.parse(listUsersDirA2.body);
+    const veAdmin = diretorList.some((u: any) => u.id === admin.id);
+    console.log(`   [Assert] Listagem do Diretor não traz Administradores: ${!veAdmin ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // 7. Testar exclusão de unidade com vínculo
     console.log('-> Testando Bloqueio de exclusão de Unidade com vínculo...');
     const deleteUnitARes = await fastify.inject({
       method: 'DELETE',

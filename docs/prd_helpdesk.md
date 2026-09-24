@@ -74,6 +74,9 @@ O objetivo do produto é fornecer uma plataforma única onde colaboradores possa
       * **Então** o sistema me redireciona obrigatoriamente para uma tela de "Alteração de Senha", impedindo o acesso a qualquer outra funcionalidade até que eu defina uma nova senha pessoal
 
 * **US 1.2:** Como Administrador do Sistema, Diretor ou Gestor de TI, eu quero criar, editar e desativar usuários para que a base de usuários reflita a estrutura organizacional de forma centralizada ou descentralizada.
+
+  > **Divergência em relação ao comportamento atual** — change `usuarios-permissoes-por-papel`. Esta US (e as personas da seção 2) descrevem Diretor e Gestor criando Diretores e outros Gestores. O comportamento implementado é mais restrito: Diretores e Administradores passaram a ser geridos **exclusivamente** pelo Administrador do Sistema, o Diretor gerencia Solicitantes, Técnicos e Gestores da própria Unidade, e o Gestor gerencia Solicitantes da própria Unidade e Técnicos da própria Unidade **e da própria área** (Tipo de Ocorrência). Ninguém altera o próprio papel, Unidade ou área. Vale para os Cenários 1, 2 e 4 abaixo. A matriz vigente está em `openspec/specs/user-management/` e em `docs/manual/perfis/gestor-diretor.md`.
+
   * **Critérios de Aceitação:**
     * *Cenário 1 — Criação de usuário pelo Administrador do Sistema:*
       * **Dado** que eu estou autenticado como Administrador do Sistema e acesso a tela de Usuários

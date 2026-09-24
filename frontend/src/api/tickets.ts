@@ -126,6 +126,22 @@ export const assignTicket = async (id: number) => {
   return response.data;
 };
 
+export interface ReassignCandidate {
+  id: number;
+  nome: string;
+  role: string;
+}
+
+/**
+ * Destinatários elegíveis para reatribuir este chamado: Técnicos e Gestores
+ * ativos da mesma Unidade e do mesmo Tipo de Ocorrência. O escopo é resolvido no
+ * servidor, a partir do chamado — não se filtra a listagem de usuários aqui.
+ */
+export const getReassignCandidates = async (id: number) => {
+  const response = await apiClient.get<ReassignCandidate[]>(`/api/tickets/${id}/reassign-candidates`);
+  return response.data;
+};
+
 export const reassignTicket = async (id: number, data: AssignTicketInput) => {
   const response = await apiClient.patch<{
     id: number;
