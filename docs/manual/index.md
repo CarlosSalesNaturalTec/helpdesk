@@ -1,6 +1,6 @@
 # Bem-vindo
 
-**SOLUTUS** é a plataforma centralizada de chamados de suporte do **Instituto Setes**. Ela conecta quem precisa de ajuda (Solicitante) a quem resolve (Técnico), com visibilidade de gestão (Gestor, Diretor) e administração global do sistema (Administrador), mantendo os dados de cada Unidade isolados entre si.
+Esta é a plataforma centralizada de chamados de suporte do Instituto. Ela conecta quem precisa de ajuda (Solicitante) a quem resolve (Técnico), com visibilidade de gestão (Gestor, Diretor) e administração global do sistema (Administrador), mantendo os dados de cada Unidade isolados entre si.
 
 Este manual descreve como usar o sistema no dia a dia, por perfil de usuário, e como suas principais funcionalidades funcionam.
 
