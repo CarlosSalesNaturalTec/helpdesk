@@ -28,6 +28,14 @@ O chamado é criado no status **Aberto**, aguardando um Técnico assumir.
 
 Em **Meus Chamados**, veja a lista com status, urgência e data. Abra um chamado para ver o histórico completo de mudanças de status e a troca de mensagens com o Técnico responsável.
 
+## Corrigir o local do chamado
+
+Errou a sala ao abrir o chamado? Na tela do chamado, clique no lápis ao lado de **Local**, informe o local correto e clique em **Salvar**. As sugestões são as mesmas da abertura.
+
+O título do chamado é recomposto automaticamente com o novo local, e a correção fica registrada no histórico, com quem corrigiu, quando, e de qual local para qual. Se já houver um Técnico responsável, ele é avisado — por notificação e por e-mail — de que o lugar mudou, para não se deslocar até o endereço errado.
+
+A correção é possível enquanto o chamado não estiver **Fechado**. Num chamado fechado o lápis não aparece: para alterar qualquer coisa, é preciso reabri-lo antes.
+
 ## Responder mensagens
 
 Quando um Técnico coloca o chamado em **Aguardando** (normalmente pedindo mais informações), envie uma mensagem na tela do chamado. Isso move o chamado automaticamente de volta para **Em Andamento**.

@@ -101,7 +101,7 @@ export const AbrirChamado: React.FC = () => {
   // `locais` não entra em `referenciasIndisponiveis`.
   const { data: locais } = useQuery({
     queryKey: ['locais'],
-    queryFn: getLocais,
+    queryFn: () => getLocais(),
   });
 
   // Os dados de referência precisam estar presentes para que o formulário seja utilizável.

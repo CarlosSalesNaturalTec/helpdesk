@@ -119,7 +119,7 @@ ABERTO → EM_ANDAMENTO → RESOLVIDO → FECHADO
 - Reopen: `PATCH /:id/reopen` requires a motivo (min 10 chars)
 - Messages: `POST /:id/messages` — if the ticket is AGUARDANDO and the sender is the Solicitante, it auto-transitions back to EM_ANDAMENTO
 
-Every transition writes a `TicketHistory` row (`HistoryType`: ABERTURA, MENSAGEM, MUDANCA_STATUS, ATRIBUICAO, REATRIBUICAO, FECHAMENTO, REABERTURA) with a JSON `content` payload.
+Every transition writes a `TicketHistory` row (`HistoryType`: ABERTURA, MENSAGEM, MUDANCA_STATUS, ATRIBUICAO, REATRIBUICAO, FECHAMENTO, REABERTURA, EDICAO) with a JSON `content` payload. `EDICAO` is the odd one out — it records a field edit outside the state machine (`{ campo, de, para, editadoPor }`), and is deliberately generic so a future editable field needs no new enum value. Today only `PATCH /:id/local` writes it.
 
 ### Ticket Local & Derived Title
 
@@ -135,6 +135,17 @@ paths (with and without attachment) call it — never duplicate the formula.
 `GET /api/tickets/locais` returns the distinct locals of the caller's scope (own Unidade;
 Admin sees all and may narrow with `unidadeId`) and feeds the `<datalist>` of the creation form.
 Like `niveis-urgencia`, it must stay registered before `/api/tickets/:id`.
+
+`PATCH /api/tickets/:id/local` corrects the local of an open ticket and **recomposes the
+title** through the same `buildTicketTitulo()` — it is the third caller, and the reason the
+formula lives in `lib/local.ts` rather than in each creation path. Normalization resolves
+against the **ticket's** Unidade, not the editor's, so an Admin fixing another Unidade's
+ticket lands on that Unidade's canonical spelling. Who may correct: the owning Solicitante,
+the **assigned** Técnico, and Gestor/Diretor/Admin within scope; the window closes at
+`FECHADO`. The route deliberately splits its refusals — **404** out of scope (repo
+convention), **403** in scope without the right (the non-assigned Técnico already reads the
+ticket elsewhere, so hiding it here would be incoherent). It writes an `EDICAO` history row
+and notifies the assigned Técnico when the correction did not come from them.
 
 The derived title shows in the ticket-detail header, notifications and emails. The listing,
 the cards and the report PDF show a **"Local"** column instead: they already carry Tipo de
@@ -180,7 +191,7 @@ Each resource domain has its own route module under `backend/src/routes/`, all r
 | Module | Endpoints | Role gate |
 | --- | --- | --- |
 | `auth.ts` | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/change-password` | public / authenticated |
-| `tickets.ts` | `POST|GET /api/tickets`, `GET /api/tickets/niveis-urgencia`, `GET /api/tickets/locais`, `GET /api/tickets/:id`, `GET /api/tickets/:id/history`, `GET /api/tickets/:id/reassign-candidates`, `PATCH|DELETE /api/tickets/:id/anexo`, `PATCH /api/tickets/:id/{assign,reassign,status,close,admin-close,reopen}`, `POST /api/tickets/:id/messages` | per-endpoint (see workflow above) |
+| `tickets.ts` | `POST|GET /api/tickets`, `GET /api/tickets/niveis-urgencia`, `GET /api/tickets/locais`, `GET /api/tickets/:id`, `GET /api/tickets/:id/history`, `GET /api/tickets/:id/reassign-candidates`, `PATCH|DELETE /api/tickets/:id/anexo`, `PATCH /api/tickets/:id/{assign,reassign,status,close,admin-close,reopen,local}`, `POST /api/tickets/:id/messages` | per-endpoint (see workflow above) |
 | `usuarios.ts` | `GET|POST /api/usuarios`, `PUT|DELETE /api/usuarios/:id`, `PATCH /api/usuarios/:id/{deactivate,activate}` | Admin, Diretor, Gestor |
 | `unidades.ts` | `GET|POST /api/unidades`, `PUT|DELETE /api/unidades/:id` | Admin (writes) |
 | `sectors.ts` | `GET|POST /api/sectors`, `PUT|DELETE /api/sectors/:id` | Admin (writes) |

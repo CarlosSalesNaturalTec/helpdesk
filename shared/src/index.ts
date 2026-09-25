@@ -11,8 +11,10 @@ import {
   assignTicketSchema,
   satisfactionSchema,
   ticketQuerySchema,
+  updateTicketLocalSchema,
   TicketStatusEnum,
   NivelUrgenciaEnum,
+  HistoryTypeEnum,
   STATUS_NAO_FECHADOS,
 } from './schemas/ticket.js';
 
@@ -30,8 +32,10 @@ export {
   assignTicketSchema,
   satisfactionSchema,
   ticketQuerySchema,
+  updateTicketLocalSchema,
   TicketStatusEnum,
   NivelUrgenciaEnum,
+  HistoryTypeEnum,
   STATUS_NAO_FECHADOS,
   MANAGEABLE_ROLES,
   canManageRole,
@@ -50,5 +54,7 @@ export type TicketStatusInput = z.infer<typeof ticketStatusSchema>;
 export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
 export type SatisfactionInput = z.infer<typeof satisfactionSchema>;
 export type TicketQueryInput = z.infer<typeof ticketQuerySchema>;
+export type UpdateTicketLocalInput = z.infer<typeof updateTicketLocalSchema>;
 export type TicketStatusType = z.infer<typeof TicketStatusEnum>;
 export type NivelUrgenciaType = z.infer<typeof NivelUrgenciaEnum>;
+export type HistoryTypeType = z.infer<typeof HistoryTypeEnum>;

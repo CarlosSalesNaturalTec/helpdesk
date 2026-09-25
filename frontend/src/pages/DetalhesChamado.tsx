@@ -13,6 +13,8 @@ import {
   reopenTicket,
   replaceAttachment,
   removeAttachment,
+  updateTicketLocal,
+  getLocais,
 } from '../api/tickets.js';
 import { useAuth } from '../context/AuthContext.js';
 import { StarRating } from '../components/StarRating.js';
@@ -42,6 +44,11 @@ export const DetalhesChamado: React.FC = () => {
   const [messageText, setMessageText] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Correção do local: edição embutida no próprio campo, com erro exibido ali mesmo
+  const [editingLocal, setEditingLocal] = useState(false);
+  const [localDraft, setLocalDraft] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+
   // Estados para gerenciamento de anexo
   const [showRemoveAnexoModal, setShowRemoveAnexoModal] = useState(false);
   const anexoInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +73,15 @@ export const DetalhesChamado: React.FC = () => {
     queryKey: ['reassignCandidates', id],
     queryFn: () => getReassignCandidates(id),
     enabled: showReassignModal && id > 0 && ['ADMIN', 'GESTOR', 'DIRETOR'].includes(user?.role || ''),
+  });
+
+  // Sugestões de local para a correção: as da Unidade **do chamado**, que para um
+  // Admin corrigindo chamado de outra Unidade não são as dele. Só é buscada quando
+  // o campo entra em edição.
+  const { data: locaisSugeridos = [] } = useQuery({
+    queryKey: ['locais', ticket?.unidadeId],
+    queryFn: () => getLocais(ticket?.unidadeId),
+    enabled: editingLocal && !!ticket?.unidadeId,
   });
 
   // Mutations
@@ -140,6 +156,48 @@ export const DetalhesChamado: React.FC = () => {
     },
     onError: (err: any) => setActionError(err.response?.data?.error || 'Erro ao enviar mensagem.'),
   });
+
+  const localMutation = useMutation({
+    mutationFn: (novoLocal: string) => updateTicketLocal(id, novoLocal),
+    onSuccess: () => {
+      setEditingLocal(false);
+      setLocalError(null);
+      // O local corrigido passa a valer como sugestão da Unidade
+      queryClient.invalidateQueries({ queryKey: ['locais'] });
+      invalidateQueries();
+    },
+    onError: (err: any) => {
+      const detalhe = err.response?.data?.error;
+      setLocalError(
+        typeof detalhe === 'string' ? detalhe : 'Erro ao corrigir o local do chamado.'
+      );
+    },
+  });
+
+  const handleSubmitLocal = () => {
+    const valor = localDraft.trim();
+    if (valor.length < 2) {
+      setLocalError('O local deve ter no mínimo 2 caracteres');
+      return;
+    }
+    if (valor.length > 60) {
+      setLocalError('O local deve ter no máximo 60 caracteres');
+      return;
+    }
+    setLocalError(null);
+    localMutation.mutate(valor);
+  };
+
+  const startEditingLocal = () => {
+    setLocalDraft(ticket?.local || '');
+    setLocalError(null);
+    setEditingLocal(true);
+  };
+
+  const cancelEditingLocal = () => {
+    setEditingLocal(false);
+    setLocalError(null);
+  };
 
   // Mutations de Anexo
   const replaceAnexoMutation = useMutation({
@@ -240,6 +298,16 @@ export const DetalhesChamado: React.FC = () => {
   const canAdminClose = (isAdmin || (['GESTOR', 'DIRETOR'].includes(user?.role || '') && belongsToSameUnit)) && ticket.status === 'RESOLVIDO';
   const canReopen = ticket.status === 'FECHADO' && (isSolicitante || (isStaff && belongsToSameUnit) || isAdmin);
 
+  // Correção do local: o Técnico só corrige o chamado que atende; o Solicitante, o
+  // próprio. Gestor e Diretor corrigem dentro da Unidade — o escopo por Tipo de
+  // Ocorrência é conferido no servidor, como nas demais ações desta tela.
+  const canEditLocal =
+    ticket.status !== 'FECHADO' &&
+    (isAdmin ||
+      (isSolicitante && ticket.solicitanteId === user?.id) ||
+      (user?.role === 'TECNICO' && belongsToSameUnit && ticket.tecnicoId === user?.id) ||
+      (['GESTOR', 'DIRETOR'].includes(user?.role || '') && belongsToSameUnit));
+
   const renderHistoryContent = (item: any) => {
     const content = item.content as any;
     switch (item.type) {
@@ -307,6 +375,24 @@ export const DetalhesChamado: React.FC = () => {
             </div>
           </div>
         );
+      case 'EDICAO':
+        return (
+          <div>
+            {content.campo === 'local' ? (
+              <>
+                Local do chamado corrigido por <strong>{content.editadoPor}</strong>.
+                <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--hue-blue-bg)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--primary)' }}>
+                  De <strong>{content.de || 'não informado'}</strong> para <strong>{content.para}</strong>
+                </div>
+              </>
+            ) : (
+              <>
+                Campo <strong>{content.campo}</strong> alterado por <strong>{content.editadoPor}</strong> de{' '}
+                <strong>{content.de || 'não informado'}</strong> para <strong>{content.para}</strong>.
+              </>
+            )}
+          </div>
+        );
       case 'MENSAGEM':
         const isAuthorSolicitante = item.author.role === 'SOLICITANTE';
         return (
@@ -339,6 +425,7 @@ export const DetalhesChamado: React.FC = () => {
       case 'FECHAMENTO': return '✓';
       case 'REABERTURA': return '♻';
       case 'MENSAGEM': return '💬';
+      case 'EDICAO': return '📍';
       default: return '•';
     }
   };
@@ -418,10 +505,79 @@ export const DetalhesChamado: React.FC = () => {
               </div>
               <div>
                 <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Local</span>
-                {ticket.local ? (
-                  <strong style={{ color: 'var(--text-main)' }}>{ticket.local}</strong>
+                {editingLocal ? (
+                  <div>
+                    <input
+                      type="text"
+                      list="locais-correcao"
+                      className="input-field"
+                      value={localDraft}
+                      onChange={(e) => setLocalDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSubmitLocal();
+                        if (e.key === 'Escape') cancelEditingLocal();
+                      }}
+                      placeholder="Ex.: Recepção, Sala de Medicação"
+                      maxLength={60}
+                      autoComplete="off"
+                      autoFocus
+                      style={{ fontSize: '14px', padding: '6px 10px' }}
+                    />
+                    <datalist id="locais-correcao">
+                      {locaisSugeridos.map((l) => (
+                        <option key={l} value={l} />
+                      ))}
+                    </datalist>
+                    {localError && (
+                      <span style={{ display: 'block', marginTop: '4px', fontSize: '12px', color: 'var(--danger)' }}>
+                        {localError}
+                      </span>
+                    )}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <button
+                        className="btn btn-primary"
+                        style={{ padding: '4px 12px', fontSize: '12px' }}
+                        onClick={handleSubmitLocal}
+                        disabled={localMutation.isPending}
+                      >
+                        {localMutation.isPending ? 'Salvando...' : 'Salvar'}
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '4px 12px', fontSize: '12px' }}
+                        onClick={cancelEditingLocal}
+                        disabled={localMutation.isPending}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <em style={{ color: 'var(--text-muted)' }}>Não informado</em>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    {ticket.local ? (
+                      <strong style={{ color: 'var(--text-main)' }}>{ticket.local}</strong>
+                    ) : (
+                      <em style={{ color: 'var(--text-muted)' }}>Não informado</em>
+                    )}
+                    {canEditLocal && (
+                      <button
+                        type="button"
+                        onClick={startEditingLocal}
+                        title="Corrigir o local do chamado"
+                        aria-label="Corrigir o local do chamado"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '0 2px',
+                          fontSize: '13px',
+                          color: 'var(--primary)',
+                        }}
+                      >
+                        ✎
+                      </button>
+                    )}
+                  </span>
                 )}
               </div>
               <div>

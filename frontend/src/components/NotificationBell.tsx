@@ -125,6 +125,7 @@ export const NotificationBell: React.FC = () => {
       case 'MENSAGEM':
       case 'MENSAGEM_AGUARDANDO': return '💬';
       case 'REATRIBUICAO': return '🔄';
+      case 'LOCAL_CORRIGIDO': return '📍';
       default: return '🔔';
     }
   };

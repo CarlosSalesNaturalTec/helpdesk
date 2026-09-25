@@ -15,6 +15,7 @@ import {
   assignTicketSchema,
   satisfactionSchema,
   ticketQuerySchema,
+  updateTicketLocalSchema,
 } from '@helpdesk/shared';
 
 
@@ -1040,6 +1041,116 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         numero: updatedTicket.numero.toString(),
         status: updatedTicket.status,
         message: 'Chamado reaberto com sucesso!',
+      });
+    }
+  );
+
+  // 11b. Corrigir a Localidade do Chamado (Solicitante dono / Técnico atribuído / Gestor / Diretor / Admin)
+  //
+  // O código de recusa distingue dois casos de propósito (design D1): quem não enxerga o
+  // chamado recebe 404, pela convenção do repositório de não revelar sua existência; quem
+  // o enxerga nas demais rotas mas não pode corrigi-lo recebe 403 — devolver 404 a quem já
+  // lê o chamado seria incoerente.
+  fastify.patch<{ Params: { id: string } }>(
+    '/api/tickets/:id/local',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request, reply) => {
+      const id = parseInt(request.params.id);
+      if (isNaN(id)) return reply.status(400).send({ error: 'ID inválido' });
+
+      const parseResult = updateTicketLocalSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({ error: parseResult.error.format() });
+      }
+
+      const ticket = await prisma.ticket.findUnique({
+        where: { id },
+        include: { problemType: { select: { nome: true } } },
+      });
+      if (!ticket) return reply.status(404).send({ error: 'Chamado não encontrado' });
+
+      const user = request.user!;
+
+      // Escopo de visão — mesma regra de GET /api/tickets/:id
+      const isSolicitanteDono = ticket.solicitanteId === user.id;
+      if (user.role === 'SOLICITANTE') {
+        if (!isSolicitanteDono) {
+          return reply.status(404).send({ error: 'Chamado não encontrado' });
+        }
+      } else if (!unitFilter(user, ticket.unidadeId) || !sectorFilter(user, ticket.sectorId)) {
+        return reply.status(404).send({ error: 'Chamado não encontrado' });
+      }
+
+      // Direito de edição dentro do escopo: o Técnico só corrige o que atende.
+      if (user.role === 'TECNICO' && ticket.tecnicoId !== user.id) {
+        return reply.status(403).send({
+          error: 'Apenas o técnico atribuído ao chamado pode corrigir a localidade.',
+        });
+      }
+
+      // Chamado fechado é registro histórico (design D2)
+      if (ticket.status === 'FECHADO') {
+        return reply.status(422).send({
+          error: "Este chamado está fechado. Para continuar, utilize a opção 'Reabrir Chamado'.",
+        });
+      }
+
+      // A grafia canônica que importa é a da Unidade onde fica a sala — a do chamado,
+      // não a de quem corrige (design D4).
+      const localAnterior = ticket.local;
+      const localNovo = await resolveLocal(parseResult.data.local, ticket.unidadeId);
+
+      if (localNovo === localAnterior) {
+        // Nada mudou: não registra evento nem notifica, para não poluir a linha do tempo.
+        return reply.send({
+          id: ticket.id,
+          numero: ticket.numero.toString(),
+          local: ticket.local,
+          titulo: ticket.titulo,
+          message: 'A localidade informada já era a do chamado.',
+        });
+      }
+
+      // O título é derivado e persistido: se o local muda e o título não acompanha, ele
+      // passa a apontar um lugar que o chamado não tem mais (design D3). Chamado antigo
+      // sem Tipo de Problema não tem de que compor — mantém o título que já tinha.
+      const titulo = ticket.problemType
+        ? buildTicketTitulo(ticket.problemType.nome, localNovo)
+        : ticket.titulo;
+
+      const [updatedTicket] = await prisma.$transaction([
+        prisma.ticket.update({
+          where: { id },
+          data: { local: localNovo, titulo },
+        }),
+        prisma.ticketHistory.create({
+          data: {
+            ticketId: id,
+            type: 'EDICAO',
+            content: {
+              campo: 'local',
+              de: localAnterior,
+              para: localNovo,
+              editadoPor: user.nome,
+            },
+            authorId: user.id,
+          },
+        }),
+      ]);
+
+      await NotificationService.notifyLocalCorrigido(
+        updatedTicket,
+        localAnterior,
+        localNovo,
+        user.id
+      ).catch((err) => fastify.log.error(err));
+
+      return reply.send({
+        id: updatedTicket.id,
+        numero: updatedTicket.numero.toString(),
+        local: updatedTicket.local,
+        titulo: updatedTicket.titulo,
+        message: 'Localidade do chamado corrigida com sucesso!',
       });
     }
   );

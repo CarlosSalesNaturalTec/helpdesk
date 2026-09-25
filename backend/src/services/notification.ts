@@ -213,6 +213,42 @@ export class NotificationService {
     }
   }
 
+  // 3.9 notifyLocalCorrigido: Notifica o Técnico atribuído (visual + e-mail) quando
+  // outra pessoa corrige a localidade — é quem está a caminho do lugar errado.
+  // Sem técnico atribuído ninguém é notificado, e o Solicitante não recebe aviso de
+  // correção de grafia (design D6).
+  static async notifyLocalCorrigido(
+    ticketOrId: any,
+    localAnterior: string | null,
+    localNovo: string,
+    autorId: number
+  ) {
+    try {
+      const ticket = await this.getFullTicket(ticketOrId);
+      if (!ticket) return;
+
+      if (!ticket.tecnicoId || !ticket.tecnico) return;
+      if (ticket.tecnicoId === autorId) return;
+
+      const anterior = localAnterior ?? 'não informado';
+      const messageText = `O local do chamado #${ticket.numero} mudou de "${anterior}" para "${localNovo}"`;
+
+      await this.create(ticket.tecnicoId, ticket.id, 'LOCAL_CORRIGIDO', messageText);
+
+      await EmailService.sendLocalCorrigido(
+        ticket.tecnico.email,
+        ticket.tecnico.nome,
+        ticket.numero.toString(),
+        ticket.titulo,
+        anterior,
+        localNovo,
+        ticket.id
+      ).catch(err => console.error('[NotificationService] Email error:', err));
+    } catch (error) {
+      console.error('[NotificationService] Error in notifyLocalCorrigido:', error);
+    }
+  }
+
   // 3.8 notifyReassignment: Notifica novo Técnico + Solicitante (visual + e-mail)
   static async notifyReassignment(ticketOrId: any, novoTecnicoOrId: any) {
     try {
