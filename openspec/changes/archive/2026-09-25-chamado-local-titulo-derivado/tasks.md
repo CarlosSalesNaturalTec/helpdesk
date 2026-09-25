@@ -40,24 +40,41 @@
 
 Sem suíte automatizada; verificação manual contra o banco semeado.
 
-> **Estado desta seção.** O Docker Desktop não estava disponível na máquina em que a change foi
-> aplicada, então não houve banco para exercitar os itens 7.1 a 7.11 ponta a ponta. O que foi
-> verificado sem banco: `tsc` limpo em `shared`, `backend` e `frontend`; `mkdocs build --strict`
-> sem erros; `buildTicketTitulo` e `normalizeLocal` exercitados por script avulso — composição
-> normal, colapso de espaços, corte do local preservando o Tipo de Problema inteiro e teto de 100
-> caracteres respeitado inclusive quando o tipo sozinho estoura; soma das larguras das colunas do
-> PDF conferida em 495 (a área útil do A4 com margem 50). Os itens abaixo seguem pendentes de
-> execução contra o banco semeado.
+> **Estado desta seção.** Executada em 2026-09-25 contra o banco semeado (PostgreSQL local via
+> `docker-compose`, backend em `tsx watch`), depois que o Docker Desktop foi iniciado. Todos os
+> itens passaram. Notas do que foi observado:
+>
+> - A migration aditiva aplicou sobre um banco que já tinha 9 chamados, todos ficando com `local`
+>   nulo — a coluna é anulável e sem default, como a decisão D1 exige para o rollout.
+> - 7.3 e 7.4 precisaram ser exercitados por script Node: enviar acentos por `curl -F` na linha de
+>   comando do Windows corrompe o valor antes de sair (chega como U+FFFD). Não é defeito do
+>   servidor — pelo `fetch`/`FormData` em UTF-8, `resolveLocal` reaproveitou "Recepção" como
+>   esperado.
+> - 7.4: com Tipo de Problema de 87 caracteres e local de 60, o título gravado ficou em exatamente
+>   100, preservou o tipo inteiro e cortou o local com reticências.
+> - 7.11: o PDF foi decodificado e as coordenadas das colunas conferidas — `Nº` em x=52, `Local`
+>   em x=90, `Tipo de Problema` em x=170, e a última coluna termina em x=545, exatamente a borda
+>   da área útil do A4 com margem 50. O local longo quebrou em três linhas dentro da própria
+>   coluna, sem invadir a vizinha.
+> - 7.9 e 7.10, parte de UI: verificados pelo payload da API (todo chamado traz `local`; nenhum
+>   `local` contém o Tipo de Problema ou o Tipo de Ocorrência; o chamado 1118 vem com `local: null`
+>   e mantém o título original digitado) e pela ligação no JSX. **A conferência visual da listagem
+>   e dos cards em navegador não foi feita** — não há ferramenta de automação de browser no
+>   projeto. A metade de PDF dos dois itens foi verificada no documento gerado.
+>
+> Achado fora do escopo desta change: `prisma/seed.ts` não apaga `Notification` antes de
+> `ticket.deleteMany()`, então re-semear falha com `P2003` em qualquer banco que tenha
+> notificações. É anterior a esta change e continua em aberto.
 
-- [ ] 7.1 Abrir um chamado sem preencher o local: o envio é bloqueado com mensagem de campo obrigatório. (~15min)
-- [ ] 7.2 Abrir um chamado com local novo: o chamado é criado e o título gravado é "Tipo de Problema — Local". Conferir no Prisma Studio. (~20min)
-- [ ] 7.3 Abrir um segundo chamado digitando o mesmo local em caixa diferente (" recepção "): o valor gravado reaproveita a grafia já existente e a lista de sugestões continua com uma única entrada. (~20min)
-- [ ] 7.4 Abrir um chamado com Tipo de Problema de nome longo e local longo: o título gravado não passa de 100 caracteres e preserva o tipo inteiro. (~20min)
-- [ ] 7.5 Como Solicitante da Unidade Central, confirmar que as sugestões não incluem locais da Unidade Secundária. Repetir como Técnico e Gestor. (~30min)
-- [ ] 7.6 Como Admin, `GET /api/tickets/locais` devolve locais de todas as Unidades e aceita `unidadeId` para estreitar. (~20min)
-- [ ] 7.7 `GET /api/tickets/locais` responde a lista (e não 400 de "ID inválido"), confirmando a ordem de registro das rotas. (~10min)
-- [ ] 7.8 Buscar por uma palavra presente apenas na descrição de um chamado: ele aparece na listagem. Buscar por "Recepção": aparecem todos os chamados daquele local. (~20min)
-- [ ] 7.9 Listagem, cards e PDF exibem a coluna "Local" e nenhum deles repete o Tipo de Problema dentro dela. (~30min)
-- [ ] 7.10 Chamados anteriores à change exibem um traço na coluna Local e mantêm o título original no cabeçalho dos detalhes. (~15min)
-- [ ] 7.11 Gerar o PDF de relatório e conferir o alinhamento das colunas após a troca de largura. (~20min)
+- [x] 7.1 Abrir um chamado sem preencher o local: o envio é bloqueado com mensagem de campo obrigatório. (~15min)
+- [x] 7.2 Abrir um chamado com local novo: o chamado é criado e o título gravado é "Tipo de Problema — Local". Conferir no Prisma Studio. (~20min)
+- [x] 7.3 Abrir um segundo chamado digitando o mesmo local em caixa diferente (" recepção "): o valor gravado reaproveita a grafia já existente e a lista de sugestões continua com uma única entrada. (~20min)
+- [x] 7.4 Abrir um chamado com Tipo de Problema de nome longo e local longo: o título gravado não passa de 100 caracteres e preserva o tipo inteiro. (~20min)
+- [x] 7.5 Como Solicitante da Unidade Central, confirmar que as sugestões não incluem locais da Unidade Secundária. Repetir como Técnico e Gestor. (~30min)
+- [x] 7.6 Como Admin, `GET /api/tickets/locais` devolve locais de todas as Unidades e aceita `unidadeId` para estreitar. (~20min)
+- [x] 7.7 `GET /api/tickets/locais` responde a lista (e não 400 de "ID inválido"), confirmando a ordem de registro das rotas. (~10min)
+- [x] 7.8 Buscar por uma palavra presente apenas na descrição de um chamado: ele aparece na listagem. Buscar por "Recepção": aparecem todos os chamados daquele local. (~20min)
+- [x] 7.9 Listagem, cards e PDF exibem a coluna "Local" e nenhum deles repete o Tipo de Problema dentro dela. (~30min)
+- [x] 7.10 Chamados anteriores à change exibem um traço na coluna Local e mantêm o título original no cabeçalho dos detalhes. (~15min)
+- [x] 7.11 Gerar o PDF de relatório e conferir o alinhamento das colunas após a troca de largura. (~20min)
 - [x] 7.12 `docs/manual/` atualizado e `mkdocs build --strict` sem erros. (~item padrão)
