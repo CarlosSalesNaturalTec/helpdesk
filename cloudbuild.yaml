@@ -72,6 +72,7 @@ steps:
           --allow-unauthenticated \
           --memory=512Mi \
           --cpu=1 \
+          --cpu-boost \
           --min-instances=0 \
           --max-instances=3 \
           --concurrency=80 \

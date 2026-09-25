@@ -192,7 +192,7 @@ Production runs entirely on GCP. `docs/Deploy_GCP.md` is the step-by-step guide;
 
 | Concern | GCP service |
 | --- | --- |
-| Backend API | **Cloud Run** (`helpdesk-backend`, region `us-central1`, port 3001, 512 MiB / 1 vCPU, min-instances 0, max 3, unauthenticated) |
+| Backend API | **Cloud Run** (`helpdesk-backend`, region `us-central1`, port 3001, 512 MiB / 1 vCPU with `--cpu-boost`, min-instances 0, max 3, unauthenticated) |
 | Database | **Cloud SQL** PostgreSQL 15 (`helpdesk-db`), attached via `--add-cloudsql-instances` |
 | Frontend | **Firebase Hosting** (`helpdesk-499614.web.app`) |
 | Attachments | **Cloud Storage** bucket (`_GCS_BUCKET_NAME`), public objects |
@@ -203,7 +203,7 @@ Production runs entirely on GCP. `docs/Deploy_GCP.md` is the step-by-step guide;
 
 **Pipeline stages** (`cloudbuild.yaml`, sequential): build the Docker image → push to Artifact Registry → `gcloud run deploy` → `npm ci` + build `shared` + build `frontend` with `VITE_API_URL` → build the user manual with MkDocs into `frontend/dist/manual/` → `firebase deploy --only hosting` publishes `frontend/dist/` (app and manual together) to Firebase Hosting, authenticated via the Cloud Build service account's Application Default Credentials. Rewrites (SPA fallback to `index.html`, `/manual/**` to the manual's own 404) and cache headers (`max-age=31536000, immutable` for hashed assets, `no-cache` for HTML) are declared in `firebase.json`, not set per-object after upload.
 
-**Container** (`Dockerfile`): multi-stage Node 20 Alpine. The build stage installs the full workspace, runs `prisma generate`, then builds `shared` and `backend`. The runtime stage copies `dist/` outputs plus root **and** nested `node_modules` (the nested copies preserve workspace symlink resolution — the `mkdir -p` before the copy exists so the `COPY` cannot fail). `openssl` is installed because Prisma needs it on Alpine. Startup command: `npx prisma migrate deploy && node backend/dist/index.js` — **migrations run automatically on every deploy**.
+**Container** (`Dockerfile`): multi-stage Node 20 Alpine. The build stage installs the full workspace, runs `prisma generate`, then builds `shared` and `backend`. The runtime stage copies `dist/` outputs plus root **and** nested `node_modules` (the nested copies preserve workspace symlink resolution — the `mkdir -p` before the copy exists so the `COPY` cannot fail). `openssl` is installed because Prisma needs it on Alpine. Startup command: `npx prisma migrate deploy && node backend/dist/index.js` — **migrations run automatically on every deploy**, and because `--min-instances=0` every new instance pays that cost before serving its first request. `--cpu-boost` on the deploy shortens that window; the frontend absorbs what is left of it with the QueryClient's retry-with-backoff policy.
 
 The Cloud Run service account needs `roles/storage.objectAdmin` on the attachments bucket, otherwise uploads fail.
 

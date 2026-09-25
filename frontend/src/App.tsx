@@ -21,7 +21,15 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
+      // Absorve a janela de subida de uma instância fria do Cloud Run: as tentativas
+      // se espaçam (1s, 2s, 4s...) em vez de caírem quase juntas.
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+    mutations: {
+      // Escritas nunca são repetidas automaticamente — reenviar um POST de criação
+      // de chamado produziria duplicata.
+      retry: 0,
     },
   },
 });

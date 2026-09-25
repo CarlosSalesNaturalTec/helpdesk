@@ -14,7 +14,9 @@ interface SectorSelectorProps {
 
 export const SectorSelector: React.FC<SectorSelectorProps> = ({ selectedSectorId, onChange }) => {
   const { data: sectors, isLoading } = useQuery<Sector[]>({
-    queryKey: ['sectors'],
+    // 'all' distingue este recorte (todos os tipos, inclusive inativos) do recorte
+    // 'ativos' consumido pelos seletores de abertura e de filtro.
+    queryKey: ['sectors', 'all'],
     queryFn: async () => {
       const res = await apiClient.get<Sector[]>('/api/sectors');
       return res.data;

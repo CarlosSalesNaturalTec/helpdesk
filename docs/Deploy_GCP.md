@@ -60,7 +60,7 @@ Antes de começar, certifique-se de ter:
 | Serviço             | Tier / Config                          | Custo Mensal Estimado |
 | ------------------- | -------------------------------------- | --------------------- |
 | **Cloud SQL**       | PostgreSQL 15, db-g1-small (1 vCPU, 1.7 GB RAM), 10 GB SSD | ~$25.00 |
-| **Cloud Run**       | min-instances=0, 512 MiB, 1 vCPU       | ~$0.00 (free tier cobre tráfego baixo) |
+| **Cloud Run**       | min-instances=0, 512 MiB, 1 vCPU, cpu-boost | ~$0.00 (free tier cobre tráfego baixo) |
 | **Firebase Hosting** | plano Spark (gratuito), 10 GB armazenados / 360 MB de transferência por dia | ~$0.00 |
 | **Cloud Storage**   | Standard, < 1 GB armazenado (bucket de anexos) | ~$0.50                |
 | **Artifact Registry** | < 1 GB de imagens Docker             | ~$0.50                |
@@ -232,6 +232,7 @@ gcloud run deploy helpdesk-backend `
   --allow-unauthenticated `
   --memory=512Mi `
   --cpu=1 `
+  --cpu-boost `
   --min-instances=0 `
   --max-instances=3 `
   --concurrency=80 `
@@ -274,6 +275,7 @@ Invoke-RestMethod -Uri https://helpdesk-backend-xxxxx-uc.a.run.app/api/health
 ```
 
 > **Cold start:** Se o serviço estiver com `min-instances=0` e não recebeu requisições recentemente, o primeiro request pode levar 2-5 segundos (inicialização do container + conexão Cloud SQL).
+> A flag `--cpu-boost` encurta essa janela concedendo CPU adicional durante a inicialização do container — relevante porque o `CMD` roda `prisma migrate deploy` antes de servir a primeira requisição. Não gera custo de instância ociosa.
 
 ---
 
@@ -600,8 +602,14 @@ npx prisma migrate reset --force
 **Causa:** `min-instances=0` significa que o container é desligado quando não há tráfego. Ao receber um request, o Cloud Run precisa iniciar um novo container.
 
 **Solução:**
-- Opção 1 (recomendada para economia): Aceite o cold start — é aceitável para volumes baixos.
-- Opção 2: Aumente `min-instances` para 1:
+- Opção 1 (já aplicada no `cloudbuild.yaml`): `--cpu-boost`, que acelera a inicialização sem custo de instância ociosa:
+  ```powershell
+  gcloud run services update helpdesk-backend `
+    --region=us-central1 `
+    --cpu-boost
+  ```
+- Opção 2 (recomendada para economia): Aceite o cold start remanescente — é aceitável para volumes baixos.
+- Opção 3: Aumente `min-instances` para 1:
   ```powershell
   gcloud run services update helpdesk-backend `
     --region=us-central1 `
