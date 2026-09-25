@@ -3,6 +3,7 @@ import type {
   TicketStatusInput,
   TicketStatusType,
   NivelUrgenciaType,
+  HistoryTypeType,
   AssignTicketInput,
   SatisfactionInput,
 } from '@helpdesk/shared';
@@ -39,7 +40,12 @@ export interface Ticket {
 export interface TicketHistory {
   id: number;
   ticketId: number;
-  type: string;
+  /**
+   * Tipado pelo enum compartilhado, e não por `string`, para que a paridade entre o
+   * `HistoryType` do Prisma e a apresentação da linha do tempo seja conferida pelo
+   * compilador em vez de depender de revisão.
+   */
+  type: HistoryTypeType;
   content: any;
   authorId: number;
   criadoEm: string;
