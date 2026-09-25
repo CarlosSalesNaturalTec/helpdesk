@@ -271,6 +271,7 @@ async function main() {
   const t1 = await prisma.ticket.create({
     data: {
       titulo: 'Computador não liga',
+      local: 'Recepção',
       descricao: 'Meu computador de trabalho não liga de jeito nenhum, já verifiquei a tomada.',
       sectorId: sectorTecnologia.id,
       problemTypeId: createdProblemTypes['HARDWARE'],
@@ -281,7 +282,7 @@ async function main() {
     },
   });
   await createHistory(t1.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t1.titulo,
+    local: t1.local,
     descricao: t1.descricao,
     problemType: 'HARDWARE',
     urgencia: t1.urgencia,
@@ -291,6 +292,7 @@ async function main() {
   const t2 = await prisma.ticket.create({
     data: {
       titulo: 'Erro ao acessar o e-mail corporativo',
+      local: 'Sala de Medicação',
       descricao: 'Ao tentar logar, aparece erro 500 na tela do Webmail.',
       sectorId: sectorTecnologia.id,
       problemTypeId: createdProblemTypes['EMAIL'],
@@ -302,7 +304,7 @@ async function main() {
     },
   });
   await createHistory(t2.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t2.titulo,
+    local: t2.local,
     descricao: t2.descricao,
     problemType: 'EMAIL',
     urgencia: t2.urgencia,
@@ -320,6 +322,7 @@ async function main() {
   const t3 = await prisma.ticket.create({
     data: {
       titulo: 'Impressora sem toner',
+      local: 'Recepção',
       descricao: 'A impressora da recepção está com aviso de toner vazio.',
       sectorId: sectorTecnologia.id,
       problemTypeId: createdProblemTypes['IMPRESSORA'],
@@ -331,7 +334,7 @@ async function main() {
     },
   });
   await createHistory(t3.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t3.titulo,
+    local: t3.local,
     descricao: t3.descricao,
     problemType: 'IMPRESSORA',
     urgencia: t3.urgencia,
@@ -354,6 +357,7 @@ async function main() {
   const t4 = await prisma.ticket.create({
     data: {
       titulo: 'Rede Wi-Fi caindo frequentemente',
+      local: 'Sala de Reuniões',
       descricao: 'A rede wifi cai a cada 10 minutos na sala de reuniões.',
       sectorId: sectorTecnologia.id,
       problemTypeId: createdProblemTypes['REDE_INTERNET'],
@@ -365,7 +369,7 @@ async function main() {
     },
   });
   await createHistory(t4.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t4.titulo,
+    local: t4.local,
     descricao: t4.descricao,
     problemType: 'REDE_INTERNET',
     urgencia: t4.urgencia,
@@ -388,6 +392,7 @@ async function main() {
   const t5 = await prisma.ticket.create({
     data: {
       titulo: 'Instalação de software de videoconferência',
+      local: 'Auditório',
       descricao: 'Preciso que instalem o Teams para uma reunião à tarde.',
       sectorId: sectorTecnologia.id,
       problemTypeId: createdProblemTypes['SOFTWARE'],
@@ -399,7 +404,7 @@ async function main() {
     },
   });
   await createHistory(t5.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t5.titulo,
+    local: t5.local,
     descricao: t5.descricao,
     problemType: 'SOFTWARE',
     urgencia: t5.urgencia,
@@ -431,6 +436,7 @@ async function main() {
   const t6 = await prisma.ticket.create({
     data: {
       titulo: 'Troca de teclado com defeito',
+      local: 'Recepção',
       descricao: 'A tecla espaço não funciona.',
       sectorId: sectorTecnologia.id,
       problemTypeId: createdProblemTypes['HARDWARE'],
@@ -442,7 +448,7 @@ async function main() {
     },
   });
   await createHistory(t6.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t6.titulo,
+    local: t6.local,
     descricao: t6.descricao,
     problemType: 'HARDWARE',
     urgencia: t6.urgencia,
@@ -469,6 +475,7 @@ async function main() {
   const t7 = await prisma.ticket.create({
     data: {
       titulo: 'Sistema interno indisponível',
+      local: 'Almoxarifado',
       descricao: 'Não consigo abrir a tela de faturamento da minha unidade.',
       sectorId: sectorTecnologia.id,
       problemTypeId: createdProblemTypes['SISTEMA_INTERNO'],
@@ -479,7 +486,7 @@ async function main() {
     },
   });
   await createHistory(t7.id, solicitanteSecundario.id, 'ABERTURA', {
-    titulo: t7.titulo,
+    local: t7.local,
     descricao: t7.descricao,
     problemType: 'SISTEMA_INTERNO',
     urgencia: t7.urgencia,
@@ -489,6 +496,7 @@ async function main() {
   const t8 = await prisma.ticket.create({
     data: {
       titulo: 'Torneira do banheiro vazando',
+      local: 'Banheiro Térreo',
       descricao: 'A torneira do banheiro do 2º andar está vazando constantemente.',
       sectorId: sectorManutencao.id,
       problemTypeId: createdProblemTypesManutencao['HIDRAULICA'],
@@ -499,7 +507,7 @@ async function main() {
     },
   });
   await createHistory(t8.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t8.titulo,
+    local: t8.local,
     descricao: t8.descricao,
     problemType: 'HIDRAULICA',
     urgencia: t8.urgencia,
@@ -509,6 +517,8 @@ async function main() {
   const t9 = await prisma.ticket.create({
     data: {
       titulo: 'Tomada elétrica com mau contato',
+      // sem `local`: simula um chamado anterior ao campo, para exercitar o traço
+      //                nas colunas "Local" da listagem, dos cards e do PDF
       descricao: 'A tomada da sala de reuniões está com mau contato e falha ao carregar notebooks.',
       sectorId: sectorManutencao.id,
       problemTypeId: createdProblemTypesManutencao['ELETRICA'],
@@ -520,7 +530,7 @@ async function main() {
     },
   });
   await createHistory(t9.id, solicitanteCentral.id, 'ABERTURA', {
-    titulo: t9.titulo,
+    local: t9.local,
     descricao: t9.descricao,
     problemType: 'ELETRICA',
     urgencia: t9.urgencia,

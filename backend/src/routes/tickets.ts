@@ -8,6 +8,7 @@ import { validateTransition } from '../lib/workflow.js';
 import { NotificationService } from '../services/notification.js';
 import { uploadFile, deleteFile, extractGcsPath } from '../lib/storage.js';
 import { validateAttachment } from '../lib/attachment.js';
+import { resolveLocal, buildTicketTitulo } from '../lib/local.js';
 import {
   createTicketSchema,
   ticketStatusSchema,
@@ -51,7 +52,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
 
       // Converter campos numéricos
       const rawData = {
-        titulo: fields['titulo'],
+        local: fields['local'],
         descricao: fields['descricao'],
         sectorId: fields['sectorId'] ? parseInt(fields['sectorId'], 10) : undefined,
         problemTypeId: fields['problemTypeId'] ? parseInt(fields['problemTypeId'], 10) : undefined,
@@ -64,7 +65,20 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: parseResult.error.format() });
       }
 
-      const { titulo, descricao, sectorId, problemTypeId, urgencia } = parseResult.data;
+      const { local: localInformado, descricao, sectorId, problemTypeId, urgencia } = parseResult.data;
+
+      // O título não vem do cliente: o servidor o compõe a partir do Tipo de Problema
+      // e do local, para as duas variantes de criação (com e sem anexo).
+      const problemType = await prisma.problemType.findUnique({
+        where: { id: problemTypeId },
+        select: { nome: true },
+      });
+      if (!problemType) {
+        return reply.status(400).send({ error: 'Tipo de problema inválido' });
+      }
+
+      const local = await resolveLocal(localInformado, user.unidadeId);
+      const titulo = buildTicketTitulo(problemType.nome, local);
 
       // Validar e fazer upload do anexo (se fornecido)
       let anexoUrl: string | null = null;
@@ -88,6 +102,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         const tempTicket = await prisma.ticket.create({
           data: {
             titulo,
+            local,
             descricao,
             sectorId,
             problemTypeId,
@@ -124,7 +139,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
           data: {
             ticketId: ticket.id,
             type: 'ABERTURA',
-            content: { titulo, descricao, sectorId, problemTypeId, urgencia },
+            content: { local, descricao, sectorId, problemTypeId, urgencia },
             authorId: user.id,
           },
         });
@@ -142,6 +157,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       const ticket = await prisma.ticket.create({
         data: {
           titulo,
+          local,
           descricao,
           sectorId,
           problemTypeId,
@@ -156,7 +172,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         data: {
           ticketId: ticket.id,
           type: 'ABERTURA',
-          content: { titulo, descricao, sectorId, problemTypeId, urgencia },
+          content: { local, descricao, sectorId, problemTypeId, urgencia },
           authorId: user.id,
         },
       });
@@ -214,13 +230,17 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         Object.assign(whereClause, scopeWhere(user));
       }
 
-      // Aplicar busca textual (titulo, solicitante.nome, unidade.nome)
+      // Aplicar busca textual (titulo, descricao, local, solicitante.nome, unidade.nome).
+      // Descrição e local entram porque o título deixou de ser redigido pelo Solicitante:
+      // sem eles, procurar por uma palavra do problema ou pela localidade não acharia nada.
       if (search) {
         whereClause.AND = [
           ...(whereClause.AND || []),
           {
             OR: [
               { titulo: { contains: search, mode: 'insensitive' } },
+              { descricao: { contains: search, mode: 'insensitive' } },
+              { local: { contains: search, mode: 'insensitive' } },
               { solicitante: { nome: { contains: search, mode: 'insensitive' } } },
               { unidade: { nome: { contains: search, mode: 'insensitive' } } },
             ],
@@ -285,6 +305,44 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         { label: 'Crítica', value: 'CRITICA' },
       ];
       return reply.send(niveis);
+    }
+  );
+
+  // 3a. Localidades já usadas, para as sugestões do campo "Onde está o problema?".
+  // Precisa ficar ANTES de GET /api/tickets/:id, senão o Fastify casa :id = "locais"
+  // (mesma armadilha já documentada para niveis-urgencia).
+  fastify.get(
+    '/api/tickets/locais',
+    { preHandler: [authRequired, requirePasswordChange] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = request.user!;
+      const queryParse = z
+        .object({ unidadeId: z.coerce.number().int().positive().optional() })
+        .safeParse(request.query);
+      if (!queryParse.success) {
+        return reply.status(400).send({ error: queryParse.error.format() });
+      }
+
+      // Nomes de salas de uma Unidade não devem vazar para outra: só o Admin
+      // enxerga além da própria Unidade, e pode estreitar com ?unidadeId=
+      // (mesmo padrão de dashboard.ts e reports.ts).
+      const where: { local: { not: null }; unidadeId?: number } = { local: { not: null } };
+      if (user.role === 'ADMIN') {
+        if (queryParse.data.unidadeId) {
+          where.unidadeId = queryParse.data.unidadeId;
+        }
+      } else {
+        where.unidadeId = user.unidadeId;
+      }
+
+      const rows = await prisma.ticket.findMany({
+        where,
+        select: { local: true },
+        distinct: ['local'],
+        orderBy: { local: 'asc' },
+      });
+
+      return reply.send(rows.map((r) => r.local).filter((l): l is string => l !== null));
     }
   );
 

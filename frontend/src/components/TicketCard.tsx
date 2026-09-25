@@ -60,7 +60,10 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, isSolicitante })
         </span>
       </div>
 
-      <div className="ticket-card-title">{ticket.titulo}</div>
+      {/* O local ocupa a posição de destaque antes ocupada pelo título: a linha de
+          meta abaixo já traz Tipo de Ocorrência e Tipo de Problema, e o título
+          composto repetiria o segundo dentro do card. */}
+      <div className="ticket-card-title">{ticket.local || '-'}</div>
 
       {!isSolicitante && (
         <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>

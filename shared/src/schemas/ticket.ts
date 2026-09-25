@@ -23,11 +23,18 @@ export const NivelUrgenciaEnum = z.enum([
   'CRITICA',
 ]);
 
+/**
+ * O título não é informado pelo cliente: o servidor o deriva do Tipo de Problema e do
+ * local no momento da criação. O `local` chega aqui já aparado — a normalização
+ * completa (colapso de espaços e reaproveitamento da grafia existente na Unidade)
+ * roda no servidor, em `backend/src/lib/local.ts`.
+ */
 export const createTicketSchema = z.object({
-  titulo: z
+  local: z
     .string()
-    .min(5, 'O título deve ter no mínimo 5 caracteres')
-    .max(100, 'O título deve ter no máximo 100 caracteres'),
+    .trim()
+    .min(2, 'O local deve ter no mínimo 2 caracteres')
+    .max(60, 'O local deve ter no máximo 60 caracteres'),
   descricao: z
     .string()
     .min(10, 'A descrição deve ter no mínimo 10 caracteres')

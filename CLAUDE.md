@@ -121,6 +121,27 @@ ABERTO → EM_ANDAMENTO → RESOLVIDO → FECHADO
 
 Every transition writes a `TicketHistory` row (`HistoryType`: ABERTURA, MENSAGEM, MUDANCA_STATUS, ATRIBUICAO, REATRIBUICAO, FECHAMENTO, REABERTURA) with a JSON `content` payload.
 
+### Ticket Local & Derived Title
+
+The Solicitante does not write a ticket title. `POST /api/tickets` takes a free-text `local`
+("Onde está o problema?", 2–60 chars) and the server derives `titulo` as
+`Tipo de Problema — Local`, capped at the column's 100 chars. `backend/src/lib/local.ts` is the
+single source of that rule — `normalizeLocal()` trims and collapses whitespace, `resolveLocal()`
+reuses the spelling already recorded in the Unidade when the value matches case-insensitively
+(so "Recepção"/"recepção" stay one suggestion), and `buildTicketTitulo()` composes the title,
+preserving the problem type whole and truncating the local when it overflows. Both creation
+paths (with and without attachment) call it — never duplicate the formula.
+
+`GET /api/tickets/locais` returns the distinct locals of the caller's scope (own Unidade;
+Admin sees all and may narrow with `unidadeId`) and feeds the `<datalist>` of the creation form.
+Like `niveis-urgencia`, it must stay registered before `/api/tickets/:id`.
+
+The derived title shows in the ticket-detail header, notifications and emails. The listing,
+the cards and the report PDF show a **"Local"** column instead: they already carry Tipo de
+Ocorrência and Tipo de Problema in their own columns, so the composed title would repeat the
+problem type on the same row — the concatenation `separate-type-columns-my-tickets` removed at
+the client's request. `Ticket.local` is nullable: tickets created before the field show a dash.
+
 ### Sectors & Problem Types
 
 - `Sector` ("Tipo de Ocorrência") — Admin-only CRUD via `/api/sectors`. Has `ativo` for soft-disable.
@@ -159,7 +180,7 @@ Each resource domain has its own route module under `backend/src/routes/`, all r
 | Module | Endpoints | Role gate |
 | --- | --- | --- |
 | `auth.ts` | `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/change-password` | public / authenticated |
-| `tickets.ts` | `POST|GET /api/tickets`, `GET /api/tickets/niveis-urgencia`, `GET /api/tickets/:id`, `GET /api/tickets/:id/history`, `GET /api/tickets/:id/reassign-candidates`, `PATCH|DELETE /api/tickets/:id/anexo`, `PATCH /api/tickets/:id/{assign,reassign,status,close,admin-close,reopen}`, `POST /api/tickets/:id/messages` | per-endpoint (see workflow above) |
+| `tickets.ts` | `POST|GET /api/tickets`, `GET /api/tickets/niveis-urgencia`, `GET /api/tickets/locais`, `GET /api/tickets/:id`, `GET /api/tickets/:id/history`, `GET /api/tickets/:id/reassign-candidates`, `PATCH|DELETE /api/tickets/:id/anexo`, `PATCH /api/tickets/:id/{assign,reassign,status,close,admin-close,reopen}`, `POST /api/tickets/:id/messages` | per-endpoint (see workflow above) |
 | `usuarios.ts` | `GET|POST /api/usuarios`, `PUT|DELETE /api/usuarios/:id`, `PATCH /api/usuarios/:id/{deactivate,activate}` | Admin, Diretor, Gestor |
 | `unidades.ts` | `GET|POST /api/unidades`, `PUT|DELETE /api/unidades/:id` | Admin (writes) |
 | `sectors.ts` | `GET|POST /api/sectors`, `PUT|DELETE /api/sectors/:id` | Admin (writes) |

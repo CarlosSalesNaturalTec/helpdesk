@@ -278,7 +278,7 @@ export const Chamados: React.FC = () => {
               <thead>
                 <tr>
                   <th className="col-numero">Número</th>
-                  <th>Título</th>
+                  <th>Local</th>
                   <th>Tipo de Ocorrência</th>
                   <th>Tipo de Problema</th>
                   {!isSolicitante && <th>Solicitante</th>}
@@ -297,7 +297,7 @@ export const Chamados: React.FC = () => {
                       #{ticket.numero}
                     </td>
                     <td>
-                      <div style={{ fontWeight: 500, color: 'var(--text-main)' }}>{ticket.titulo}</div>
+                      <div style={{ fontWeight: 500, color: 'var(--text-main)' }}>{ticket.local || '-'}</div>
                     </td>
                     <td>
                       <div style={{ color: 'var(--text-main)', fontSize: '14px' }}>{ticket.sector?.nome || '-'}</div>

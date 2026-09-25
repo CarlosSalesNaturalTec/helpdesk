@@ -6,6 +6,8 @@ O Técnico atende os chamados de suporte. O que um Técnico enxerga é **duplame
 
 Em **Chamados**, a lista mostra os chamados dentro do seu escopo, com filtros por status (um ou mais), urgência e Tipo de Ocorrência — veja [Listagem e filtros de chamados](../funcionalidades/listagem-chamados.md). O **Dashboard** resume os chamados abertos, em andamento, resolvidos e os críticos ainda não fechados, além de uma tendência de 30 dias; clicar em um cartão abre a listagem com esses chamados.
 
+O **Local** informado pelo Solicitante aparece em coluna própria na listagem, nos cards e na tela do chamado — não é preciso ler a descrição inteira para saber aonde ir. Chamados abertos antes da existência desse campo exibem um traço.
+
 ## Assumir um chamado
 
 Um chamado nos status **Aberto** ou **Reaberto** pode ser assumido por qualquer Técnico da mesma Unidade — o primeiro a assumir se torna o responsável, e o chamado passa a **Em Andamento**. Chamados fechados não podem ser assumidos; é preciso reabri-los primeiro.
