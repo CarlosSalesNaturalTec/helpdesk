@@ -44,7 +44,7 @@ O PDF contém:
 - **Cabeçalho** com o período, o nome da Unidade (ou "Todas") e o Tipo de Ocorrência (ou "Todos") considerados.
 - **Cartões de métricas** — total, taxa de fechamento, TMA e satisfação média.
 - **Gráfico** da dimensão selecionada, exatamente como aparece na tela.
-- **Lista de chamados** do escopo filtrado, com número, título, tipo de problema, status, urgência, solicitante, técnico e data de abertura. Chamados ainda sem técnico mostram "—" na coluna de técnico.
+- **Lista de chamados** do escopo filtrado, com número, local, tipo de problema, status, urgência, solicitante, técnico e data de abertura. Chamados ainda sem técnico mostram "—" na coluna de técnico, e chamados sem local registrado mostram "—" na coluna de local.
 - Em todas as páginas, o nome de quem gerou o documento, a data/hora e a numeração de páginas.
 
 Os cartões e a lista são apurados pelo servidor a partir dos mesmos filtros, no momento da geração — por isso o total do cartão sempre corresponde à quantidade de chamados listados.

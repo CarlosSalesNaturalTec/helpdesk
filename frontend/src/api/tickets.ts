@@ -11,6 +11,8 @@ export interface Ticket {
   id: number;
   numero: string;
   titulo: string;
+  /** Localidade do problema. Nulo nos chamados anteriores ao campo. */
+  local?: string | null;
   descricao: string;
   tipoProblema: string;
   urgencia: string;
@@ -52,7 +54,8 @@ export interface TicketListResponse {
 }
 
 export interface CreateTicketInput {
-  titulo: string;
+  /** O título não é enviado: o servidor o deriva do Tipo de Problema e do local. */
+  local: string;
   descricao: string;
   sectorId: number;
   problemTypeId: number;
@@ -66,7 +69,7 @@ export interface CreateTicketInput {
  */
 export const createTicket = async (data: CreateTicketInput) => {
   const formData = new FormData();
-  formData.append('titulo', data.titulo);
+  formData.append('local', data.local);
   formData.append('descricao', data.descricao);
   formData.append('sectorId', String(data.sectorId));
   formData.append('problemTypeId', String(data.problemTypeId));
@@ -189,6 +192,15 @@ export const reopenTicket = async (id: number, data: { motivo: string }) => {
 
 export const getTiposProblema = async () => {
   const response = await apiClient.get<{ label: string; value: string }[]>('/api/tickets/tipos-problema');
+  return response.data;
+};
+
+/**
+ * Localidades já usadas em chamados do escopo do usuário, para as sugestões do
+ * campo "Onde está o problema?". Escopo resolvido no servidor.
+ */
+export const getLocais = async () => {
+  const response = await apiClient.get<string[]>('/api/tickets/locais');
   return response.data;
 };
 

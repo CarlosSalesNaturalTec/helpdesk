@@ -6,12 +6,19 @@ O Solicitante é quem abre chamados de suporte e acompanha o atendimento até a 
 
 Em **Abrir Chamado**, preencha:
 
-- **Título** (5 a 100 caracteres) e **Descrição** (10 a 2000 caracteres) do problema.
+- **Onde está o problema?** (2 a 60 caracteres) — o local físico da ocorrência, como "Recepção" ou "Sala de Medicação". Ao clicar no campo, o sistema sugere os locais já usados em chamados da sua Unidade; você pode escolher um deles ou digitar um local novo, que passa a valer como sugestão nas próximas aberturas.
+- **Descrição** (10 a 2000 caracteres) do problema.
 - **Tipo de Ocorrência** e **Tipo de Problema** — escolha primeiro o Tipo de Ocorrência; a lista de Tipos de Problema é filtrada de acordo.
 - **Urgência** — Baixa, Média, Alta ou Crítica.
 - **Anexo** (opcional) — um único arquivo JPG, PNG, PDF ou DOCX, até 5 MB. Veja [Anexos](../funcionalidades/anexos.md).
 
 O chamado é criado no status **Aberto**, aguardando um Técnico assumir.
+
+!!! info "O título é montado pelo sistema"
+    Não é mais preciso escrever um título: o sistema o monta sozinho, no formato **Tipo de Problema — Local** (por exemplo, "Impressora travada — Recepção"). Ele aparece no cabeçalho do chamado, nas notificações e nos e-mails. Nas listas e nos relatórios, que já trazem colunas próprias de Tipo de Ocorrência e Tipo de Problema, o que aparece é a coluna **Local**.
+
+!!! tip "Escreva o local do mesmo jeito que os colegas"
+    Prefira uma sugestão da lista quando ela existir. O sistema já ignora diferenças de maiúsculas e de espaços — " recepção " é gravado como "Recepção" se esse local já existir na Unidade —, mas variações de grafia ("Sala Medicação" e "Sala de Medicação") viram dois locais diferentes.
 
 !!! tip "Se um seletor não carregar"
     Se **Tipo de Ocorrência**, **Tipo de Problema** ou **Urgência** exibir a mensagem "Não foi possível carregar a lista", clique em **Tentar novamente** logo ao lado — não é preciso recarregar a página nem perder o que já foi digitado. Enquanto alguma dessas listas estiver indisponível, o botão **Enviar Chamado** fica desabilitado, para que você não descubra a falha só depois de escrever a descrição inteira.

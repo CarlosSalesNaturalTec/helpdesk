@@ -417,6 +417,14 @@ export const DetalhesChamado: React.FC = () => {
                 <strong style={{ color: 'var(--text-main)' }}>{ticket.unidade.nome}</strong>
               </div>
               <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Local</span>
+                {ticket.local ? (
+                  <strong style={{ color: 'var(--text-main)' }}>{ticket.local}</strong>
+                ) : (
+                  <em style={{ color: 'var(--text-muted)' }}>Não informado</em>
+                )}
+              </div>
+              <div>
                 <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Tipo de Ocorrência</span>
                 <strong style={{ color: 'var(--text-main)' }}>{ticket.sector?.nome || '-'}</strong>
               </div>

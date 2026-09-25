@@ -101,6 +101,7 @@ model Ticket {
   numero        BigInt          @default(autoincrement())
   titulo        String          @db.VarChar(100)
   descricao     String          @db.VarChar(2000)
+  local         String?         @db.VarChar(100)
   urgencia      NivelUrgencia
   status        TicketStatus    @default(ABERTO)
   solicitanteId Int

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { createTicket, getNiveisUrgencia } from '../api/tickets.js';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createTicket, getNiveisUrgencia, getLocais } from '../api/tickets.js';
 import { apiClient } from '../api/client.js';
 import { createTicketSchema } from '@helpdesk/shared';
 import { useAuth } from '../context/AuthContext.js';
@@ -41,7 +41,8 @@ const ListaIndisponivel: React.FC<{ nome: string; onRetry: () => void }> = ({ no
 
 export const AbrirChamado: React.FC = () => {
   const { user } = useAuth();
-  const [titulo, setTitulo] = useState('');
+  const queryClient = useQueryClient();
+  const [local, setLocal] = useState('');
   const [descricao, setDescricao] = useState('');
   const [sectorId, setSectorId] = useState<number | ''>('');
   const [problemTypeId, setProblemTypeId] = useState<number | ''>('');
@@ -95,6 +96,14 @@ export const AbrirChamado: React.FC = () => {
     queryFn: getNiveisUrgencia,
   });
 
+  // Sugestões de local: conveniência, não pré-requisito. Se a consulta falhar, o
+  // <datalist> fica vazio e o campo segue sendo um texto livre comum — por isso
+  // `locais` não entra em `referenciasIndisponiveis`.
+  const { data: locais } = useQuery({
+    queryKey: ['locais'],
+    queryFn: getLocais,
+  });
+
   // Os dados de referência precisam estar presentes para que o formulário seja utilizável.
   const referenciasIndisponiveis = !sectors || !allProblemTypes || !niveisUrgencia;
 
@@ -103,8 +112,11 @@ export const AbrirChamado: React.FC = () => {
     mutationFn: createTicket,
     onSuccess: (data) => {
       setSuccessData({ numero: data.numero, id: data.id });
+      // Um local novo passa a valer como sugestão já na abertura seguinte, inclusive
+      // no "Abrir Outro Chamado", que não desmonta a página.
+      queryClient.invalidateQueries({ queryKey: ['locais'] });
       // Resetar form
-      setTitulo('');
+      setLocal('');
       setDescricao('');
       setSectorId('');
       setProblemTypeId('');
@@ -171,7 +183,7 @@ export const AbrirChamado: React.FC = () => {
     setValidationErrors({});
 
     const formData = {
-      titulo,
+      local,
       descricao,
       sectorId: sectorId as any,
       problemTypeId: problemTypeId as any,
@@ -231,7 +243,7 @@ export const AbrirChamado: React.FC = () => {
     );
   }
 
-  const isTituloValid = titulo.length >= 5 && titulo.length <= 100;
+  const isLocalValid = local.trim().length >= 2 && local.trim().length <= 60;
   const isDescricaoValid = descricao.length >= 10 && descricao.length <= 2000;
 
   return (
@@ -275,28 +287,36 @@ export const AbrirChamado: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Título */}
+          {/* Local do problema — texto livre com sugestões da própria Unidade */}
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <label className="form-label">Título do Chamado</label>
+              <label className="form-label" htmlFor="local-input">Onde está o problema?</label>
               <span style={{
                 fontSize: '12px',
-                color: titulo.length === 0 ? 'var(--text-muted)' : isTituloValid ? 'var(--success-main)' : 'var(--danger-main)'
+                color: local.length === 0 ? 'var(--text-muted)' : isLocalValid ? 'var(--success-main)' : 'var(--danger-main)'
               }}>
-                {titulo.length}/100 caractere(s) {titulo.length > 0 && !isTituloValid && '(Mínimo 5)'}
+                {local.length}/60 caractere(s) {local.length > 0 && !isLocalValid && '(Mínimo 2)'}
               </span>
             </div>
             <input
+              id="local-input"
               type="text"
-              className={`input-field ${validationErrors.titulo ? 'input-error' : ''}`}
-              placeholder="Descreva o problema de forma resumida (ex: Impressora da recepção travada)"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              maxLength={100}
+              list="locais-sugeridos"
+              className={`input-field ${validationErrors.local ? 'input-error' : ''}`}
+              placeholder="Ex.: Recepção, Sala de Medicação"
+              value={local}
+              onChange={(e) => setLocal(e.target.value)}
+              maxLength={60}
+              autoComplete="off"
             />
-            {validationErrors.titulo && (
+            <datalist id="locais-sugeridos">
+              {locais?.map((l) => (
+                <option key={l} value={l} />
+              ))}
+            </datalist>
+            {validationErrors.local && (
               <span className="error-message" style={{ color: 'var(--danger-main)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                {validationErrors.titulo}
+                {validationErrors.local}
               </span>
             )}
           </div>

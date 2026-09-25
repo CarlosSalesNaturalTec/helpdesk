@@ -60,7 +60,7 @@ O sistema SHALL incluir no rodapé ou cabeçalho do PDF: data e hora de geraçã
 ### Requirement: Lista de chamados agrupada por Unidade e Tipo de Ocorrência
 O sistema SHALL incluir no PDF a lista dos chamados do escopo filtrado, agrupada hierarquicamente por **Unidade** e, dentro de cada Unidade, por **Tipo de Ocorrência**, exibindo o subtotal de cada grupo. Cada chamado SHALL aparecer uma única vez.
 
-Cada linha SHALL conter: número do chamado, título, tipo de problema, status, urgência, solicitante, técnico responsável e data de abertura. Campos sem valor — como o técnico de um chamado ainda não atribuído — DEVEM ser representados por um marcador neutro, nunca por espaço em branco ambíguo.
+Cada linha SHALL conter: número do chamado, local, tipo de problema, status, urgência, solicitante, técnico responsável e data de abertura. Campos sem valor — como o técnico de um chamado ainda não atribuído — DEVEM ser representados por um marcador neutro, nunca por espaço em branco ambíguo.
 
 #### Scenario: Admin obtém a árvore completa
 - **WHEN** o Admin gera o PDF sem filtrar Unidade nem Tipo de Ocorrência
@@ -102,3 +102,24 @@ Os cards-resumo SHALL continuar refletindo o **total real** do escopo, e não o 
 #### Scenario: Geração não é recusada por volume
 - **WHEN** o escopo excede o limite
 - **THEN** o PDF é gerado normalmente, com a lista truncada, em vez de a geração ser recusada
+
+### Requirement: Coluna de Local na lista de chamados do relatório
+A lista de chamados do relatório em PDF SHALL apresentar uma coluna **"Local"** no lugar da coluna "Título", exibindo a localidade do problema, com um traço para os chamados que não a possuem. A largura das colunas SHALL ser redistribuída de modo que a soma continue cabendo na área útil da página.
+
+O título composto do chamado NÃO DEVE ser apresentado nessa lista: ela já possui coluna própria de Tipo de Problema, e o título repetiria esse valor na mesma linha.
+
+#### Scenario: Relatório apresenta a coluna Local
+- **WHEN** um Gestor, Diretor ou Administrador gera o relatório em PDF
+- **THEN** a lista de chamados apresenta a coluna "Local" no lugar de "Título", preservando as demais colunas
+
+#### Scenario: Local não repete o Tipo de Problema
+- **WHEN** um chamado de Tipo de Problema "Impressora travada" no local "Recepção" consta da lista
+- **THEN** a coluna "Local" exibe apenas "Recepção" e a coluna "Tipo de Problema" exibe "Impressora travada"
+
+#### Scenario: Chamado sem local no relatório
+- **WHEN** um chamado anterior à existência do campo consta da lista
+- **THEN** a coluna "Local" exibe um traço
+
+#### Scenario: Larguras continuam cabendo na página
+- **WHEN** o PDF é gerado com a nova coluna
+- **THEN** a soma das larguras das colunas não ultrapassa a área útil da página e nenhuma coluna é cortada

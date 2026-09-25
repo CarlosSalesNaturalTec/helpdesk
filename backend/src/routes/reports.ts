@@ -222,7 +222,12 @@ async function computeCards(scope: ReportScope): Promise<ReportCards> {
 
 interface PdfTicketRow {
   numero: string;
-  titulo: string;
+  /**
+   * Localidade do problema, no lugar do antigo título. O título composto
+   * (`Tipo de Problema — Local`) repetiria aqui a coluna de Tipo de Problema
+   * ao lado — a mesma concatenação que a separação de colunas eliminou.
+   */
+  local: string;
   problemType: string;
   status: string;
   urgencia: string;
@@ -254,7 +259,7 @@ async function fetchGroupedTickets(scope: ReportScope): Promise<UnidadeGroup[]> 
     take: PDF_MAX_TICKETS,
     select: {
       numero: true,
-      titulo: true,
+      local: true,
       status: true,
       urgencia: true,
       criadoEm: true,
@@ -270,7 +275,7 @@ async function fetchGroupedTickets(scope: ReportScope): Promise<UnidadeGroup[]> 
   for (const t of tickets) {
     const row: PdfTicketRow = {
       numero: t.numero.toString(),
-      titulo: t.titulo,
+      local: t.local ?? EMPTY_MARK,
       problemType: t.problemType?.nome ?? EMPTY_MARK,
       status: STATUS_LABELS[t.status] ?? t.status,
       urgencia: URGENCIA_LABELS[t.urgencia] ?? t.urgencia,
@@ -303,12 +308,12 @@ async function fetchGroupedTickets(scope: ReportScope): Promise<UnidadeGroup[]> 
 // Colunas da lista de chamados (largura total = 495, área útil do A4 com margem 50)
 const TICKET_COLUMNS: { key: keyof PdfTicketRow; title: string; width: number }[] = [
   { key: 'numero', title: 'Nº', width: 38 },
-  { key: 'titulo', title: 'Título', width: 107 },
-  { key: 'problemType', title: 'Tipo de Problema', width: 68 },
+  { key: 'local', title: 'Local', width: 80 },
+  { key: 'problemType', title: 'Tipo de Problema', width: 80 },
   { key: 'status', title: 'Status', width: 52 },
   { key: 'urgencia', title: 'Urgência', width: 40 },
-  { key: 'solicitante', title: 'Solicitante', width: 66 },
-  { key: 'tecnico', title: 'Técnico', width: 66 },
+  { key: 'solicitante', title: 'Solicitante', width: 74 },
+  { key: 'tecnico', title: 'Técnico', width: 73 },
   { key: 'abertura', title: 'Abertura', width: 58 },
 ];
 
