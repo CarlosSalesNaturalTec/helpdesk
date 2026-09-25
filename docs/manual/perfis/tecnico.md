@@ -20,6 +20,16 @@ Quando faltam informações do Solicitante para prosseguir, mude o status para *
 
 Para marcar como **Resolvido**, descreva a solução aplicada (mínimo de 10 caracteres). O Solicitante é notificado e pode fechar o chamado com uma avaliação ou reabri-lo se o problema persistir.
 
+## Corrigir o local do chamado
+
+Chegou ao lugar indicado e o problema não é ali? Você, como Técnico **atribuído** ao chamado, pode corrigir o local: na tela do chamado, clique no lápis ao lado de **Local**, informe o lugar certo e salve. É a informação mais útil que você traz do campo — corrigi-la evita que outra pessoa repita o deslocamento errado.
+
+O título do chamado é recomposto com o novo local e a correção entra no histórico, com seu nome, a data e o local anterior. Como a correção partiu de você, nenhuma notificação é enviada a você mesmo.
+
+Só o Técnico atribuído corrige: um colega do mesmo Tipo de Ocorrência que enxergue o chamado mas não o atenda verá o local apenas para leitura. E nenhum chamado **Fechado** aceita correção — é preciso reabri-lo antes.
+
+Quando outra pessoa (o Solicitante ou a gestão) corrige o local de um chamado seu, você recebe notificação e e-mail com o local anterior e o novo.
+
 ## Reatribuição
 
 Um Gestor, Diretor ou Administrador pode reatribuir um chamado para outro Técnico (ou Gestor) da mesma Unidade e do mesmo Tipo de Ocorrência — você será notificado se um chamado for atribuído a você por reatribuição, ou se um chamado seu for movido para outro colega.

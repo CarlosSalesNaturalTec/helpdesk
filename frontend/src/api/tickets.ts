@@ -198,9 +198,31 @@ export const getTiposProblema = async () => {
 /**
  * Localidades já usadas em chamados do escopo do usuário, para as sugestões do
  * campo "Onde está o problema?". Escopo resolvido no servidor.
+ *
+ * `unidadeId` serve à correção do local na tela de detalhes, onde as sugestões
+ * que importam são as da Unidade **do chamado**: para um Admin corrigindo um
+ * chamado de outra Unidade, não são as dele. O servidor só honra o parâmetro
+ * para o Admin; para os demais papéis a Unidade do chamado já é a sua.
  */
-export const getLocais = async () => {
-  const response = await apiClient.get<string[]>('/api/tickets/locais');
+export const getLocais = async (unidadeId?: number) => {
+  const response = await apiClient.get<string[]>('/api/tickets/locais', {
+    params: unidadeId ? { unidadeId } : undefined,
+  });
+  return response.data;
+};
+
+/**
+ * Corrige a localidade de um chamado já aberto. O servidor normaliza o valor
+ * pela Unidade do chamado e recompõe o título derivado.
+ */
+export const updateTicketLocal = async (id: number, local: string) => {
+  const response = await apiClient.patch<{
+    id: number;
+    numero: string;
+    local: string | null;
+    titulo: string;
+    message: string;
+  }>(`/api/tickets/${id}/local`, { local });
   return response.data;
 };
 

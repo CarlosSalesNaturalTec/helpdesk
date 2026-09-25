@@ -171,4 +171,22 @@ Atenciosamente,
 ${fullName}.`;
     return this.send(toEmail, subject, body);
   }
+
+  // 8. LOCAL_CORRIGIDO: A localidade do chamado foi corrigida por outra pessoa, notifica o Técnico atribuído
+  static async sendLocalCorrigido(toEmail: string, tecnicoNome: string, ticketNumero: string | number, ticketTitulo: string, localAnterior: string, localNovo: string, ticketId: number) {
+    const subject = `Local do chamado #${ticketNumero} foi corrigido`;
+    const body = `Olá, ${tecnicoNome}.
+
+A localidade do chamado #${ticketNumero} ("${ticketTitulo}"), pelo qual você é responsável, foi corrigida.
+
+Local anterior: ${localAnterior}
+Novo local: ${localNovo}
+
+Confira o chamado antes de se deslocar:
+${this.getTicketLink(ticketId)}
+
+Atenciosamente,
+${fullName}.`;
+    return this.send(toEmail, subject, body);
+  }
 }

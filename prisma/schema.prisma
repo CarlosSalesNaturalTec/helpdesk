@@ -94,6 +94,7 @@ enum HistoryType {
   REATRIBUICAO
   FECHAMENTO
   REABERTURA
+  EDICAO
 }
 
 model Ticket {

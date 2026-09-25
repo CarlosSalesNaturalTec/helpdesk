@@ -10,6 +10,14 @@ O **Dashboard** e a lista de **Chamados** do Diretor mostram todos os chamados d
 
 Em um chamado que ainda não está fechado, reatribua o Técnico (ou Gestor) responsável — o destino precisa pertencer à mesma Unidade **e** ao mesmo Tipo de Ocorrência do chamado. O Gestor só reatribui chamados da sua própria área; o Diretor reatribui chamados de qualquer área da Unidade. A lista de destinatários é montada a partir do próprio chamado e traz os Técnicos e Gestores ativos da mesma Unidade e do mesmo Tipo de Ocorrência — então um Gestor encontra ali os outros Gestores da sua área, ainda que não possa gerenciá-los na tela de **Usuários**. Isso é útil para redistribuir carga de trabalho ou repassar um chamado para quem tem mais contexto sobre o problema. Técnico e Solicitante são notificados da mudança.
 
+## Corrigir o local do chamado
+
+Em um chamado que ainda não está fechado, clique no lápis ao lado de **Local**, na tela do chamado, para corrigir a localidade. O Gestor corrige chamados da sua própria área; o Diretor, de qualquer área da Unidade.
+
+Além de consertar uma sala trocada, isso serve para **padronizar grafias**: como as sugestões oferecidas na abertura saem dos locais já usados na Unidade, "Sala Medicação" e "Sala de Medicação" convivem como duas sugestões diferentes até que alguém uniformize. Ao corrigir para a grafia padronizada, a lista de sugestões da Unidade passa a refletir a correção.
+
+O título do chamado é recomposto com o novo local e a alteração fica no histórico, com autor, data e os valores anterior e novo. Havendo Técnico atribuído, ele é notificado (in-app e e-mail) da mudança — o Solicitante não é, para não gerar ruído com uma correção apenas ortográfica.
+
 ## Fechamento administrativo
 
 Além do fechamento normal (feito pelo Solicitante com avaliação), Gestor, Diretor e Administrador podem executar um **fechamento administrativo**, que encerra o chamado sem passar pela pesquisa de satisfação — útil quando o Solicitante não responde ou o chamado precisa ser encerrado por outro motivo administrativo. O Gestor só pode fechar chamados da sua própria área. O Solicitante é notificado do encerramento.

@@ -24,6 +24,25 @@ export const NivelUrgenciaEnum = z.enum([
 ]);
 
 /**
+ * Tipos de evento da linha do tempo do chamado. Precisa ficar em paridade com o enum
+ * `HistoryType` do Prisma e com o `switch` de apresentação do frontend — um valor novo
+ * que entre só de um lado aparece sem rótulo na linha do tempo.
+ *
+ * `EDICAO` é genérico de propósito (campo + valor anterior + valor novo): a edição de
+ * outro campo, no futuro, não precisa de mais um valor de enum.
+ */
+export const HistoryTypeEnum = z.enum([
+  'ABERTURA',
+  'MENSAGEM',
+  'MUDANCA_STATUS',
+  'ATRIBUICAO',
+  'REATRIBUICAO',
+  'FECHAMENTO',
+  'REABERTURA',
+  'EDICAO',
+]);
+
+/**
  * O título não é informado pelo cliente: o servidor o deriva do Tipo de Problema e do
  * local no momento da criação. O `local` chega aqui já aparado — a normalização
  * completa (colapso de espaços e reaproveitamento da grafia existente na Unidade)
@@ -99,4 +118,12 @@ export const ticketQuerySchema = z.object({
   problemTypeId: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().default(20),
+});
+
+/**
+ * Correção da localidade de um chamado já aberto. As regras do campo são as mesmas
+ * da abertura (`createTicketSchema.local`) — o local é o mesmo campo, corrigido depois.
+ */
+export const updateTicketLocalSchema = z.object({
+  local: createTicketSchema.shape.local,
 });
