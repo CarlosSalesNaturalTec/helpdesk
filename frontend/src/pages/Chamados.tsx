@@ -67,7 +67,7 @@ export const Chamados: React.FC = () => {
   const setPage = (p: number) => updateFilters({ page: p > 1 ? String(p) : undefined });
 
   const { data: sectors } = useQuery({
-    queryKey: ['sectors'],
+    queryKey: ['sectors', 'ativos'],
     queryFn: async () => {
       const res = await apiClient.get<any[]>('/api/sectors');
       return res.data.filter((s: any) => s.ativo);

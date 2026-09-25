@@ -13,6 +13,10 @@ Em **Abrir Chamado**, preencha:
 
 O chamado é criado no status **Aberto**, aguardando um Técnico assumir.
 
+!!! tip "Se um seletor não carregar"
+    Se **Tipo de Ocorrência**, **Tipo de Problema** ou **Urgência** exibir a mensagem "Não foi possível carregar a lista", clique em **Tentar novamente** logo ao lado — não é preciso recarregar a página nem perder o que já foi digitado. Enquanto alguma dessas listas estiver indisponível, o botão **Enviar Chamado** fica desabilitado, para que você não descubra a falha só depois de escrever a descrição inteira.
+    Isso costuma acontecer quando o sistema está iniciando depois de um período sem uso; a segunda tentativa quase sempre funciona. Se insistir, avise o Administrador.
+
 ## Acompanhar o chamado
 
 Em **Meus Chamados**, veja a lista com status, urgência e data. Abra um chamado para ver o histórico completo de mudanças de status e a troca de mensagens com o Técnico responsável.

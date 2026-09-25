@@ -12,7 +12,7 @@ Este documento cobre apenas a visão de alto nível do pipeline e como este manu
 ## Pipeline (`cloudbuild.yaml`)
 
 1. **`docker-build` / `docker-push`** — build da imagem do backend e envio ao Artifact Registry.
-2. **`deploy-cloud-run`** — deploy do backend no Cloud Run (aplica migrações do Prisma automaticamente no start do container).
+2. **`deploy-cloud-run`** — deploy do backend no Cloud Run (aplica migrações do Prisma automaticamente no start do container). O deploy usa `--cpu-boost`: como o serviço roda com `min-instances=0`, cada instância nova executa as migrações antes de atender a primeira requisição, e a CPU extra na inicialização encurta essa janela sem custo de instância ociosa.
 3. **`build-frontend`** — build do `shared` e do frontend (Vite), gerando `frontend/dist/`.
 4. **`build-docs`** — build deste manual com MkDocs, para dentro de `frontend/dist/manual/`.
 5. **`deploy-frontend`** — `firebase deploy --only hosting` publica `frontend/dist/` (aplicação **e** manual) no Firebase Hosting.

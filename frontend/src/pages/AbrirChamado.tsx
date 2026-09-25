@@ -12,6 +12,33 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf',
 const ALLOWED_EXTENSIONS = '.jpg,.jpeg,.png,.pdf,.docx';
 const ALLOWED_TYPES_LABEL = 'JPG, PNG, PDF ou DOCX';
 
+/**
+ * Ocupa o lugar do seletor quando a sua lista de referência não pôde ser carregada.
+ * Mantém o erro visível e recuperável sem recarregar a página (design D1).
+ */
+const ListaIndisponivel: React.FC<{ nome: string; onRetry: () => void }> = ({ nome, onRetry }) => (
+  <div
+    style={{
+      border: '1px solid var(--danger-main)',
+      borderRadius: '8px',
+      padding: '12px 16px',
+      background: 'var(--bg-surface-subtle)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '12px',
+      flexWrap: 'wrap',
+    }}
+  >
+    <span style={{ fontSize: '13px', color: 'var(--danger-main)' }}>
+      ⚠ Não foi possível carregar a lista de {nome}.
+    </span>
+    <button type="button" className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }} onClick={onRetry}>
+      Tentar novamente
+    </button>
+  </div>
+);
+
 export const AbrirChamado: React.FC = () => {
   const { user } = useAuth();
   const [titulo, setTitulo] = useState('');
@@ -30,15 +57,25 @@ export const AbrirChamado: React.FC = () => {
   const [successData, setSuccessData] = useState<{ numero: string; id: number } | null>(null);
 
   // Queries para os dropdowns
-  const { data: sectors, isLoading: loadingSectors } = useQuery({
-    queryKey: ['sectors'],
+  const {
+    data: sectors,
+    isLoading: loadingSectors,
+    isError: errorSectors,
+    refetch: refetchSectors,
+  } = useQuery({
+    queryKey: ['sectors', 'ativos'],
     queryFn: async () => {
       const res = await apiClient.get<any[]>('/api/sectors');
       return res.data.filter((s: any) => s.ativo);
     },
   });
 
-  const { data: allProblemTypes, isLoading: loadingTipos } = useQuery({
+  const {
+    data: allProblemTypes,
+    isLoading: loadingTipos,
+    isError: errorTipos,
+    refetch: refetchTipos,
+  } = useQuery({
     queryKey: ['problemTypes'],
     queryFn: async () => {
       const res = await apiClient.get<any[]>('/api/problem-types');
@@ -48,10 +85,18 @@ export const AbrirChamado: React.FC = () => {
 
   const filteredProblemTypes = allProblemTypes?.filter(pt => pt.sectorId === sectorId) || [];
 
-  const { data: niveisUrgencia, isLoading: loadingUrgencias } = useQuery({
+  const {
+    data: niveisUrgencia,
+    isLoading: loadingUrgencias,
+    isError: errorUrgencias,
+    refetch: refetchUrgencias,
+  } = useQuery({
     queryKey: ['niveisUrgencia'],
     queryFn: getNiveisUrgencia,
   });
+
+  // Os dados de referência precisam estar presentes para que o formulário seja utilizável.
+  const referenciasIndisponiveis = !sectors || !allProblemTypes || !niveisUrgencia;
 
   // Mutation de criação
   const createMutation = useMutation({
@@ -260,22 +305,26 @@ export const AbrirChamado: React.FC = () => {
             {/* Setor */}
             <div className="form-group">
               <label className="form-label">Tipo de Ocorrência</label>
-              <select
-                className={`input-field ${validationErrors.sectorId ? 'input-error' : ''}`}
-                value={sectorId}
-                onChange={(e) => {
-                  setSectorId(e.target.value ? Number(e.target.value) : '');
-                  setProblemTypeId('');
-                }}
-                disabled={loadingSectors}
-              >
-                <option value="">Selecione o tipo de ocorrência...</option>
-                {sectors?.map((sector) => (
-                  <option key={sector.id} value={sector.id}>
-                    {sector.nome}
-                  </option>
-                ))}
-              </select>
+              {errorSectors ? (
+                <ListaIndisponivel nome="Tipos de Ocorrência" onRetry={() => refetchSectors()} />
+              ) : (
+                <select
+                  className={`input-field ${validationErrors.sectorId ? 'input-error' : ''}`}
+                  value={sectorId}
+                  onChange={(e) => {
+                    setSectorId(e.target.value ? Number(e.target.value) : '');
+                    setProblemTypeId('');
+                  }}
+                  disabled={loadingSectors}
+                >
+                  <option value="">{loadingSectors ? 'Carregando...' : 'Selecione o tipo de ocorrência...'}</option>
+                  {sectors?.map((sector) => (
+                    <option key={sector.id} value={sector.id}>
+                      {sector.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
               {validationErrors.sectorId && (
                 <span className="error-message" style={{ color: 'var(--danger-main)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
                   {validationErrors.sectorId}
@@ -286,19 +335,23 @@ export const AbrirChamado: React.FC = () => {
             {/* Tipo de Problema */}
             <div className="form-group">
               <label className="form-label">Tipo de Problema</label>
-              <select
-                className={`input-field ${validationErrors.problemTypeId ? 'input-error' : ''}`}
-                value={problemTypeId}
-                onChange={(e) => setProblemTypeId(e.target.value ? Number(e.target.value) : '')}
-                disabled={!sectorId || loadingTipos}
-              >
-                <option value="">Selecione o problema...</option>
-                {filteredProblemTypes.map((pt) => (
-                  <option key={pt.id} value={pt.id}>
-                    {pt.nome}
-                  </option>
-                ))}
-              </select>
+              {errorTipos ? (
+                <ListaIndisponivel nome="Tipos de Problema" onRetry={() => refetchTipos()} />
+              ) : (
+                <select
+                  className={`input-field ${validationErrors.problemTypeId ? 'input-error' : ''}`}
+                  value={problemTypeId}
+                  onChange={(e) => setProblemTypeId(e.target.value ? Number(e.target.value) : '')}
+                  disabled={!sectorId || loadingTipos}
+                >
+                  <option value="">{loadingTipos ? 'Carregando...' : 'Selecione o problema...'}</option>
+                  {filteredProblemTypes.map((pt) => (
+                    <option key={pt.id} value={pt.id}>
+                      {pt.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
               {validationErrors.problemTypeId && (
                 <span className="error-message" style={{ color: 'var(--danger-main)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
                   {validationErrors.problemTypeId}
@@ -309,19 +362,23 @@ export const AbrirChamado: React.FC = () => {
             {/* Urgência */}
             <div className="form-group">
               <label className="form-label">Nível de Urgência</label>
-              <select
-                className={`input-field ${validationErrors.urgencia ? 'input-error' : ''}`}
-                value={urgencia}
-                onChange={(e) => setUrgencia(e.target.value)}
-                disabled={loadingUrgencias}
-              >
-                <option value="">Selecione a urgência...</option>
-                {niveisUrgencia?.map((nivel) => (
-                  <option key={nivel.value} value={nivel.value}>
-                    {nivel.label}
-                  </option>
-                ))}
-              </select>
+              {errorUrgencias ? (
+                <ListaIndisponivel nome="níveis de urgência" onRetry={() => refetchUrgencias()} />
+              ) : (
+                <select
+                  className={`input-field ${validationErrors.urgencia ? 'input-error' : ''}`}
+                  value={urgencia}
+                  onChange={(e) => setUrgencia(e.target.value)}
+                  disabled={loadingUrgencias}
+                >
+                  <option value="">{loadingUrgencias ? 'Carregando...' : 'Selecione a urgência...'}</option>
+                  {niveisUrgencia?.map((nivel) => (
+                    <option key={nivel.value} value={nivel.value}>
+                      {nivel.label}
+                    </option>
+                  ))}
+                </select>
+              )}
               {validationErrors.urgencia && (
                 <span className="error-message" style={{ color: 'var(--danger-main)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
                   {validationErrors.urgencia}
@@ -442,12 +499,19 @@ export const AbrirChamado: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
+          {referenciasIndisponiveis && !createMutation.isPending && (
+            <span style={{ display: 'block', marginTop: '24px', fontSize: '13px', color: 'var(--text-muted)' }}>
+              O envio fica bloqueado enquanto as listas de Tipo de Ocorrência, Tipo de Problema e Nível de Urgência não
+              forem carregadas.
+            </span>
+          )}
+
+          <div style={{ display: 'flex', gap: '16px', marginTop: referenciasIndisponiveis ? '12px' : '32px' }}>
             <button
               type="submit"
               className="btn btn-primary"
               style={{ flexGrow: 1 }}
-              disabled={createMutation.isPending || !!anexoError}
+              disabled={createMutation.isPending || !!anexoError || referenciasIndisponiveis}
             >
               {createMutation.isPending ? 'Enviando chamado...' : 'Enviar Chamado'}
             </button>
