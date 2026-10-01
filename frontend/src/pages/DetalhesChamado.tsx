@@ -99,7 +99,12 @@ export const DetalhesChamado: React.FC = () => {
   // AbrirChamado). Só é buscada quando o modal de pendência abre.
   const { data: razoesPendencia = [] } = useQuery({
     queryKey: ['razoesPendencia', ticket?.sectorId],
-    queryFn: () => getRazoesPendencia(),
+    // As razões do Tipo de Ocorrência **do chamado**, que para um Admin colocando em
+    // pendência o chamado de outra área não são as de toda a rede. O parâmetro só é
+    // honrado para o Admin; para os demais papéis o escopo do servidor já é o próprio,
+    // e enviá-lo não amplia nada. Mesma razão pela qual a correção de local consulta
+    // pela Unidade do chamado: é contra essa área que o servidor resolve a grafia.
+    queryFn: () => getRazoesPendencia(ticket?.sectorId),
     enabled: showStatusModal === 'AGUARDANDO',
   });
 
