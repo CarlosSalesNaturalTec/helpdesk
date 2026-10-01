@@ -20,7 +20,7 @@ substitutions:
   # tolerar vírgulas em nomes de cliente.
   # _CLIENT_NAME vazio é intencional e suportado: o sistema passa a exibir
   # apenas _APP_NAME, sem travessão. Não confundir com "não configurado".
-  _APP_NAME: ISETS
+  _APP_NAME: ISETES
   _CLIENT_NAME: ""
   # URL base do frontend publicado no Firebase Hosting, usada para montar os
   # links dos e-mails (${FRONTEND_URL}/chamados/{id}) e como ALLOWED_ORIGIN do

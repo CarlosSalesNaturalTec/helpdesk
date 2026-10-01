@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**SOLUTUS** (currently deployed as **ISETS**) — a centralized ticketing platform for support across an Instituto with multiple Unidades. The system supports 5 personas (Solicitante, Técnico, Gestor, Diretor, Administrador do Sistema) with strict data isolation between units (Unidades). `Gestor` is not IT-specific: its area of responsibility is whichever Sector ("Tipo de Ocorrência") is associated with the user — see [Data Isolation](#data-isolation-rbac--unit-and-sector-scoping).
+**SOLUTUS** (currently deployed as **ISETES**) — a centralized ticketing platform for support across an Instituto with multiple Unidades. The system supports 5 personas (Solicitante, Técnico, Gestor, Diretor, Administrador do Sistema) with strict data isolation between units (Unidades). `Gestor` is not IT-specific: its area of responsibility is whichever Sector ("Tipo de Ocorrência") is associated with the user — see [Data Isolation](#data-isolation-rbac--unit-and-sector-scoping).
 
-The displayed name is configurable at build/deploy time, not hardcoded: `APP_NAME` (default `SOLUTUS`) and `CLIENT_NAME` (default `Instituto Setes`) are two distinct concepts. The production deploy sets `APP_NAME=ISETS` with an **empty** `CLIENT_NAME`, so the product name `SOLUTUS` appears nowhere in published output — see [Branding](#branding-configurable-app-name--client-name).
+The displayed name is configurable at build/deploy time, not hardcoded: `APP_NAME` (default `SOLUTUS`) and `CLIENT_NAME` (default `Instituto Setes`) are two distinct concepts. The production deploy sets `APP_NAME=ISETES` with an **empty** `CLIENT_NAME`, so the product name `SOLUTUS` appears nowhere in published output — see [Branding](#branding-configurable-app-name--client-name).
 
 **Tech Stack:** React 18 + TypeScript (frontend), Node.js 20 + TypeScript + Fastify 4 (backend), PostgreSQL 15 + Prisma 5 (ORM), Zod (shared validation), JWT + bcryptjs (auth), PDFKit (PDF generation), Recharts + html-to-image (charts & chart snapshots), TanStack React Query (data fetching), React Router v6 (routing), `@fastify/multipart` + `@google-cloud/storage` (attachments), `@sendgrid/mail` (email notifications).
 

@@ -15,7 +15,15 @@ import {
   removeAttachment,
   updateTicketLocal,
   getLocais,
+  getRazoesPendencia,
 } from '../api/tickets.js';
+import {
+  STATUS_LABELS,
+  STATUS_BADGE_CLASSES,
+  statusLabel,
+  statusBadgeClass,
+  MAX_PENDENCIA_MOTIVO_LENGTH,
+} from '@helpdesk/shared';
 import { useAuth } from '../context/AuthContext.js';
 import { StarRating } from '../components/StarRating.js';
 import { apiClient } from '../api/client.js';
@@ -82,6 +90,22 @@ export const DetalhesChamado: React.FC = () => {
     queryKey: ['locais', ticket?.unidadeId],
     queryFn: () => getLocais(ticket?.unidadeId),
     enabled: editingLocal && !!ticket?.unidadeId,
+  });
+
+  // Sugestões da Razão da Pendência: as razões já registradas no escopo do usuário, cujo
+  // eixo é o Tipo de Ocorrência. São conveniência, não pré-requisito — se a consulta
+  // falhar, o <datalist> fica vazio e o campo segue sendo texto livre comum, sem mensagem
+  // de erro e sem bloquear a pendência (mesma postura das sugestões de local em
+  // AbrirChamado). Só é buscada quando o modal de pendência abre.
+  const { data: razoesPendencia = [] } = useQuery({
+    queryKey: ['razoesPendencia', ticket?.sectorId],
+    // As razões do Tipo de Ocorrência **do chamado**, que para um Admin colocando em
+    // pendência o chamado de outra área não são as de toda a rede. O parâmetro só é
+    // honrado para o Admin; para os demais papéis o escopo do servidor já é o próprio,
+    // e enviá-lo não amplia nada. Mesma razão pela qual a correção de local consulta
+    // pela Unidade do chamado: é contra essa área que o servidor resolve a grafia.
+    queryFn: () => getRazoesPendencia(ticket?.sectorId),
+    enabled: showStatusModal === 'AGUARDANDO',
   });
 
   // Mutations
@@ -253,18 +277,6 @@ export const DetalhesChamado: React.FC = () => {
     );
   }
 
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'ABERTO': return 'badge-aberto';
-      case 'EM_ANDAMENTO': return 'badge-andamento';
-      case 'AGUARDANDO': return 'badge-aguardando';
-      case 'RESOLVIDO': return 'badge-resolvido';
-      case 'FECHADO': return 'badge-fechado';
-      case 'REABERTO': return 'badge-reaberto';
-      default: return 'badge-secondary';
-    }
-  };
-
   const getUrgenciaBadgeClass = (urgencia: string) => {
     switch (urgencia) {
       case 'BAIXA': return 'badge-urgencia-baixa';
@@ -335,10 +347,10 @@ export const DetalhesChamado: React.FC = () => {
       case 'MUDANCA_STATUS':
         return (
           <div>
-            Status alterado de <span className={`status-badge ${getStatusBadgeClass(content.from)}`} style={{ padding: '2px 8px', fontSize: '10px' }}>{content.from}</span> para <span className={`status-badge ${getStatusBadgeClass(content.to)}`} style={{ padding: '2px 8px', fontSize: '10px' }}>{content.to}</span>.
+            Status alterado de <span className={`status-badge ${statusBadgeClass(content.from)}`} style={{ padding: '2px 8px', fontSize: '10px' }}>{statusLabel(content.from)}</span> para <span className={`status-badge ${statusBadgeClass(content.to)}`} style={{ padding: '2px 8px', fontSize: '10px' }}>{statusLabel(content.to)}</span>.
             {content.mensagem && (
               <div style={{ marginTop: '8px', padding: '8px 12px', background: 'var(--hue-purple-bg)', borderRadius: '6px', fontSize: '13px', borderLeft: '3px solid var(--hue-purple-text)', color: 'var(--hue-purple-text)' }}>
-                <strong>Motivo do Aguardo:</strong> {content.mensagem}
+                <strong>Razão da Pendência:</strong> {content.mensagem}
               </div>
             )}
             {content.solucao && (
@@ -460,8 +472,8 @@ export const DetalhesChamado: React.FC = () => {
                 </span>
                 <h1 style={{ fontSize: '28px', marginTop: '4px', marginBottom: '12px' }}>{ticket.titulo}</h1>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <span className={`status-badge ${getStatusBadgeClass(ticket.status)}`}>
-                    {ticket.status.replace('_', ' ')}
+                  <span className={`status-badge ${STATUS_BADGE_CLASSES[ticket.status]}`}>
+                    {STATUS_LABELS[ticket.status]}
                   </span>
                   <span className={`urgencia-badge ${getUrgenciaBadgeClass(ticket.urgencia)}`}>
                     Urgência {ticket.urgencia}
@@ -470,6 +482,23 @@ export const DetalhesChamado: React.FC = () => {
                     Tipo de Ocorrência: {ticket.sector?.nome} | Tipo: {ticket.problemType?.nome}
                   </span>
                 </div>
+
+                {/* Razão da Pendência corrente. Condicionada à existência do valor: os
+                    chamados colocados em pendência antes desta coluna têm `pendenciaMotivo`
+                    nulo, e um rótulo vazio seria pior que nenhum. */}
+                {ticket.status === 'AGUARDANDO' && ticket.pendenciaMotivo && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '8px 12px',
+                    background: 'var(--hue-purple-bg)',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    borderLeft: '3px solid var(--hue-purple-text)',
+                    color: 'var(--hue-purple-text)',
+                  }}>
+                    <strong>Razão da Pendência:</strong> {ticket.pendenciaMotivo}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -823,7 +852,7 @@ export const DetalhesChamado: React.FC = () => {
                       onClick={() => setShowStatusModal('AGUARDANDO')}
                       style={{ width: '100%', borderColor: 'var(--warning-glow)' }}
                     >
-                      ⏸ Colocar em Aguardando
+                      ⏸ Colocar em Pendente
                     </button>
                     <button
                       className="btn btn-primary"
@@ -931,12 +960,12 @@ export const DetalhesChamado: React.FC = () => {
         </div>
       )}
 
-      {/* Modal Status (Aguardando / Resolvido) */}
+      {/* Modal Status (Pendente / Resolvido) */}
       {showStatusModal && (
         <div className="modal-overlay">
           <div className="glass-panel modal-content">
             <h3 style={{ fontSize: '20px', marginBottom: '16px' }}>
-              {showStatusModal === 'AGUARDANDO' ? 'Colocar em Aguardando' : 'Resolver Chamado'}
+              {showStatusModal === 'AGUARDANDO' ? 'Colocar em Pendente' : 'Resolver Chamado'}
             </h3>
             
             <form onSubmit={(e) => {
@@ -949,15 +978,29 @@ export const DetalhesChamado: React.FC = () => {
             }}>
               {showStatusModal === 'AGUARDANDO' ? (
                 <div className="form-group">
-                  <label className="form-label">Motivo do Aguardo</label>
-                  <textarea
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <label className="form-label" htmlFor="pendencia-motivo-input">Razão da Pendência</label>
+                    <span style={{ fontSize: '11px', color: statusMessage.trim().length >= 2 ? 'var(--success-main)' : 'var(--text-muted)' }}>
+                      {statusMessage.length}/{MAX_PENDENCIA_MOTIVO_LENGTH} caractere(s) (mínimo 2)
+                    </span>
+                  </div>
+                  <input
+                    id="pendencia-motivo-input"
+                    type="text"
+                    list="razoes-pendencia-sugeridas"
                     className="input-field"
-                    style={{ minHeight: '100px', resize: 'vertical' }}
-                    placeholder="Ex: Aguardando retorno da peça de reposição pelo fornecedor."
+                    placeholder="Ex.: Aguardando peça de reposição pelo fornecedor"
                     value={statusMessage}
                     onChange={(e) => setStatusMessage(e.target.value)}
+                    maxLength={MAX_PENDENCIA_MOTIVO_LENGTH}
+                    autoComplete="off"
                     required
-                  ></textarea>
+                  />
+                  <datalist id="razoes-pendencia-sugeridas">
+                    {razoesPendencia?.map((r) => (
+                      <option key={r} value={r} />
+                    ))}
+                  </datalist>
                 </div>
               ) : (
                 <div className="form-group">
@@ -991,7 +1034,7 @@ export const DetalhesChamado: React.FC = () => {
                   className="btn btn-primary"
                   disabled={
                     statusMutation.isPending ||
-                    (showStatusModal === 'AGUARDANDO' && statusMessage.trim() === '') ||
+                    (showStatusModal === 'AGUARDANDO' && statusMessage.trim().length < 2) ||
                     (showStatusModal === 'RESOLVIDO' && statusSolution.trim().length < 10)
                   }
                 >

@@ -38,7 +38,11 @@ A correção é possível enquanto o chamado não estiver **Fechado**. Num chama
 
 ## Responder mensagens
 
-Quando um Técnico coloca o chamado em **Aguardando** (normalmente pedindo mais informações), envie uma mensagem na tela do chamado. Isso move o chamado automaticamente de volta para **Em Andamento**.
+Quando um Técnico coloca o chamado em **Pendente**, você recebe uma notificação e um e-mail com a **Razão da Pendência** — o que o atendimento está esperando (um material, um laudo, um fornecedor, ou uma informação sua). A razão também fica visível no topo da tela do chamado.
+
+Se a razão pede algo de você, responda por mensagem na tela do chamado. O Técnico responsável é avisado da sua resposta por notificação e por e-mail.
+
+**A sua mensagem não muda o status do chamado.** Ele continua **Pendente** até que o Técnico confirme que a pendência foi resolvida e retome o atendimento — muitas pendências não dependem de você (a peça que não chegou, o orçamento que não saiu), e responder não as desfaz.
 
 ## Fechar com avaliação
 

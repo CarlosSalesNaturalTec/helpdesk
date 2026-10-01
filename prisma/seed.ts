@@ -318,7 +318,11 @@ async function main() {
     to: 'EM_ANDAMENTO',
   });
 
-  // Ticket 3: AGUARDANDO
+  // Ticket 3: AGUARDANDO ("Pendente" na interface)
+  // A Razão da Pendência vive em dois lugares de propósito: na coluna, que responde "por
+  // que está parado agora" e alimenta as sugestões do campo, e no histórico, que é a
+  // trilha de auditoria. O seed grava os dois com o mesmo texto.
+  const RAZAO_PENDENCIA_T3 = 'Aguardando entrega do toner pelo almoxarifado';
   const t3 = await prisma.ticket.create({
     data: {
       titulo: 'Impressora sem toner',
@@ -328,6 +332,7 @@ async function main() {
       problemTypeId: createdProblemTypes['IMPRESSORA'],
       urgencia: 'BAIXA',
       status: 'AGUARDANDO',
+      pendenciaMotivo: RAZAO_PENDENCIA_T3,
       solicitanteId: solicitanteCentral.id,
       tecnicoId: tecnicoCentral.id,
       unidadeId: unidadePadrao.id,
@@ -350,7 +355,7 @@ async function main() {
   await createHistory(t3.id, tecnicoCentral.id, 'MUDANCA_STATUS', {
     from: 'EM_ANDAMENTO',
     to: 'AGUARDANDO',
-    motivo: 'Aguardando entrega do toner pelo almoxarifado.',
+    mensagem: RAZAO_PENDENCIA_T3,
   });
 
   // Ticket 4: RESOLVIDO

@@ -105,6 +105,10 @@ model Ticket {
   local         String?         @db.VarChar(100)
   urgencia      NivelUrgencia
   status        TicketStatus    @default(ABERTO)
+  /// Razão da Pendência corrente. Preenchida ao entrar em AGUARDANDO ("Pendente" na
+  /// interface) e zerada na retomada: a coluna responde "por que está parado agora".
+  /// A trilha de auditoria segue em TicketHistory. Nula nos chamados anteriores ao campo.
+  pendenciaMotivo String?       @db.VarChar(100)
   solicitanteId Int
   solicitante   User            @relation("Solicitante", fields: [solicitanteId], references: [id])
   tecnicoId     Int?

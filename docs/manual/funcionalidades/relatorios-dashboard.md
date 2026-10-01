@@ -18,7 +18,7 @@ Clique em um cartão (ou selecione-o com a tecla Tab e pressione Enter) para abr
 | Cartão | Abre a listagem filtrada por |
 | --- | --- |
 | Abertos | status Aberto e Reaberto |
-| Em Andamento | status Em Andamento e Aguardando |
+| Em Andamento | status Em Andamento e Pendente |
 | Resolvidos | status Resolvido |
 | Críticos | urgência Crítica e todos os status exceto Fechado |
 
@@ -30,7 +30,7 @@ Os cartões da tela de Relatórios são apenas informativos e não levam a outra
 
 Em **Relatórios** (Gestor, Diretor, Administrador), escolha um período — predefinido em dias, ou um intervalo de datas customizado — para ver:
 
-- **Cartões de métricas:** total de chamados, taxa de fechamento, tempo médio de atendimento (TMA, que desconta o tempo em que o chamado ficou Aguardando) e satisfação média.
+- **Cartões de métricas:** total de chamados, taxa de fechamento, tempo médio de atendimento (TMA, que desconta o tempo em que o chamado ficou Pendente) e satisfação média.
 - **Distribuição** por status, prioridade, categoria (Tipo de Problema) ou satisfação. A dimensão "Unidade" só está disponível para o Administrador.
 
 O Administrador pode filtrar por Unidade e por Tipo de Ocorrência. O Diretor vê sempre a própria Unidade e pode, opcionalmente, estreitar os números a um Tipo de Ocorrência — o filtro nunca mostra dados de outra Unidade. O Gestor vê sempre a própria Unidade restrita ao seu Tipo de Ocorrência, por isso o seletor de Tipo de Ocorrência não aparece para ele.

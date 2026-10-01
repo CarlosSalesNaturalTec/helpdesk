@@ -5,6 +5,7 @@ import path from 'path';
 import { prisma } from '../lib/prisma.js';
 import { JwtPayload } from '../lib/jwt.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
+import { statusLabel } from '@helpdesk/shared';
 import { fullName, brandingSlug } from '../lib/branding.js';
 
 const LOGO_PRINT_PATH = path.join(__dirname, '../../src/assets/logo-print.png');
@@ -50,15 +51,6 @@ interface ReportCards {
   tmaHoras: number;
   satisfacaoMedia: number;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  ABERTO: 'Aberto',
-  EM_ANDAMENTO: 'Em Andamento',
-  AGUARDANDO: 'Aguardando',
-  RESOLVIDO: 'Resolvido',
-  FECHADO: 'Fechado',
-  REABERTO: 'Reaberto',
-};
 
 const URGENCIA_LABELS: Record<string, string> = {
   BAIXA: 'Baixa',
@@ -277,7 +269,7 @@ async function fetchGroupedTickets(scope: ReportScope): Promise<UnidadeGroup[]> 
       numero: t.numero.toString(),
       local: t.local ?? EMPTY_MARK,
       problemType: t.problemType?.nome ?? EMPTY_MARK,
-      status: STATUS_LABELS[t.status] ?? t.status,
+      status: statusLabel(t.status),
       urgencia: URGENCIA_LABELS[t.urgencia] ?? t.urgencia,
       solicitante: t.solicitante?.nome ?? EMPTY_MARK,
       tecnico: t.tecnico?.nome ?? EMPTY_MARK,
@@ -583,8 +575,19 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
 
     const distResult = await prisma.$queryRawUnsafe<{ label: string | number | null, count: number }[]>(distSql, ...distParams);
 
+    // O rótulo do status passa pelo mapa compartilhado: sem isso o gráfico de
+    // distribuição — e o PNG dele embutido no PDF — exibiria o valor cru do enum
+    // ("AGUARDANDO", "EM_ANDAMENTO"), que é justamente o que o requisito de rótulos
+    // proíbe. A dimensão de urgência fica como está, declaradamente fora do escopo.
     const distribuicao = distResult.map(r => ({
-      label: r.label === null ? (dimensao === 'satisfacao' ? 'Sem nota' : 'Desconhecido') : String(r.label),
+      label:
+        r.label === null
+          ? dimensao === 'satisfacao'
+            ? 'Sem nota'
+            : 'Desconhecido'
+          : dimensao === 'status'
+          ? statusLabel(String(r.label))
+          : String(r.label),
       count: r.count
     }));
 

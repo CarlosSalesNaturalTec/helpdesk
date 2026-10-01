@@ -9,7 +9,7 @@ Painel inicial com indicadores numéricos de status e gráfico de tendência, of
 O sistema SHALL exibir quatro cards numéricos no Dashboard com as seguintes regras de contagem, restritas à Unidade do usuário logado (exceto Admin) e, no caso de Técnicos e Gestores, restritas ao seu **Setor**. Diretor não sofre essa restrição adicional, vendo todos os Setores da sua Unidade.
 
 - **Abertos:** chamados com status "Aberto" ou "Reaberto"
-- **Em Andamento:** chamados com status "Em Andamento" ou "Aguardando"
+- **Em Andamento:** chamados com status "Em Andamento" ou "Pendente"
 - **Resolvidos:** chamados com status "Resolvido"
 - **Críticos:** chamados com urgência "Crítica" E status diferente de "Fechado"
 

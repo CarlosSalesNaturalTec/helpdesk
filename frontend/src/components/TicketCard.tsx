@@ -1,23 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { STATUS_LABELS, STATUS_BADGE_CLASSES } from '@helpdesk/shared';
 import type { Ticket } from '../api/tickets.js';
 
 interface TicketCardProps {
   ticket: Ticket;
   isSolicitante: boolean;
 }
-
-const getStatusBadgeClass = (status: string) => {
-  switch (status) {
-    case 'ABERTO': return 'badge-aberto';
-    case 'EM_ANDAMENTO': return 'badge-andamento';
-    case 'AGUARDANDO': return 'badge-aguardando';
-    case 'RESOLVIDO': return 'badge-resolvido';
-    case 'FECHADO': return 'badge-fechado';
-    case 'REABERTO': return 'badge-reaberto';
-    default: return 'badge-secondary';
-  }
-};
 
 const getUrgenciaBadgeClass = (urgencia: string) => {
   switch (urgencia) {
@@ -55,8 +44,8 @@ export const TicketCard: React.FC<TicketCardProps> = ({ ticket, isSolicitante })
     <div className="glass-panel ticket-card">
       <div className="ticket-card-header">
         <span className="ticket-card-numero">#{ticket.numero}</span>
-        <span className={`status-badge ${getStatusBadgeClass(ticket.status)}`}>
-          {ticket.status.replace('_', ' ')}
+        <span className={`status-badge ${STATUS_BADGE_CLASSES[ticket.status]}`}>
+          {STATUS_LABELS[ticket.status]}
         </span>
       </div>
 

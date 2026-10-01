@@ -17,7 +17,13 @@ export interface Ticket {
   descricao: string;
   tipoProblema: string;
   urgencia: string;
-  status: string;
+  /** Tipado pelo enum compartilhado para indexar `STATUS_LABELS`/`STATUS_BADGE_CLASSES`. */
+  status: TicketStatusType;
+  /**
+   * Razão da Pendência corrente. Preenchida enquanto o chamado está pendente e zerada na
+   * retomada; nula também nos chamados anteriores à coluna.
+   */
+  pendenciaMotivo?: string | null;
   solicitanteId: number;
   tecnicoId: number | null;
   unidadeId: number;
@@ -213,6 +219,18 @@ export const getTiposProblema = async () => {
 export const getLocais = async (unidadeId?: number) => {
   const response = await apiClient.get<string[]>('/api/tickets/locais', {
     params: unidadeId ? { unidadeId } : undefined,
+  });
+  return response.data;
+};
+
+/**
+ * Razões de pendência já registradas, para as sugestões do campo "Razão da Pendência".
+ * O escopo é por Tipo de Ocorrência e vem do papel do usuário; só o Admin pode estreitar
+ * com `sectorId`.
+ */
+export const getRazoesPendencia = async (sectorId?: number) => {
+  const response = await apiClient.get<string[]>('/api/tickets/razoes-pendencia', {
+    params: sectorId ? { sectorId } : undefined,
   });
   return response.data;
 };

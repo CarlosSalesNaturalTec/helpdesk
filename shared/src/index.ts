@@ -16,6 +16,12 @@ import {
   NivelUrgenciaEnum,
   HistoryTypeEnum,
   STATUS_NAO_FECHADOS,
+  STATUS_LABELS,
+  STATUS_BADGE_CLASSES,
+  statusLabel,
+  statusBadgeClass,
+  MIN_PENDENCIA_MOTIVO_LENGTH,
+  MAX_PENDENCIA_MOTIVO_LENGTH,
 } from './schemas/ticket.js';
 
 // Re-exporting schemas
@@ -37,6 +43,12 @@ export {
   NivelUrgenciaEnum,
   HistoryTypeEnum,
   STATUS_NAO_FECHADOS,
+  STATUS_LABELS,
+  STATUS_BADGE_CLASSES,
+  statusLabel,
+  statusBadgeClass,
+  MIN_PENDENCIA_MOTIVO_LENGTH,
+  MAX_PENDENCIA_MOTIVO_LENGTH,
   MANAGEABLE_ROLES,
   canManageRole,
 };

@@ -14,13 +14,6 @@ O sistema SHALL enviar e-mail ao Solicitante quando um Técnico assumir seu cham
 - **WHEN** um Técnico assume um chamado do Solicitante "Maria Silva"
 - **THEN** Maria recebe um e-mail com assunto "Chamado #XXX foi assumido" informando o nome do Técnico responsável
 
-### Requirement: E-mail ao colocar chamado em Aguardando
-O sistema SHALL enviar e-mail ao Solicitante quando um chamado for colocado em "Aguardando", incluindo a mensagem do Técnico solicitando informações.
-
-#### Scenario: Solicitante recebe e-mail de Aguardando
-- **WHEN** um Técnico altera o status para "Aguardando" e registra "Preciso do número de série do equipamento"
-- **THEN** o Solicitante recebe e-mail com a mensagem do Técnico e instrução para responder no sistema
-
 ### Requirement: E-mail ao resolver chamado
 O sistema SHALL enviar e-mail ao Solicitante quando seu chamado for resolvido, com link para acessar, verificar a solução e fechar o chamado.
 
@@ -41,13 +34,6 @@ O sistema SHALL notificar o Técnico responsável (ou, se não houver, a fila de
 #### Scenario: Técnico recebe e-mail de reabertura
 - **WHEN** um Solicitante reabre um chamado "Fechado"
 - **THEN** o Técnico que estava responsável recebe e-mail informando a reabertura com o motivo registrado
-
-### Requirement: E-mail quando Solicitante responde em Aguardando
-O sistema SHALL notificar o Técnico responsável quando o Solicitante enviar uma mensagem em um chamado com status "Aguardando".
-
-#### Scenario: Técnico recebe e-mail de resposta
-- **WHEN** um Solicitante envia uma mensagem em um chamado "Aguardando"
-- **THEN** o Técnico responsável recebe e-mail informando que o Solicitante respondeu, com o conteúdo da mensagem
 
 ### Requirement: E-mail na reatribuição
 O sistema SHALL notificar o novo Técnico responsável e o Solicitante quando um Gestor ou Diretor reatribuir um chamado.
@@ -81,3 +67,29 @@ O envio SHALL seguir a independência já estabelecida do serviço de e-mail: um
 #### Scenario: Falha de envio não afeta a correção
 - **WHEN** o serviço de e-mail está indisponível no momento da correção
 - **THEN** a localidade permanece corrigida, a notificação em aplicação segue registrada e a falha de envio é apenas registrada nos logs
+
+### Requirement: E-mail ao colocar chamado em Pendente
+O sistema SHALL enviar e-mail ao Solicitante quando um chamado for colocado em "Pendente", incluindo a Razão da Pendência registrada pelo Técnico.
+
+O e-mail SHALL referir-se ao status como "Pendente" no assunto e no corpo, e NÃO DEVE prometer que uma resposta do Solicitante retomará o atendimento.
+
+#### Scenario: Solicitante recebe e-mail de Pendente
+- **WHEN** um Técnico altera o status para "Pendente" e informa a razão "Aguardando material"
+- **THEN** o Solicitante recebe e-mail informando que o chamado está Pendente, com a razão registrada e link para acompanhar o chamado
+
+#### Scenario: E-mail não promete retomada automática
+- **WHEN** o e-mail de pendência é composto
+- **THEN** seu corpo não afirma que responder no sistema fará o chamado voltar a "Em Andamento"
+
+### Requirement: E-mail quando Solicitante responde em chamado Pendente
+O sistema SHALL notificar o Técnico responsável quando o Solicitante enviar uma mensagem em um chamado com status "Pendente".
+
+O e-mail SHALL informar que o chamado permanece Pendente e que a retomada do atendimento depende de ação do Técnico — NÃO DEVE afirmar que o status foi alterado automaticamente.
+
+#### Scenario: Técnico recebe e-mail de resposta
+- **WHEN** um Solicitante envia uma mensagem em um chamado "Pendente"
+- **THEN** o Técnico responsável recebe e-mail com o conteúdo da mensagem, informando que o chamado segue Pendente até que ele retome o atendimento
+
+#### Scenario: Aviso preservado após a remoção da transição automática
+- **WHEN** o Solicitante responde em um chamado "Pendente" e o status não é alterado
+- **THEN** o Técnico ainda assim é avisado por e-mail, de modo que a resposta não passe desapercebida

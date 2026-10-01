@@ -57,17 +57,18 @@ ${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
-  // 2. AGUARDANDO: Chamado colocado em aguardando, notifica Solicitante com a justificativa
+  // 2. AGUARDANDO: Chamado colocado em Pendente, notifica Solicitante com a Razão da Pendência.
+  // O corpo não promete que responder retoma o atendimento: a retomada é ação do Técnico.
   static async sendAguardando(toEmail: string, solicitanteNome: string, ticketNumero: string | number, ticketTitulo: string, mensagemTecnico: string, ticketId: number) {
-    const subject = `Chamado #${ticketNumero} precisa de informações (Aguardando)`;
+    const subject = `Chamado #${ticketNumero} está Pendente`;
     const body = `Olá, ${solicitanteNome}.
 
-Seu chamado #${ticketNumero} ("${ticketTitulo}") foi colocado no status "Aguardando" porque o técnico necessita de informações adicionais.
+Seu chamado #${ticketNumero} ("${ticketTitulo}") foi colocado no status "Pendente" pelo técnico responsável.
 
-Mensagem do técnico:
+Razão da Pendência:
 "${mensagemTecnico}"
 
-Por favor, responda diretamente no sistema acessando o link abaixo para dar andamento ao atendimento:
+Você pode acompanhar o chamado e enviar mensagens pelo link abaixo. O atendimento será retomado pelo técnico responsável assim que a pendência for resolvida:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,
@@ -123,17 +124,19 @@ ${fullName}.`;
     return this.send(toEmail, subject, body);
   }
 
-  // 6. MENSAGEM_AGUARDANDO: Solicitante responde mensagem em chamado Aguardando, notifica Técnico
+  // 6. MENSAGEM_AGUARDANDO: Solicitante responde em chamado Pendente, notifica Técnico.
+  // Este e-mail é o que preserva o aviso ao Técnico depois da remoção da retomada
+  // automática — por isso não pode afirmar que o status mudou.
   static async sendMensagemAguardando(toEmail: string, tecnicoNome: string, ticketNumero: string | number, ticketTitulo: string, mensagemSolicitante: string, ticketId: number) {
-    const subject = `Nova resposta no chamado #${ticketNumero} (Aguardando)`;
+    const subject = `Nova resposta no chamado #${ticketNumero} (Pendente)`;
     const body = `Olá, ${tecnicoNome}.
 
-O solicitante enviou uma mensagem no chamado #${ticketNumero} ("${ticketTitulo}"), que estava aguardando retorno. O status do chamado foi atualizado automaticamente para Em Andamento.
+O solicitante enviou uma mensagem no chamado #${ticketNumero} ("${ticketTitulo}"), que está Pendente. O chamado permanece Pendente até que você retome o atendimento.
 
 Mensagem do solicitante:
 "${mensagemSolicitante}"
 
-Acesse o chamado pelo link abaixo para responder:
+Acesse o chamado pelo link abaixo para responder e, se a pendência estiver resolvida, retomar o atendimento:
 ${this.getTicketLink(ticketId)}
 
 Atenciosamente,

@@ -1,74 +1,13 @@
-# Spec: Workflow do Chamado (ticket-workflow)
+# Spec Delta
 
-Máquina de estados que governa o ciclo de vida do chamado, com transições permitidas, registros de histórico e bloqueios.
+## REMOVED Requirements
 
-## Purpose
-TBD
+### Requirement: Máquina de estados do chamado
+**Reason**: O desvio do ciclo de vida passa a chamar-se "Pendente" e a retornar a "Em Andamento" apenas por ação explícita do Técnico. O requisito é reescrito como "Máquina de estados do chamado com desvio de pendência", abaixo, com os cenários renomeados — a redação anterior ("retornando a Em Andamento quando houver atualização") descrevia justamente o comportamento automático que esta mudança remove.
 
-## Requirements
+**Migration**: Nenhuma migração de dados. O ciclo de vida em si não muda: os mesmos estados, as mesmas transições permitidas e o mesmo registro em histórico seguem valendo, agora sob o rótulo "Pendente" e sem a retomada automática. O requisito substituto preserva integralmente os cenários de progressão normal e de reabertura.
 
-### Requirement: Fechamento com pesquisa de satisfação
-O sistema SHALL exigir que o Solicitante avalie o atendimento antes de concluir o fechamento. Ao acionar "Fechar Chamado" em um chamado "Resolvido", o sistema DEVE apresentar a tela de pesquisa de satisfação (1 a 5 estrelas). O fechamento só DEVE ser concluído após a seleção de uma nota.
-
-#### Scenario: Solicitante fecha com avaliação
-- **WHEN** o Solicitante acessa um chamado "Resolvido", aciona "Fechar Chamado", seleciona 4 estrelas e confirma
-- **THEN** o chamado transita para "Fechado", a nota é registrada, e o chamado não pode mais ser alterado diretamente
-
-#### Scenario: Fechamento administrativo por Gestor ou Diretor
-- **WHEN** um Gestor de TI ou Diretor aciona "Fechar Chamado" em um chamado "Resolvido" de sua Unidade
-- **THEN** o chamado transita para "Fechado" sem acionar a pesquisa de satisfação, e a ação é registrada no histórico
-
-### Requirement: Reabertura de chamado fechado
-O sistema SHALL permitir a reabertura de chamados "Fechados" exclusivamente pela ação explícita "Reabrir Chamado", com registro obrigatório do motivo. A reabertura DEVE transitar o chamado para o status "Reaberto" e disponibilizá-lo na fila comum da Unidade.
-
-#### Scenario: Solicitante reabre chamado
-- **WHEN** o Solicitante original acessa um chamado "Fechado", aciona "Reabrir Chamado" e informa o motivo
-- **THEN** o chamado passa para "Reaberto", o motivo é registrado no histórico, e o chamado retorna à fila comum da Unidade
-
-#### Scenario: Técnico, Gestor ou Diretor reabre chamado
-- **WHEN** um Técnico, Gestor de TI ou Diretor da Unidade do chamado aciona "Reabrir Chamado" em um chamado "Fechado" e informa o motivo
-- **THEN** o chamado passa para "Reaberto" e fica disponível na fila comum da Unidade
-
-### Requirement: Bloqueio de alterações em chamado fechado
-O sistema SHALL impedir qualquer alteração de status, adição de mensagens ou **edição de campos do chamado** em chamados "Fechados" que não utilize a ação explícita "Reabrir Chamado".
-
-#### Scenario: Tentativa de alterar chamado fechado sem reabrir
-- **WHEN** qualquer usuário tenta alterar o status ou adicionar mensagem em um chamado "Fechado" sem usar "Reabrir Chamado"
-- **THEN** o sistema exibe "Este chamado está fechado. Para continuar, utilize a opção 'Reabrir Chamado'." e bloqueia a ação
-
-#### Scenario: Tentativa de corrigir a localidade de chamado fechado
-- **WHEN** um usuário autorizado tenta corrigir a localidade de um chamado "Fechado"
-- **THEN** o sistema bloqueia a operação com a mesma orientação e nenhum evento de edição é registrado
-
-### Requirement: Histórico cronológico do chamado
-O sistema SHALL registrar uma linha do tempo cronológica para cada chamado contendo: dados da abertura (autor, data/hora, título, descrição, tipo, urgência), todas as mensagens trocadas (com autor, data e hora) e todas as mudanças de status (status anterior, novo status, autor, data/hora). O histórico DEVE ser exibido em ordem cronológica da mais antiga para a mais recente.
-
-#### Scenario: Linha do tempo completa
-- **WHEN** qualquer participante de um chamado acessa a tela de detalhes
-- **THEN** todas as interações são exibidas em ordem cronológica (mais antiga primeiro), formando uma timeline legível com abertura, mensagens e mudanças de status
-
-#### Scenario: Histórico registra transição de status
-- **WHEN** um chamado transita de "Em Andamento" para "Resolvido"
-- **THEN** o histórico registra: autor da transição, status anterior, novo status, data/hora e a solução registrada
-
-### Requirement: Registro de edição de campo no histórico
-O sistema SHALL registrar na linha do tempo do chamado um evento do tipo `EDICAO` sempre que um campo do chamado for alterado fora das transições de status, contendo o campo alterado, o valor anterior, o valor novo, o autor e a data/hora.
-
-O tipo `EDICAO` SHALL existir de forma consistente no enum do banco de dados, no enum compartilhado de validação e na apresentação da linha do tempo, e SHALL ser apresentado com rótulo e ícone próprios — nunca no tratamento padrão de tipo desconhecido.
-
-Nesta capacidade, o único campo que produz evento de edição é a localidade do chamado.
-
-#### Scenario: Correção de localidade registrada
-- **WHEN** a localidade de um chamado é corrigida de "Recepção" para "Sala de Medicação"
-- **THEN** a linha do tempo passa a apresentar um evento de edição informando o autor, a data/hora, o valor anterior e o valor novo
-
-#### Scenario: Evento apresentado com identidade própria
-- **WHEN** um chamado com evento de edição tem sua linha do tempo exibida
-- **THEN** o evento aparece com rótulo e ícone próprios, em ordem cronológica junto aos demais eventos
-
-#### Scenario: Paridade do enum entre as camadas
-- **WHEN** o tipo `EDICAO` é acrescentado ao enum de tipos de histórico
-- **THEN** ele consta igualmente do schema do banco de dados, do enum compartilhado de validação e do tratamento de apresentação
+## ADDED Requirements
 
 ### Requirement: Máquina de estados do chamado com desvio de pendência
 O sistema SHALL implementar o seguinte ciclo de vida: **Aberto → Em Andamento → Resolvido → Fechado**. O status **"Pendente"** DEVE ser acionável a partir de "Em Andamento" como um desvio, e SHALL retornar a "Em Andamento" **exclusivamente por ação explícita do Técnico responsável** — nenhuma outra interação no chamado, inclusive mensagens do Solicitante, DEVE alterar o status de um chamado Pendente. Chamados "Fechados" PODEM ser reabertos exclusivamente pela ação explícita "Reabrir Chamado", transitando para "Reaberto" e retornando ao ciclo normal (Reaberto → Em Andamento → Resolvido → Fechado).
