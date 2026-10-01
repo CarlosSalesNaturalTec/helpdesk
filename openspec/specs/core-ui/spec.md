@@ -23,16 +23,17 @@ Nenhum nome de produto ou de cliente SHALL ser fixado em código.
 - **THEN** o título da aba e o cabeçalho exibem "SOLUTUS — Instituto Setes"
 
 #### Scenario: Cliente vazio exibe apenas o nome da aplicação
-- **WHEN** o sistema é publicado com `APP_NAME="ISETS"` e `CLIENT_NAME=""`
-- **THEN** o título da aba exibe "ISETS", sem travessão residual nem espaço à direita
-- **AND** o cabeçalho da aplicação exibe "ISETS", sem elemento vazio na navbar
+- **WHEN** o sistema é publicado com `APP_NAME="ISETES"` e `CLIENT_NAME=""`
+- **THEN** o título da aba exibe "ISETES", sem travessão residual nem espaço à direita
+- **AND** o cabeçalho da aplicação exibe "ISETES", sem elemento vazio na navbar
 - **AND** nenhum valor padrão como "Instituto Setes" é reintroduzido
 
 #### Scenario: Identidade propagada aos artefatos gerados
-- **WHEN** o sistema está publicado com `APP_NAME="ISETS"` e `CLIENT_NAME=""`
-- **THEN** o cabeçalho do PDF de relatório exibe "Relatório ISETS"
-- **AND** o arquivo baixado é nomeado a partir do slug "isets"
-- **AND** a assinatura dos e-mails de notificação exibe "ISETS"
+- **WHEN** o sistema está publicado com `APP_NAME="ISETES"` e `CLIENT_NAME=""`
+- **THEN** o cabeçalho do PDF de relatório exibe "Relatório ISETES"
+- **AND** o arquivo baixado é nomeado a partir do slug "isetes"
+- **AND** a assinatura dos e-mails de notificação exibe "ISETES"
+- **AND** o título do manual publicado exibe "ISETES"
 
 ### Requirement: Link para o manual do usuário na navbar
 A navbar DEVE exibir um link "Manual" que abre o manual do sistema em uma nova aba, visível a todas as personas. O link DEVE ser o **último** item da lista de navegação, depois dos itens administrativos (Usuários, Unidades, Tipos de Ocorrência, Tipos de Problema quando visíveis ao perfil do usuário) — o manual é referência auxiliar, não área de trabalho, e não deve interromper o agrupamento desses itens.
@@ -138,3 +139,20 @@ Quando duas telas consomem o mesmo recurso com recortes diferentes, o sistema SH
 #### Scenario: Filtro de listagem e seletor de abertura não compartilham cache
 - **WHEN** o filtro por Tipo de Ocorrência da listagem (que apresenta todos os tipos, inclusive inativos) e um seletor que apresenta apenas os tipos ativos são usados na mesma sessão
 - **THEN** cada um exibe o seu próprio recorte, independentemente de qual tela foi aberta primeiro
+
+### Requirement: Rótulos de status derivados de fonte única
+O sistema SHALL apresentar o status de um chamado por um rótulo legível em português, nunca pelo identificador interno do status. Essa correspondência entre identificador e rótulo SHALL ter uma única definição compartilhada entre frontend e backend, de modo que o rótulo exibido seja idêntico em todas as superfícies: etiquetas na listagem, nos cartões de chamado e na tela de detalhes, eventos de mudança de status na linha do tempo, filtro de status da listagem e relatório em PDF.
+
+Um rótulo novo ou alterado SHALL exigir uma única edição para valer em todas essas superfícies.
+
+#### Scenario: Mesmo rótulo em todas as superfícies
+- **WHEN** um usuário vê um chamado no desvio de pendência na listagem, no cartão, na tela de detalhes, na linha do tempo, no filtro de status e no relatório em PDF
+- **THEN** todas as seis superfícies exibem "Pendente"
+
+#### Scenario: Identificador interno nunca aparece
+- **WHEN** qualquer status é apresentado ao usuário
+- **THEN** o texto exibido é o rótulo em português, sem os identificadores internos em maiúsculas e sem sublinhados
+
+#### Scenario: Alteração de rótulo em um único ponto
+- **WHEN** o rótulo de um status é alterado na definição compartilhada
+- **THEN** todas as superfícies passam a exibir o novo rótulo, sem edição adicional em cada tela

@@ -25,13 +25,6 @@ O sistema SHALL permitir que o Solicitante envie mensagens textuais dentro de se
 - **WHEN** o Solicitante acessa seu chamado e envia uma mensagem com informações adicionais
 - **THEN** a mensagem é registrada no histórico e fica visível para o Técnico
 
-### Requirement: Mensagem retorna chamado de Aguardando para Em Andamento
-O sistema SHALL transitar automaticamente o chamado de "Aguardando" para "Em Andamento" quando o Solicitante envia uma mensagem.
-
-#### Scenario: Solicitante responde e chamado sai de Aguardando
-- **WHEN** um chamado está "Aguardando" e o Solicitante envia uma mensagem
-- **THEN** o status transita para "Em Andamento" e a mudança é registrada no histórico
-
 ### Requirement: Bloqueio de mensagem em chamado fechado
 O sistema NÃO DEVE permitir o envio de mensagens em chamados com status "Fechado".
 
@@ -42,6 +35,13 @@ O sistema NÃO DEVE permitir o envio de mensagens em chamados com status "Fechad
 ### Requirement: Timeline unificada
 O sistema SHALL exibir o histórico completo do chamado em ordem cronológica (da mais antiga para a mais recente), incluindo: abertura do chamado, mensagens trocadas, mudanças de status, atribuições e reatribuições.
 
+Os status apresentados na timeline SHALL usar os mesmos rótulos exibidos no restante do sistema — nunca o identificador interno do status.
+
 #### Scenario: Timeline com múltiplos tipos de evento
 - **WHEN** um chamado possui eventos de abertura, 3 mensagens, 2 mudanças de status e 1 atribuição
 - **THEN** a timeline exibe todos os 7 eventos em ordem cronológica, cada um com seu tipo, autor e data/hora
+
+#### Scenario: Mudança de status apresentada com rótulo
+- **WHEN** a timeline exibe a transição de um chamado para o desvio de pendência
+- **THEN** o evento apresenta "Em Andamento" e "Pendente" como rótulos legíveis, e não os identificadores internos
+

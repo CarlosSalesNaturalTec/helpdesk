@@ -575,8 +575,19 @@ export const reportsRoutes: FastifyPluginAsync = async (fastify: FastifyInstance
 
     const distResult = await prisma.$queryRawUnsafe<{ label: string | number | null, count: number }[]>(distSql, ...distParams);
 
+    // O rótulo do status passa pelo mapa compartilhado: sem isso o gráfico de
+    // distribuição — e o PNG dele embutido no PDF — exibiria o valor cru do enum
+    // ("AGUARDANDO", "EM_ANDAMENTO"), que é justamente o que o requisito de rótulos
+    // proíbe. A dimensão de urgência fica como está, declaradamente fora do escopo.
     const distribuicao = distResult.map(r => ({
-      label: r.label === null ? (dimensao === 'satisfacao' ? 'Sem nota' : 'Desconhecido') : String(r.label),
+      label:
+        r.label === null
+          ? dimensao === 'satisfacao'
+            ? 'Sem nota'
+            : 'Desconhecido'
+          : dimensao === 'status'
+          ? statusLabel(String(r.label))
+          : String(r.label),
       count: r.count
     }));
 

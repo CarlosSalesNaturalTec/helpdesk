@@ -5,26 +5,6 @@ Indicadores gerenciais calculados e gráficos de distribuição para análise de
 
 ## Requirements
 
-### Requirement: Cards-resumo para Diretor e Gestor
-O sistema SHALL exibir quatro cards-resumo numéricos na tela de Relatórios para Diretores e Gestores, contendo dados estritamente da Unidade do usuário:
-
-- **Total de Tickets:** contagem de chamados da Unidade no período
-- **Taxa de Fechamento (%):** (chamados fechados no período / total de chamados no período) × 100
-- **Tempo Médio de Atendimento (horas):** média do intervalo entre abertura e primeira transição para "Resolvido", descontando o tempo total em que o chamado permaneceu em "Aguardando"
-- **Satisfação Média:** média das notas de satisfação (1-5) dos chamados fechados no período, excluindo fechamentos administrativos (sem nota)
-
-#### Scenario: Diretor visualiza métricas locais
-- **WHEN** um Diretor da "Unidade A" acessa a tela de Relatórios
-- **THEN** os quatro cards exibem valores calculados exclusivamente com dados da "Unidade A"
-
-#### Scenario: TMA desconta tempo Aguardando
-- **WHEN** um chamado ficou 2h em "Aguardando" e o tempo total até resolução foi 10h
-- **THEN** o TMA considera 8h para esse chamado (10h - 2h)
-
-#### Scenario: Satisfação Média exclui fechamentos administrativos
-- **WHEN** 3 chamados foram fechados no período (2 pelo Solicitante com notas 4 e 5; 1 por Gestor sem nota)
-- **THEN** a Satisfação Média é 4,5 (média de 4 e 5, excluindo o fechamento administrativo)
-
 ### Requirement: Cards-resumo para Admin
 O sistema SHALL exibir os mesmos quatro cards-resumo para o Administrador do Sistema de forma consolidada (todo o Instituto) e disponibilizar filtro de Unidade para recalcular os indicadores para uma Unidade específica.
 
@@ -45,7 +25,7 @@ O sistema SHALL exibir um gráfico de distribuição (barras ou pizza) para Dire
 
 #### Scenario: Distribuição por Status
 - **WHEN** um Diretor seleciona "Status" como dimensão
-- **THEN** o gráfico exibe a contagem de chamados agrupados por Aberto, Em Andamento, Aguardando, Resolvido, Fechado, Reaberto
+- **THEN** o gráfico exibe a contagem de chamados agrupados por Aberto, Em Andamento, Pendente, Resolvido, Fechado, Reaberto, usando os mesmos rótulos exibidos no restante do sistema — nunca os identificadores internos do status
 
 ### Requirement: Gráfico comparativo entre Unidades para Admin
 O sistema SHALL disponibilizar a dimensão "Unidade" no gráfico de distribuição para o Administrador do Sistema, exibindo um gráfico de barras comparando totais de chamados, tipos de chamado e satisfação média entre as Unidades cadastradas.
@@ -95,3 +75,27 @@ Filtrar NUNCA amplia o alcance de um papel — para o Diretor é estreitamento d
 #### Scenario: Filtro não amplia o escopo do Diretor
 - **WHEN** um Diretor da "Unidade A" requisita métricas informando um Tipo de Ocorrência que só existe na "Unidade B"
 - **THEN** o resultado permanece restrito à "Unidade A" e nenhum dado da "Unidade B" é exposto
+
+### Requirement: Cards-resumo de desempenho para Diretor e Gestor
+O sistema SHALL exibir quatro cards-resumo numéricos na tela de Relatórios para Diretores e Gestores, contendo dados estritamente da Unidade do usuário:
+
+- **Total de Tickets:** contagem de chamados da Unidade no período
+- **Taxa de Fechamento (%):** (chamados fechados no período / total de chamados no período) × 100
+- **Tempo Médio de Atendimento (horas):** média do intervalo entre abertura e primeira transição para "Resolvido", descontando o tempo total em que o chamado permaneceu em "Pendente"
+- **Satisfação Média:** média das notas de satisfação (1-5) dos chamados fechados no período, excluindo fechamentos administrativos (sem nota)
+
+#### Scenario: Diretor visualiza métricas locais
+- **WHEN** um Diretor da "Unidade A" acessa a tela de Relatórios
+- **THEN** os quatro cards exibem valores calculados exclusivamente com dados da "Unidade A"
+
+#### Scenario: TMA desconta tempo Pendente
+- **WHEN** um chamado ficou 2h em "Pendente" e o tempo total até resolução foi 10h
+- **THEN** o TMA considera 8h para esse chamado (10h - 2h)
+
+#### Scenario: TMA não é reiniciado por mensagem do Solicitante
+- **WHEN** um chamado permanece 5 dias em "Pendente" e o Solicitante envia mensagens nesse intervalo
+- **THEN** os 5 dias seguem integralmente descontados do TMA, porque o chamado não saiu de "Pendente"
+
+#### Scenario: Satisfação Média exclui fechamentos administrativos
+- **WHEN** 3 chamados foram fechados no período (2 pelo Solicitante com notas 4 e 5; 1 por Gestor sem nota)
+- **THEN** a Satisfação Média é 4,5 (média de 4 e 5, excluindo o fechamento administrativo)
