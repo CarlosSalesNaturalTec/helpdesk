@@ -43,15 +43,21 @@ Um `Record<TicketStatusType, string>` exportado do `shared`, consumido pelas tr�
 
 ### D3 — Coluna `Ticket.pendenciaMotivo String?`, limpa na retomada
 
-*Por quê a coluna, e não só o histórico:* o `<datalist>` precisa de `SELECT DISTINCT` com índice e escopo por `sectorId`. Em JSON seria varredura sem índice com join até `Ticket` só para aplicar o escopo — e não permitiria a coluna "Pendência" na listagem nem o filtro por razão.
+*Por quê a coluna:* ela responde "por que está parado agora" — é o que o cabeçalho do chamado exibe, e o que permitirá a coluna "Pendência" na listagem e o filtro por razão.
 
-*Por quê limpar na retomada:* a coluna responde "por que está parado agora". Mantê-la exibiria razão obsoleta em chamado ativo. O `TicketHistory` segue como trilha — é dele que o TMA já reconstrói os intervalos (`reports.ts:196`), de modo que nada de auditoria se perde.
+*Por quê limpar na retomada:* mantê-la exibiria razão obsoleta em chamado ativo. O `TicketHistory` segue como trilha — é dele que o TMA já reconstrói os intervalos (`reports.ts:196`), de modo que nada de auditoria se perde.
 
 *Custo aceito:* "quantas vezes paramos por falta de material?" continua sendo consulta ao histórico. Uma tabela `PendencyReason` resolveria isso e permitiria curadoria administrativa, mas o pedido era digitação livre; as razões gravadas servirão de semente quando essa tabela existir.
 
-### D4 — Escopo das razões por `sectorId`
+**Correção durante a implementação.** A redação original desta decisão dizia que a coluna seria também a fonte do `<datalist>`, por `SELECT DISTINCT` indexado, e descartava o histórico por ser varredura de JSON. As duas metades da decisão não podiam valer juntas: zerar a coluna na retomada apaga a grafia do vocabulário, de modo que uma razão desaparecia das sugestões assim que seu chamado voltava a andar — e `resolvePendenciaMotivo()` não tinha mais como reaproveitá-la, gravando uma variação quase idêntica na pendência seguinte. Dois cenários do delta `ticket-workflow` reprovavam na verificação ("Razão nova é aceita", que exige que a razão passe a constar das sugestões *nas próximas pendências*, e "Grafia existente é reaproveitada").
 
-`GET /api/tickets/razoes-pendencia` espelha `GET /api/tickets/locais`: `distinct` + ordenação, escopo derivado do papel.
+Era a própria justificativa de D4 virada contra o desenho: um vocabulário que evapora faz cada Técnico redigitar as mesmas razões desde zero. A resolução separa os dois papéis — a coluna continua sendo o estado corrente (e segue zerada na retomada), e o **vocabulário vem da trilha durável**: ver D4.
+
+### D4 — Escopo das razões por `sectorId`, vocabulário lido do histórico
+
+`GET /api/tickets/razoes-pendencia` deriva o escopo do papel como `GET /api/tickets/locais`, mas **não** lê a mesma espécie de fonte: as razões vêm dos eventos `MUDANCA_STATUS` com destino `AGUARDANDO` do `TicketHistory`, não da coluna.
+
+*Por quê a assimetria com `/locais`:* `Ticket.local` nunca é apagado, então para ele a coluna é fonte suficiente. `Ticket.pendenciaMotivo` é zerada na retomada (D3), e uma lista construída sobre ela ofereceria apenas as razões dos chamados pendentes *naquele instante* — um Tipo de Ocorrência sem pendências abertas não sugeriria nada. O join até `Ticket` existe justamente para aplicar o escopo (e portanto o isolamento entre Unidades) sobre os eventos. `backend/src/lib/pendencia.ts` concentra as duas operações que dependem desse vocabulário — listar e resolver a grafia —, de modo que a fonte é escolhida num lugar só.
 
 *Por quê por Tipo de Ocorrência, e não por Unidade:* "Aguardando material" é vocabulário genérico, e por Unidade cada uma redigitaria as mesmas razões desde zero. O eixo acompanha `ProblemType`, que já é filho de `Sector`.
 

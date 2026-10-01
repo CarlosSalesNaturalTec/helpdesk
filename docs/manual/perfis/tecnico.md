@@ -12,9 +12,23 @@ O **Local** informado pelo Solicitante aparece em coluna própria na listagem, n
 
 Um chamado nos status **Aberto** ou **Reaberto** pode ser assumido por qualquer Técnico da mesma Unidade — o primeiro a assumir se torna o responsável, e o chamado passa a **Em Andamento**. Chamados fechados não podem ser assumidos; é preciso reabri-los primeiro.
 
-## Colocar em Aguardando
+## Colocar em Pendente
 
-Quando faltam informações do Solicitante para prosseguir, mude o status para **Aguardando** e escreva uma mensagem explicando o que é necessário — a mensagem é obrigatória e vai por notificação (in-app e e-mail) ao Solicitante. Quando o Solicitante responde, o chamado volta automaticamente para **Em Andamento**.
+Quando o atendimento depende de algo que não está na sua mão — material, equipamento, laudo, fornecedor, verba, ou uma informação que só o Solicitante tem —, mude o status para **Pendente** e informe a **Razão da Pendência**. A razão é obrigatória (de 2 a 100 caracteres) e vai por notificação (in-app e e-mail) ao Solicitante.
+
+O campo oferece as razões já registradas em chamados do seu Tipo de Ocorrência como sugestões: comece a digitar e escolha uma da lista, ou escreva uma razão nova — ela passa a ser sugerida nas pendências seguintes. Reaproveitar a mesma redação é o que mantém a lista curta e torna possível reconhecer padrões ("de novo falta de material"). Diferenças de maiúsculas e de espaços não criam entradas novas: "aguardando  material" é gravado com a grafia já registrada, "Aguardando material".
+
+As sugestões são uma conveniência. Se a lista não carregar, o campo continua aceitando texto livre e a pendência pode ser concluída normalmente.
+
+Enquanto o chamado estiver Pendente, a razão aparece no topo da tela do chamado, de modo que qualquer pessoa com acesso saiba o que se está esperando.
+
+## Retomar o atendimento
+
+**O chamado não sai de Pendente por conta própria.** Uma mensagem do Solicitante não retoma o atendimento — você é avisado da resposta por notificação e por e-mail, e decide se a pendência está resolvida.
+
+Quando estiver, clique em **▶ Retomar Atendimento** na tela do chamado: o status volta para **Em Andamento**, a transição entra no histórico e a razão deixa de ser exibida (o registro histórico dela permanece na linha do tempo).
+
+Essa decisão é sua de propósito: o tempo em Pendente é descontado do Tempo Médio de Atendimento, e uma retomada automática por conversa reiniciaria essa contagem sem que nada tivesse se resolvido.
 
 ## Resolver um chamado
 

@@ -1,6 +1,11 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TicketStatusEnum, NivelUrgenciaEnum } from '@helpdesk/shared';
+import {
+  TicketStatusEnum,
+  NivelUrgenciaEnum,
+  STATUS_LABELS,
+  STATUS_BADGE_CLASSES,
+} from '@helpdesk/shared';
 import type { TicketStatusType, NivelUrgenciaType } from '@helpdesk/shared';
 import { getTickets } from '../api/tickets.js';
 import { useAuth } from '../context/AuthContext.js';
@@ -8,15 +13,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
 import { TicketCard } from '../components/TicketCard.js';
 import { UnitSelector } from '../components/UnitSelector.js';
-
-const STATUS_LABELS: Record<TicketStatusType, string> = {
-  ABERTO: 'Aberto',
-  EM_ANDAMENTO: 'Em Andamento',
-  AGUARDANDO: 'Aguardando',
-  RESOLVIDO: 'Resolvido',
-  FECHADO: 'Fechado',
-  REABERTO: 'Reaberto',
-};
 
 const URGENCIA_LABELS: Record<NivelUrgenciaType, string> = {
   BAIXA: 'Baixa',
@@ -88,18 +84,6 @@ export const Chamados: React.FC = () => {
       limit,
     }),
   });
-
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'ABERTO': return 'badge-aberto';
-      case 'EM_ANDAMENTO': return 'badge-andamento';
-      case 'AGUARDANDO': return 'badge-aguardando';
-      case 'RESOLVIDO': return 'badge-resolvido';
-      case 'FECHADO': return 'badge-fechado';
-      case 'REABERTO': return 'badge-reaberto';
-      default: return 'badge-secondary';
-    }
-  };
 
   const getUrgenciaBadgeClass = (urgencia: string) => {
     switch (urgencia) {
@@ -312,8 +296,8 @@ export const Chamados: React.FC = () => {
                       </td>
                     )}
                     <td>
-                      <span className={`status-badge ${getStatusBadgeClass(ticket.status)}`}>
-                        {ticket.status.replace('_', ' ')}
+                      <span className={`status-badge ${STATUS_BADGE_CLASSES[ticket.status]}`}>
+                        {STATUS_LABELS[ticket.status]}
                       </span>
                     </td>
                     <td>

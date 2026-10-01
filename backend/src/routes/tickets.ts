@@ -9,6 +9,7 @@ import { NotificationService } from '../services/notification.js';
 import { uploadFile, deleteFile, extractGcsPath } from '../lib/storage.js';
 import { validateAttachment } from '../lib/attachment.js';
 import { resolveLocal, buildTicketTitulo } from '../lib/local.js';
+import { resolvePendenciaMotivo, listPendenciaMotivos } from '../lib/pendencia.js';
 import {
   createTicketSchema,
   ticketStatusSchema,
@@ -344,6 +345,43 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       });
 
       return reply.send(rows.map((r) => r.local).filter((l): l is string => l !== null));
+    }
+  );
+
+  // 3a-bis. Razões de pendência já registradas, para as sugestões do campo
+  // "Razão da Pendência". Precisa ficar ANTES de GET /api/tickets/:id, senão o Fastify
+  // casa :id = "razoes-pendencia" (mesma armadilha de niveis-urgencia e locais).
+  fastify.get(
+    '/api/tickets/razoes-pendencia',
+    {
+      // Papéis enumerados pelo requisito: o campo só existe no modal do Técnico, e
+      // `scopeWhere()` devolve `{}` para o Solicitante — deixá-lo entrar aqui exporia
+      // as razões de toda a rede a quem só pode ver os próprios chamados.
+      preHandler: [
+        authRequired,
+        requirePasswordChange,
+        requireRole(['TECNICO', 'GESTOR', 'DIRETOR', 'ADMIN']),
+      ],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = request.user!;
+      const queryParse = z
+        .object({ sectorId: z.coerce.number().int().positive().optional() })
+        .safeParse(request.query);
+      if (!queryParse.success) {
+        return reply.status(400).send({ error: queryParse.error.format() });
+      }
+
+      // O eixo das razões é o Tipo de Ocorrência: "Aguardando material" é vocabulário
+      // genérico, e por Unidade cada uma redigitaria tudo desde zero. O isolamento entre
+      // Unidades continua valendo — ele vem de `scopeWhere()`, que prende Técnico, Gestor
+      // e Diretor à própria Unidade; só o Admin vê além, e pode estreitar com ?sectorId=.
+      const scope: { unidadeId?: number; sectorId?: number } = { ...scopeWhere(user) };
+      if (user.role === 'ADMIN' && queryParse.data.sectorId) {
+        scope.sectorId = queryParse.data.sectorId;
+      }
+
+      return reply.send(await listPendenciaMotivos(scope));
     }
   );
 
@@ -835,9 +873,26 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'O chamado deve possuir um Técnico atribuído para ser colocado Em Andamento.' });
       }
 
+      // Razão da Pendência: ao entrar em pendência, grava-se a grafia já usada no Tipo de
+      // Ocorrência quando houver (para o <datalist> não acumular variações quase idênticas);
+      // ao retomar, a coluna é zerada — ela responde "por que está parado agora", e manter a
+      // razão num chamado ativo exibiria pendência obsoleta. O TicketHistory abaixo segue
+      // como trilha de auditoria, de onde o TMA já reconstrói os intervalos.
+      const razaoPendencia =
+        newStatus === 'AGUARDANDO'
+          ? await resolvePendenciaMotivo(mensagem ?? '', ticket.sectorId)
+          : null;
+
       const updatedTicket = await prisma.ticket.update({
         where: { id },
-        data: { status: newStatus },
+        data: {
+          status: newStatus,
+          ...(newStatus === 'AGUARDANDO'
+            ? { pendenciaMotivo: razaoPendencia }
+            : newStatus === 'EM_ANDAMENTO'
+            ? { pendenciaMotivo: null }
+            : {}),
+        },
       });
 
       // Registrar mudança no histórico (com os dados condicionais exigidos na Tarefa 6.3)
@@ -848,7 +903,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
           content: {
             from: ticket.status,
             to: newStatus,
-            mensagem: newStatus === 'AGUARDANDO' ? mensagem : undefined,
+            mensagem: newStatus === 'AGUARDANDO' ? razaoPendencia ?? undefined : undefined,
             solucao: newStatus === 'RESOLVIDO' ? solucao : undefined,
           },
           authorId: user.id,
@@ -856,7 +911,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
       });
 
       if (newStatus === 'AGUARDANDO') {
-        await NotificationService.notifyAguardando(updatedTicket, mensagem || '').catch(err => fastify.log.error(err));
+        await NotificationService.notifyAguardando(updatedTicket, razaoPendencia ?? '').catch(err => fastify.log.error(err));
       } else if (newStatus === 'RESOLVIDO') {
         await NotificationService.notifyResolved(updatedTicket).catch(err => fastify.log.error(err));
       }
@@ -1197,31 +1252,12 @@ export async function ticketRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Chamado não encontrado' });
       }
 
+      // Uma mensagem não altera o status. A pendência representa bloqueio de terceiros
+      // (material, equipamento, fornecedor) e uma resposta do Solicitante não o desfaz —
+      // retomar o chamado aqui reiniciava a contagem do TMA, que desconta justamente o
+      // tempo em pendência. A retomada é ação explícita do Técnico ("Retomar Atendimento").
+      // O aviso ao Técnico permanece: ver notifyMessageInAguardando abaixo.
       const originalStatus = ticket.status;
-      let currentStatus = originalStatus;
-
-      // Se status é AGUARDANDO e autor é Solicitante, transitar para EM_ANDAMENTO
-      if (originalStatus === 'AGUARDANDO' && isSolicitante) {
-        currentStatus = 'EM_ANDAMENTO';
-        await prisma.ticket.update({
-          where: { id },
-          data: { status: 'EM_ANDAMENTO' },
-        });
-
-        // Registrar a mudança de status no histórico
-        await prisma.ticketHistory.create({
-          data: {
-            ticketId: id,
-            type: 'MUDANCA_STATUS',
-            content: {
-              from: 'AGUARDANDO',
-              to: 'EM_ANDAMENTO',
-              mensagem: 'Retornado para Em Andamento por mensagem do solicitante.',
-            },
-            authorId: user.id,
-          },
-        });
-      }
 
       // Registrar mensagem no histórico
       const historyRecord = await prisma.ticketHistory.create({
@@ -1269,7 +1305,7 @@ export async function ticketRoutes(fastify: FastifyInstance) {
           nome: user.nome,
           role: user.role,
         },
-        status: currentStatus,
+        status: originalStatus,
       });
     }
   );

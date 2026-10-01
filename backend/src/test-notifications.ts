@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import multipart from '@fastify/multipart';
 import { authRoutes } from './routes/auth.js';
 import { unidadeRoutes } from './routes/unidades.js';
 import { usuarioRoutes } from './routes/usuarios.js';
@@ -8,11 +9,28 @@ import { prisma } from './lib/prisma.js';
 import * as bcrypt from 'bcryptjs';
 
 const fastify = Fastify({ logger: false });
+// POST /api/tickets é multipart-only (o anexo é opcional, mas o parser não): sem este
+// plugin, request.parts() falha e toda criação volta em erro.
+fastify.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
 fastify.register(authRoutes);
 fastify.register(unidadeRoutes);
 fastify.register(usuarioRoutes);
 fastify.register(ticketRoutes);
 fastify.register(notificationRoutes);
+
+const MULTIPART_BOUNDARY = '----helpdeskNotifBoundary';
+
+/** Monta um corpo multipart/form-data só com campos de texto. */
+function multipartBody(fields: Record<string, string | number>) {
+  const parts = Object.entries(fields).map(
+    ([k, v]) =>
+      `--${MULTIPART_BOUNDARY}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`
+  );
+  return {
+    payload: parts.join('') + `--${MULTIPART_BOUNDARY}--\r\n`,
+    contentType: `multipart/form-data; boundary=${MULTIPART_BOUNDARY}`,
+  };
+}
 
 async function runTests() {
   console.log('\n==================================================');
@@ -28,9 +46,15 @@ async function runTests() {
     await prisma.ticket.deleteMany({});
     await prisma.user.deleteMany({});
     await prisma.unidade.deleteMany({});
+    await prisma.problemType.deleteMany({});
+    await prisma.sector.deleteMany({});
 
-    // 2. Criar Unidades e Usuários
+    // 2. Criar Unidade, Tipo de Ocorrência, Tipo de Problema e Usuários
     const unit = await prisma.unidade.create({ data: { nome: 'Unidade Notif' } });
+    const sector = await prisma.sector.create({ data: { nome: 'Tecnologia' } });
+    const problemType = await prisma.problemType.create({
+      data: { nome: 'HARDWARE', sectorId: sector.id, slaMinutes: 480 }
+    });
     const salt = await bcrypt.genSalt(10);
     const senhaHash = await bcrypt.hash('senha123', salt);
 
@@ -38,7 +62,7 @@ async function runTests() {
       data: { nome: 'Sol Teste', email: 'sol@n.com', senhaHash, role: 'SOLICITANTE', unidadeId: unit.id, passwordResetRequired: false }
     });
     const tec = await prisma.user.create({
-      data: { nome: 'Tec Teste', email: 'tec@n.com', senhaHash, role: 'TECNICO', unidadeId: unit.id, passwordResetRequired: false }
+      data: { nome: 'Tec Teste', email: 'tec@n.com', senhaHash, role: 'TECNICO', unidadeId: unit.id, sectorId: sector.id, passwordResetRequired: false }
     });
 
     const getHeaders = async (email: string) => {
@@ -54,12 +78,19 @@ async function runTests() {
     const headersSol = await getHeaders('sol@n.com');
     const headersTec = await getHeaders('tec@n.com');
 
-    // 3. Criar ticket
+    // 3. Criar ticket. O título é derivado pelo servidor de `Tipo de Problema — Local`.
+    const mpTicket = multipartBody({
+      local: 'Sala 10',
+      descricao: 'O monitor desliga sozinho.',
+      sectorId: sector.id,
+      problemTypeId: problemType.id,
+      urgencia: 'MEDIA',
+    });
     const resOpen = await fastify.inject({
       method: 'POST',
       url: '/api/tickets',
-      headers: headersSol,
-      payload: { titulo: 'Monitor piscando', descricao: 'O monitor desliga sozinho.', tipoProblema: 'HARDWARE', urgencia: 'MEDIA' }
+      headers: { ...headersSol, 'content-type': mpTicket.contentType },
+      payload: mpTicket.payload
     });
     const ticket = JSON.parse(resOpen.body);
 
@@ -167,19 +198,27 @@ async function runTests() {
     });
     console.log(`   [Assert] Contagem não lidas agora é 0: ${JSON.parse(readAllCountRes.body).count === 0 ? 'Passou ✓' : 'FALHOU ✗'}`);
 
-    // 10. Testar transição automática de status AGUARDANDO -> EM_ANDAMENTO ao responder
-    console.log('-> Testando transição automática de AGUARDANDO para EM_ANDAMENTO...');
-    
-    // Colocar em AGUARDANDO
+    // 10. Mensagem do Solicitante em chamado Pendente: o status NÃO muda, e o Técnico
+    // é avisado. É o aviso que preserva o sinal depois da remoção da retomada automática.
+    console.log('-> Testando que mensagem do Solicitante não retoma chamado Pendente...');
+
+    // Colocar em Pendente (AGUARDANDO no código) com a Razão da Pendência
     await fastify.inject({
       method: 'PATCH',
       url: `/api/tickets/${ticket.id}/status`,
       headers: headersTec,
-      payload: { status: 'AGUARDANDO', mensagem: 'Preciso do numero de serie.' }
+      payload: { status: 'AGUARDANDO', mensagem: 'Aguardando peça de reposição' }
     });
-    
+
     const ticketWait = await prisma.ticket.findUnique({ where: { id: ticket.id } });
-    console.log(`   [Assert] Ticket está no status AGUARDANDO: ${ticketWait?.status === 'AGUARDANDO' ? 'Passou ✓' : 'FALHOU ✗'}`);
+    console.log(`   [Assert] Ticket está no status AGUARDANDO (Pendente): ${ticketWait?.status === 'AGUARDANDO' ? 'Passou ✓' : 'FALHOU ✗'}`);
+    console.log(`   [Assert] Razão da Pendência gravada na coluna: ${ticketWait?.pendenciaMotivo === 'Aguardando peça de reposição' ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    const unreadTecAntes = JSON.parse((await fastify.inject({
+      method: 'GET',
+      url: '/api/notifications/unread-count',
+      headers: headersTec
+    })).body).count;
 
     // Solicitante responde mensagem
     await fastify.inject({
@@ -189,8 +228,28 @@ async function runTests() {
       payload: { content: 'O número de série é 987654321.' }
     });
 
+    const ticketAfterMessage = await prisma.ticket.findUnique({ where: { id: ticket.id } });
+    console.log(`   [Assert] Ticket PERMANECE em AGUARDANDO após a mensagem: ${ticketAfterMessage?.status === 'AGUARDANDO' ? 'Passou ✓' : 'FALHOU ✗'}`);
+    console.log(`   [Assert] Razão da Pendência preservada: ${ticketAfterMessage?.pendenciaMotivo === 'Aguardando peça de reposição' ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    const unreadTecDepois = JSON.parse((await fastify.inject({
+      method: 'GET',
+      url: '/api/notifications/unread-count',
+      headers: headersTec
+    })).body).count;
+    console.log(`   [Assert] Técnico foi notificado da resposta: ${unreadTecDepois > unreadTecAntes ? 'Passou ✓' : 'FALHOU ✗'}`);
+
+    // A retomada é ação explícita do Técnico, e zera a razão corrente.
+    await fastify.inject({
+      method: 'PATCH',
+      url: `/api/tickets/${ticket.id}/status`,
+      headers: headersTec,
+      payload: { status: 'EM_ANDAMENTO' }
+    });
+
     const ticketResumed = await prisma.ticket.findUnique({ where: { id: ticket.id } });
-    console.log(`   [Assert] Ticket transitou automaticamente para EM_ANDAMENTO: ${ticketResumed?.status === 'EM_ANDAMENTO' ? 'Passou ✓' : 'FALHOU ✗'}`);
+    console.log(`   [Assert] Técnico retomou explicitamente para EM_ANDAMENTO: ${ticketResumed?.status === 'EM_ANDAMENTO' ? 'Passou ✓' : 'FALHOU ✗'}`);
+    console.log(`   [Assert] Razão da Pendência zerada na retomada: ${ticketResumed?.pendenciaMotivo === null ? 'Passou ✓' : 'FALHOU ✗'}`);
 
     // 11. Testar bloqueio de mensagem em chamado fechado
     console.log('-> Testando bloqueio de mensagem em chamado FECHADO...');

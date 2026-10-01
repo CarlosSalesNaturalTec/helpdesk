@@ -61,13 +61,16 @@ export class NotificationService {
   }
 
   // 3.3 notifyAguardando: Notifica Solicitante (visual + e-mail)
+  // O texto diz "Pendente"; o identificador 'AGUARDANDO' de `Notification.type` NÃO muda —
+  // há linhas gravadas em produção com ele, e renomeá-lo orfanaria os ícones do
+  // NotificationBell, jogando as notificações antigas no tratamento de tipo desconhecido.
   static async notifyAguardando(ticketOrId: any, mensagemTecnico: string) {
     try {
       const ticket = await this.getFullTicket(ticketOrId);
       if (!ticket) return;
 
       const solicitante = ticket.solicitante;
-      const messageText = `Chamado #${ticket.numero} precisa de informações adicionais (Aguardando)`;
+      const messageText = `Chamado #${ticket.numero} está Pendente: ${mensagemTecnico}`;
 
       // Notificação visual
       await this.create(solicitante.id, ticket.id, 'AGUARDANDO', messageText);
@@ -193,7 +196,7 @@ export class NotificationService {
 
       // Só notifica se tiver técnico responsável
       if (ticket.tecnicoId && ticket.tecnico) {
-        const messageText = `Nova resposta no chamado #${ticket.numero} (Aguardando)`;
+        const messageText = `Nova resposta no chamado #${ticket.numero} (Pendente)`;
 
         // Notificação visual
         await this.create(ticket.tecnicoId, ticket.id, 'MENSAGEM_AGUARDANDO', messageText);

@@ -7,8 +7,8 @@ Cada evento relevante do ciclo de vida de um chamado gera uma notificação **in
 | Evento | Quem é notificado |
 | --- | --- |
 | Chamado assumido por um Técnico | Solicitante |
-| Chamado colocado em Aguardando | Solicitante |
-| Nova mensagem do Solicitante em um chamado Aguardando | Técnico responsável |
+| Chamado colocado em Pendente (com a Razão da Pendência) | Solicitante |
+| Nova mensagem do Solicitante em um chamado Pendente | Técnico responsável |
 | Chamado marcado como Resolvido | Solicitante |
 | Chamado fechado administrativamente | Solicitante |
 | Chamado reaberto | Técnico(s) responsável(is), ou todos os Técnicos da Unidade se não houver um Técnico atribuído |

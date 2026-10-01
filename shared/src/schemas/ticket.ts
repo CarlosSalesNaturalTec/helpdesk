@@ -16,6 +16,56 @@ export const TicketStatusEnum = z.enum([
  */
 export const STATUS_NAO_FECHADOS = TicketStatusEnum.options.filter((s) => s !== 'FECHADO');
 
+/**
+ * Rótulos legíveis dos status, em português. Fonte única consumida pelas etiquetas da
+ * listagem, dos cartões e dos detalhes, pela linha do tempo, pelo filtro de status e pelo
+ * relatório em PDF — nenhuma dessas superfícies deve imprimir o valor cru do enum.
+ *
+ * `AGUARDANDO` é apresentado como "Pendente": a renomeação é da camada de texto, como em
+ * `Sector` → "Tipo de Ocorrência". O identificador do enum não muda.
+ *
+ * Sendo um `Record<TicketStatusType, string>`, um status novo sem rótulo aqui quebra o
+ * build em vez de aparecer em maiúsculas na tela.
+ */
+export const STATUS_LABELS: Record<z.infer<typeof TicketStatusEnum>, string> = {
+  ABERTO: 'Aberto',
+  EM_ANDAMENTO: 'Em Andamento',
+  AGUARDANDO: 'Pendente',
+  RESOLVIDO: 'Resolvido',
+  FECHADO: 'Fechado',
+  REABERTO: 'Reaberto',
+};
+
+/**
+ * Classe CSS da etiqueta de cada status. Mesma duplicação que os rótulos tinham: as três
+ * funções `getStatusBadgeClass` do frontend liam daqui.
+ *
+ * `badge-aguardando` é identificador de código (classe CSS) e permanece como está — só o
+ * rótulo foi renomeado para "Pendente".
+ */
+export const STATUS_BADGE_CLASSES: Record<z.infer<typeof TicketStatusEnum>, string> = {
+  ABERTO: 'badge-aberto',
+  EM_ANDAMENTO: 'badge-andamento',
+  AGUARDANDO: 'badge-aguardando',
+  RESOLVIDO: 'badge-resolvido',
+  FECHADO: 'badge-fechado',
+  REABERTO: 'badge-reaberto',
+};
+
+/**
+ * Rótulo de um status que chega como texto solto — o caso da linha do tempo, cujo
+ * `TicketHistory.content` é JSON e portanto não é tipado pelo enum. Um valor fora do
+ * enum devolve a si mesmo, para que a tela nunca fique em branco.
+ */
+export function statusLabel(status: string): string {
+  return STATUS_LABELS[status as z.infer<typeof TicketStatusEnum>] ?? status;
+}
+
+/** Contraparte de `statusLabel` para a classe da etiqueta. */
+export function statusBadgeClass(status: string): string {
+  return STATUS_BADGE_CLASSES[status as z.infer<typeof TicketStatusEnum>] ?? 'badge-secondary';
+}
+
 export const NivelUrgenciaEnum = z.enum([
   'BAIXA',
   'MEDIA',
@@ -63,6 +113,17 @@ export const createTicketSchema = z.object({
   urgencia: NivelUrgenciaEnum,
 });
 
+/** Tetos da Razão da Pendência, compartilhados com o campo da interface. */
+export const MIN_PENDENCIA_MOTIVO_LENGTH = 2;
+export const MAX_PENDENCIA_MOTIVO_LENGTH = 100;
+
+/**
+ * Transição de status. Ao entrar em pendência (`AGUARDANDO`), `mensagem` carrega a Razão da
+ * Pendência — texto curto escolhido da lista de razões já registradas no Tipo de Ocorrência
+ * ou digitado livremente. O campo chega aqui apenas aparado: a normalização completa
+ * (colapso de espaços e reaproveitamento da grafia existente no Sector) roda no servidor,
+ * em `backend/src/lib/pendencia.ts`.
+ */
 export const ticketStatusSchema = z
   .object({
     status: TicketStatusEnum,
@@ -70,12 +131,21 @@ export const ticketStatusSchema = z
     solucao: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.status === 'AGUARDANDO' && (!data.mensagem || data.mensagem.trim() === '')) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'A mensagem explicativa é obrigatória para colocar o chamado em aguardo',
-        path: ['mensagem'],
-      });
+    if (data.status === 'AGUARDANDO') {
+      const razao = data.mensagem?.trim() ?? '';
+      if (razao.length < MIN_PENDENCIA_MOTIVO_LENGTH) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `A Razão da Pendência é obrigatória e deve ter no mínimo ${MIN_PENDENCIA_MOTIVO_LENGTH} caracteres`,
+          path: ['mensagem'],
+        });
+      } else if (razao.length > MAX_PENDENCIA_MOTIVO_LENGTH) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `A Razão da Pendência deve ter no máximo ${MAX_PENDENCIA_MOTIVO_LENGTH} caracteres`,
+          path: ['mensagem'],
+        });
+      }
     }
     if (data.status === 'RESOLVIDO' && (!data.solucao || data.solucao.trim().length < 10)) {
       ctx.addIssue({

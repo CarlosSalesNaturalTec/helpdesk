@@ -5,6 +5,7 @@ import path from 'path';
 import { prisma } from '../lib/prisma.js';
 import { JwtPayload } from '../lib/jwt.js';
 import { authRequired, requirePasswordChange, requireRole } from '../middleware/auth.js';
+import { statusLabel } from '@helpdesk/shared';
 import { fullName, brandingSlug } from '../lib/branding.js';
 
 const LOGO_PRINT_PATH = path.join(__dirname, '../../src/assets/logo-print.png');
@@ -50,15 +51,6 @@ interface ReportCards {
   tmaHoras: number;
   satisfacaoMedia: number;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  ABERTO: 'Aberto',
-  EM_ANDAMENTO: 'Em Andamento',
-  AGUARDANDO: 'Aguardando',
-  RESOLVIDO: 'Resolvido',
-  FECHADO: 'Fechado',
-  REABERTO: 'Reaberto',
-};
 
 const URGENCIA_LABELS: Record<string, string> = {
   BAIXA: 'Baixa',
@@ -277,7 +269,7 @@ async function fetchGroupedTickets(scope: ReportScope): Promise<UnidadeGroup[]> 
       numero: t.numero.toString(),
       local: t.local ?? EMPTY_MARK,
       problemType: t.problemType?.nome ?? EMPTY_MARK,
-      status: STATUS_LABELS[t.status] ?? t.status,
+      status: statusLabel(t.status),
       urgencia: URGENCIA_LABELS[t.urgencia] ?? t.urgencia,
       solicitante: t.solicitante?.nome ?? EMPTY_MARK,
       tecnico: t.tecnico?.nome ?? EMPTY_MARK,
